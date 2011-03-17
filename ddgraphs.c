@@ -918,7 +918,7 @@ boolean passesSimpleForbiddenConnectionsTest(){
 
 }
 
-void handleComponentList(){
+void handleComponentList(int vertexCount){
     if(!isMaybeRealizableComponentList()){
         return;
     } else if(!passesSimpleForbiddenConnectionsTest()){
@@ -955,7 +955,7 @@ void handleComponentList(){
 
 void q4Components(int targetSize, int currentSize){
     Q4ComponentCount = targetSize - currentSize; //each q4 component has 1 vertex
-    handleComponentList();
+    handleComponentList(targetSize);
 }
 
 void q3Components(int currentType, int currentParameter, int targetSize, int currentSize){
@@ -1100,8 +1100,6 @@ void initStatistics(){
 
 void startGeneration(int targetSize){
 
-    vertexCount = targetSize; //facilitate calling ddgraphs as library
-
     initComponents(targetSize);
     initStatistics();
 
@@ -1156,7 +1154,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     }
 
     //parse the order
-    vertexCount = strtol(argv[optind], NULL, 10);
+    int vertexCount = strtol(argv[optind], NULL, 10);
     DEBUGDUMP(vertexCount, "%d")
 
     /*=========== initialization ===========*/

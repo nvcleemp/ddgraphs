@@ -96,9 +96,6 @@ int** Q3TypeComponentsComponentCount;
 int Q4ComponentCount;
 
 /******************Global Variables**********************/
-int vertexCount; //the targeted vertex size
-
-int Q1TypeComponents[Q1TypeComponentsCount];
 
 /******************Methods*******************************/
 
