@@ -36,6 +36,16 @@
 
 //========================== Utility methods ================================
 
+DDGRAPH *getNewDDGraph(int order){
+    DDGRAPH *ddgraph = (DDGRAPH *)malloc(sizeof(DDGRAPH));
+    ddgraph->order=order;
+    ddgraph->adjList = (int**)malloc(sizeof(int *)*order);
+    int i;
+    for(i=0;i<order;i++){
+        ddgraph->adjList[i] = (int*)malloc(sizeof(int)*3);
+    }
+}
+
 /**
  * Configures and returns the given building block with the given details.
  * 
@@ -812,6 +822,71 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
             exit(EXIT_FAILURE);
         }
     }
+}
+
+
+//=============== PHASE 2: CONNECTING THE BUILDING BLOCKS ===================
+
+BBLOCK *constructComponentList(int *blockListSize){
+    int i,j,k;
+    int currentBlock;
+    int blockCount = Q4ComponentCount;
+
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ1TypeComponents; j++){
+            blockCount += Q1TypeComponentsComponentCount[i][j];
+        }
+    }
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ2TypeComponents; j++){
+            blockCount += Q2TypeComponentsComponentCount[i][j];
+        }
+    }
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ3TypeComponents; j++){
+            blockCount += Q3TypeComponentsComponentCount[i][j];
+        }
+    }
+
+    *blockListSize = blockCount;
+    BBLOCK *block = (BBLOCK *) malloc(sizeof(BBLOCK)*blockCount);
+    currentBlock = 0;
+
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ1TypeComponents; j++){
+            for(k = 0; k < Q1TypeComponentsComponentCount[i][j]; k++){
+                initBuildingBlock(block + currentBlock, 1, i, j);
+            }
+        }
+    }
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ2TypeComponents; j++){
+            for(k = 0; k < Q2TypeComponentsComponentCount[i][j]; k++){
+                initBuildingBlock(block + currentBlock, 2, i, j);
+            }
+        }
+    }
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ3TypeComponents; j++){
+            for(k = 0; k < Q3TypeComponentsComponentCount[i][j]; k++){
+                initBuildingBlock(block + currentBlock, 3, i, j);
+            }
+        }
+    }
+    for(k = 0; k < Q4ComponentCount; k++){
+        initBuildingBlock(block + currentBlock, 4, 0, 0);
+    }
+
+    return block;
+}
+
+void connectComponentList(int vertexCount){
+    int blockCount = 0;
+    BBLOCK *blocks = constructComponentList(&blockCount);
+    DDGRAPH *graph = getNewDDGraph(vertexCount);
+
+    constructBuildingBlockListAsGraph(blocks, blockCount, graph);
+    
 }
 
 //================ PHASE 1: GENERATION OF COMPONENT LISTS ===================
