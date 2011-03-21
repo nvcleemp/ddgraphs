@@ -1217,6 +1217,12 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
             exit(EXIT_FAILURE);
         }
     }
+
+    ddgraph->underlyingGraph->nv = ddgraph->order + ddgraph->dummyVertexCount;
+
+    for(i = 0; i < ddgraph->underlyingGraph->nv; i++){
+        ddgraph->underlyingGraph->nde += ddgraph->underlyingGraph->d[i];
+    }
 }
 
 
