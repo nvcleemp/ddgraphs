@@ -1298,7 +1298,7 @@ void connectComponentList(int vertexCount){
 
     constructBuildingBlockListAsGraph(blocks, blockCount, graph);
 
-    free(graph);
+    freeDDGraph(graph);
     free(blocks);
 }
 
