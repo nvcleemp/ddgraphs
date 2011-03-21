@@ -132,6 +132,8 @@ void metaGraph2DDgraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph)
     }
 }
 
+//====================== Building block construction ==========================
+
 /*
  * Constructs a hub H(n). This block has 4 connectors arranged as follows:
  *
