@@ -33,6 +33,7 @@
 /******************Includes**********************/
 
 #include "util.h"
+#include "nausparse.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -97,6 +98,15 @@ int Q4ComponentCount;
 
 /******************Global Variables**********************/
 
+int connectionsMade; //the number of connections made at this point
+                     //the maximum value is vertexCount/2
+
+/* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
+ * There are at most n<=MAXN generators in a graph with n vertices and the length
+ * of each generator is n.
+ */
+permutation automorphismGroupGenerators[MAXN/2][MAXN][MAXN];
+int numberOfGenerators[MAXN/2];
 /******************Methods*******************************/
 
 

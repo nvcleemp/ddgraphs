@@ -132,6 +132,19 @@ void metaGraph2DDgraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph)
     }
 }
 
+inline void increaseConnectionsMade(){
+    connectionsMade++;
+    numberOfGenerators[connectionsMade] = 0;
+}
+
+void storeGenerator(int count, permutation perm[], nvector orbits[],
+        int numorbits, int stabvertex, int n) {
+    memcpy(automorphismGroupGenerators[connectionsMade] +
+            numberOfGenerators[connectionsMade], perm, sizeof(permutation) * n);
+
+    numberOfGenerators[connectionsMade]++;
+}
+
 //====================== Building block construction ==========================
 
 /*
@@ -1202,6 +1215,8 @@ void initComponents(int targetSize){
 
 void initStatistics(){
     componentListsCount = 0;
+    connectionsMade = 0;
+    numberOfGenerators[connectionsMade] = 0;
 }
 
 //====================== START =======================
