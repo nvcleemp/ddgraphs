@@ -37,13 +37,54 @@
 //========================== Utility methods ================================
 
 DDGRAPH *getNewDDGraph(int order){
-    DDGRAPH *ddgraph = (DDGRAPH *)malloc(sizeof(DDGRAPH));
-    ddgraph->order=order;
-    ddgraph->adjList = (int**)malloc(sizeof(int *)*order);
     int i;
-    for(i=0;i<order;i++){
-        ddgraph->adjList[i] = (int*)malloc(sizeof(int)*3);
+    
+    DDGRAPH *ddgraph = (DDGRAPH *)malloc(sizeof(DDGRAPH));
+    ddgraph->order = order;
+    ddgraph->dummyVertexCount = 0;
+    for(i = 0; i < order; i++){
+        ddgraph->semiEdges[i] = 0;
     }
+    ddgraph->underlyingGraph = (sparsegraph *)malloc(sizeof(sparsegraph));
+    if(order==2){
+        //order 2 is a bit special because we need to store the theta-graph
+        ddgraph->underlyingGraph->nv = 0;
+        ddgraph->underlyingGraph->nde = 0;
+        ddgraph->underlyingGraph->d = (int *)malloc(4*sizeof(int));
+        ddgraph->underlyingGraph->v = (int *)malloc(4*sizeof(int));
+        ddgraph->underlyingGraph->e = (int *)malloc(10*sizeof(int));
+        for(i = 0; i < order; i++){
+            ddgraph->underlyingGraph->d[i]=3;
+            ddgraph->underlyingGraph->v[i]=3*i;
+        }
+        for(i = order; i < 4; i++){
+            ddgraph->underlyingGraph->d[i]=2;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*i;
+        }
+        ddgraph->underlyingGraph->dlen = 4;
+        ddgraph->underlyingGraph->vlen = 4;
+        ddgraph->underlyingGraph->elen = 10;
+    } else {
+        int maxVertices = order + order/2;
+        ddgraph->underlyingGraph->nv = 0;
+        ddgraph->underlyingGraph->nde = 0;
+        ddgraph->underlyingGraph->d = (int *)malloc(maxVertices*sizeof(int));
+        ddgraph->underlyingGraph->v = (int *)malloc(maxVertices*sizeof(int));
+        ddgraph->underlyingGraph->e = (int *)malloc((3*order + 2*(order/2))*sizeof(int));
+        for(i = 0; i < order; i++){
+            ddgraph->underlyingGraph->d[i]=3;
+            ddgraph->underlyingGraph->v[i]=3*i;
+        }
+        for(i = order; i < maxVertices; i++){
+            ddgraph->underlyingGraph->d[i]=2;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*i;
+        }
+        ddgraph->underlyingGraph->dlen = maxVertices;
+        ddgraph->underlyingGraph->vlen = maxVertices;
+        ddgraph->underlyingGraph->elen = 3*order + 2*(order/2);
+    }
+
+    return ddgraph;
 }
 
 /**
@@ -112,26 +153,6 @@ void clearConnectors(BBLOCK* blocks, int buildingBlockCount){
     }
 }
 
-/**
- * Translates an array of (connected!) blocks to a Delaney-Dress graph. This
- * method assumes that the different building blocks already have been
- * constructed in the Delaney-Dress graph and that the free neighbour of each
- * connector is the first neighbour (position 0 in the adjacency list).
- *
- * @param blocks
- * @param buildingBlockCount
- */
-void metaGraph2DDgraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
-    int i, j;
-
-    for (i = 0; i < buildingBlockCount; i++) {
-        for(j = 0; j < (blocks+i)->connectorCount; j++){
-            ddgraph->adjList[(blocks+i)->connectionVertices[j]][0] =
-                    (blocks+i)->connections[j]->connectionVertices[(blocks+i)->targetConnector[j]];
-        }
-    }
-}
-
 inline void increaseConnectionsMade(){
     connectionsMade++;
     numberOfGenerators[connectionsMade] = 0;
@@ -167,35 +188,53 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     block->connectionVertices[2] = (*currentVertex)+(block->parameter-1)*4+2;
     block->connectionVertices[3] = (*currentVertex)+(block->parameter-1)*4+3;
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 }
 
@@ -219,36 +258,55 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+2;
     block->connectionVertices[2] = (*currentVertex)+(block->parameter-1)*4+3;
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+2;
+    edges[positions[*currentVertex]+2] = SEMIEDGE;
+    degrees[*currentVertex] = 2;
+    ddgraph->semiEdges[*currentVertex] = 1;
+    //don't change position: semi-edges are at the end
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 }
 
@@ -274,37 +332,51 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph)
 
     start = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+(block->parameter-1)*4+3;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+    
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = start;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = start;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+
     (*currentVertex)+=2;
 }
 
@@ -327,37 +399,58 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = (*currentVertex)+1;
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+
+    edges[positions[*currentVertex]+0] = dummyVertex;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+
+    edges[positions[(*currentVertex)+1]+0] = dummyVertex;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+
+    edges[positions[dummyVertex]+0] = (*currentVertex);
+    edges[positions[dummyVertex]+1] = (*currentVertex)+1;
+
+    ddgraph->dummyVertexCount++;
+    
     (*currentVertex)+=2;
 }
 
@@ -380,37 +473,58 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = (*currentVertex)+1;
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = SEMIEDGE;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+
+    edges[positions[*currentVertex]+0] = SEMIEDGE;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //semi-edge is at position 0
+    ddgraph->semiEdges[*currentVertex]=1;
+
+    edges[positions[(*currentVertex)+1]+0] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //semi-edge is at position 0
+    ddgraph->semiEdges[(*currentVertex)+1]=1;
+
     (*currentVertex)+=2;
 }
 
@@ -427,6 +541,8 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
  *          /               \
  *         0                 1
  *
+ * No special measures need to be made for the case where n is 1, because this
+ * is not a legal type.
  */
 void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i, start;
@@ -435,37 +551,51 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
 
     start = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+(block->parameter-1)*4+2;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = start;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+0] = start;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 }
 
@@ -489,42 +619,62 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+3;
     
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = SEMIEDGE;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //semi-edge is at position 0
+    ddgraph->semiEdges[*currentVertex] = 1;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+1] = SEMIEDGE;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //semi-edge is at position 0
+    ddgraph->semiEdges[*currentVertex] = 1;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 }
 
 /*
- * Constructs a locked diagonal chain LDC(n). This block has 2 connectors
+ * Constructs a locked diagonal chain LDC(n). This block has 1 connector
  * arranged as follows:
  *
  *              _______________
@@ -545,38 +695,53 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
 
     start = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+(block->parameter-1)*4+3;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = start;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+0] = SEMIEDGE;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //semi-edge is at position 0
+    ddgraph->semiEdges[*currentVertex] = 1;
+
+    edges[positions[(*currentVertex)+1]+1] = start;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+
     (*currentVertex)+=2;
 }
 
@@ -598,38 +763,60 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     int i;
     block->connectionVertices[0] = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][0] = SEMIEDGE;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+1] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //semi-edge is at position 0
+    ddgraph->semiEdges[(*currentVertex)+1] = 1;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+
+    edges[positions[*currentVertex]+0] = dummyVertex;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+
+    edges[positions[(*currentVertex)+1]+0] = dummyVertex;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+
+    edges[positions[dummyVertex]+0] = (*currentVertex);
+    edges[positions[dummyVertex]+1] = (*currentVertex)+1;
+
+    ddgraph->dummyVertexCount++;
+
     (*currentVertex)+=2;
 }
 
@@ -651,38 +838,60 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     int i;
     block->connectionVertices[0] = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][0] = SEMIEDGE;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+0] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //semi-edge is at position 0
+    ddgraph->semiEdges[(*currentVertex)+1]=1;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = SEMIEDGE;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = SEMIEDGE;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+
+    edges[positions[*currentVertex]+0] = SEMIEDGE;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //semi-edge is at position 0
+    ddgraph->semiEdges[*currentVertex]=1;
+
+    edges[positions[(*currentVertex)+1]+0] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //semi-edge is at position 0
+    ddgraph->semiEdges[(*currentVertex)+1]=1;
+
     (*currentVertex)+=2;
 }
 
@@ -698,7 +907,8 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
  *           o---o-...-o---o
  *          /               \
  *         0
- *
+ * No special measures need to be made for the case where n is 1, because this
+ * is not a legal type. *
  */
 void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i, start;
@@ -706,108 +916,247 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
 
     start = *currentVertex;
 
-    ddgraph->adjList[*currentVertex][0] = (*currentVertex)+(block->parameter-1)*4+2;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+2;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        ddgraph->adjList[(*currentVertex)+1][0] = (*currentVertex)-2;
-        ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
-        ddgraph->adjList[(*currentVertex)+2][0] = *currentVertex;
-        ddgraph->adjList[(*currentVertex)+2][1] = (*currentVertex)+3;
-        ddgraph->adjList[(*currentVertex)+2][2] = (*currentVertex)+4;
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
 
-        ddgraph->adjList[(*currentVertex)+3][0] = (*currentVertex)+1;
-        ddgraph->adjList[(*currentVertex)+3][1] = (*currentVertex)+2;
-        ddgraph->adjList[(*currentVertex)+3][2] = (*currentVertex)+5;
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
         (*currentVertex)+=4;
     }
 
-    ddgraph->adjList[*currentVertex][0] = start;
-    ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-    ddgraph->adjList[*currentVertex][2] = (*currentVertex)-2;
-    ddgraph->adjList[(*currentVertex)+1][0] = SEMIEDGE;
-    ddgraph->adjList[(*currentVertex)+1][1] = *currentVertex;
-    ddgraph->adjList[(*currentVertex)+1][2] = (*currentVertex)-1;
+    edges[positions[*currentVertex]+0] = start;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+
+    edges[positions[(*currentVertex)+1]+0] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //semi-edge is at position 0
+
     (*currentVertex)+=2;
 }
 
+/*
+ * Constructs a pearl chain PC(n). This block has 2 connectors
+ * arranged as follows:
+ *         ____         ____
+ *        /    \       /    \
+ *    0--o      o-...-o      o--1
+ *        \____/       \____/
+ *
+ */
 void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter);
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
     for(i=0; i<block->parameter; i++){
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
+        int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+        ddgraph->dummyVertexCount++;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = dummyVertex;
+        edges[positions[dummyVertex]+0] = (*currentVertex);
         (*currentVertex)++;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)+1;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)+1;
         //for the last vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+2] = dummyVertex;
+        edges[positions[dummyVertex]+1] = (*currentVertex);
         (*currentVertex)++;
     }
+
+    degrees[block->connectionVertices[0]] = 2;
+    degrees[block->connectionVertices[1]] = 2;
+    positions[block->connectionVertices[0]]++;
+    positions[block->connectionVertices[1]]++;
+
 }
 
+/*
+ * Constructs a locked pearl chain LPC(n). This block has 1 connector
+ * arranged as follows:
+ *         ____         ____
+ *        /    \       /    \
+ *    0--o      o-...-o      o-
+ *        \____/       \____/
+ *
+ */
 void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
     for(i=0; i<block->parameter; i++){
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
+        int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+        ddgraph->dummyVertexCount++;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = dummyVertex;
+        edges[positions[dummyVertex]+0] = (*currentVertex);
         (*currentVertex)++;
-        ddgraph->adjList[*currentVertex][1] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)+1;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)+1;
         //for the last vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+2] = dummyVertex;
+        edges[positions[dummyVertex]+1] = (*currentVertex);
         (*currentVertex)++;
     }
-    ddgraph->adjList[(*currentVertex-1)][0] = SEMIEDGE;
+
+    edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
+    ddgraph->semiEdges[(*currentVertex)-1] = 1;
+
+    degrees[block->connectionVertices[0]] = 2;
+    degrees[block->connectionVertices[1]] = 2;
+    positions[block->connectionVertices[0]]++;
+    positions[block->connectionVertices[1]]++;
 }
 
+/*
+ * Constructs a barb wire BW(n). This block has 2 connectors
+ * arranged as follows:
+ *
+ *       |    |     |    |
+ *    0--o----o-...-o----o--1
+ *
+ *
+ */
 void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter);
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
     for(i=0; i<block->parameter; i++){
-        ddgraph->adjList[*currentVertex][1] = SEMIEDGE;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = SEMIEDGE;
+        degrees[*currentVertex] = 2;
         (*currentVertex)++;
-        ddgraph->adjList[*currentVertex][1] = SEMIEDGE;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)-1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)+1;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)+1;
         //for the last vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+2] = SEMIEDGE;
+        degrees[*currentVertex] = 2;
         (*currentVertex)++;
     }
+
+    degrees[block->connectionVertices[0]] = 1;
+    degrees[block->connectionVertices[1]] = 1;
+    positions[block->connectionVertices[0]]++;
+    positions[block->connectionVertices[1]]++;
 }
 
+/*
+ * Constructs a locked barb wire LBW(n). This block has 1 connector
+ * arranged as follows:
+ *
+ *       |    |     |    |
+ *    0--o----o-...-o----o-
+ *
+ *
+ */
 void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
-    for(i=0; i<2*(block->parameter); i++){
-        ddgraph->adjList[*currentVertex][1] = SEMIEDGE;
-        ddgraph->adjList[*currentVertex][2] = (*currentVertex)+1;
-        ddgraph->adjList[*currentVertex][0] = (*currentVertex)-1;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for(i=0; i<block->parameter; i++){
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = SEMIEDGE;
+        degrees[*currentVertex] = 2;
+        ddgraph->semiEdges[(*currentVertex)] = 1;
+        (*currentVertex)++;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)+1;
+        //for the last vertex this will be overwritten when making the connections
+        edges[positions[*currentVertex]+1] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+2] = SEMIEDGE;
+        degrees[*currentVertex] = 2;
+        ddgraph->semiEdges[(*currentVertex)] = 1;
         (*currentVertex)++;
     }
-    ddgraph->adjList[(*currentVertex)-1][2] = SEMIEDGE;
+    edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
+    degrees[(*currentVertex)-1] = 1;
+    ddgraph->semiEdges[(*currentVertex)-1] = 2;
+    positions[(*currentVertex)-1]++;
+
+    degrees[block->connectionVertices[0]] = 1;
+    positions[block->connectionVertices[0]]++;
 }
 
+/*
+ * Constructs a q4 block. This block has 1 connector
+ * arranged as follows:
+ *
+ *    0--o<
+ *
+ */
 void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
-    ddgraph->adjList[*currentVertex][1] = ddgraph->adjList[*currentVertex][2] = SEMIEDGE;
+    ddgraph->underlyingGraph->e[(*currentVertex) + 1] = ddgraph->underlyingGraph->e[(*currentVertex) + 2] = SEMIEDGE;
+    ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
+    ddgraph->semiEdges[(*currentVertex)] = 2;
+
+    //it is not necessary to adjust ddgraph->underlyingGraph->v because it will
+    //not be used when the degree is 0.
     block->connectionVertices[0] = *currentVertex;
     (*currentVertex)++;
 }

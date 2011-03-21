@@ -60,11 +60,31 @@ struct _buildingblock {
 typedef struct _buildingblock BBLOCK;
 
 struct _ddgraph {
+    /* This is the true order of the Delaney-Dress graph. It may differ from the
+     * order of the nauty graph because that graph includes extra vertices to
+     * remove the double edges. The vertices are arranged in such a way that
+     * the numbering of the vertices are the same for both graph (i.e. all dummy
+     * vertices are at the end of the nauty graph).
+     */
     int order;
 
-    //an adjacency list of the graph
-    int **adjList;
+    /* In this graph nv is equal to order + number of double edges, nde is equal
+     * to 2*(number of edges (including double edges) + number of double edges).
+     * The array e has length 3*order + order (-1) (i.e. +/- 4*order). The first
+     * range of 3*order is subdivided in ranges of 3 corresponding to the
+     * 3-regular vertices of the graph. The last range is subdivided into ranges
+     * of 2, corresponding to the dummy vertices for the double edges.
+     */
+    sparsegraph *underlyingGraph;
 
+    /* This array is used to count the number of semi-edges incident with each
+     * vertex. This is doen, because semi-edges can't be used in nauty, but we
+     * do use the number of semi-edges as a color for the vertices to make sure
+     * that they are taken into account for the automorphism group.
+     */
+    int *semiEdges;
+
+    int dummyVertexCount;
 };
 
 typedef struct _ddgraph DDGRAPH;

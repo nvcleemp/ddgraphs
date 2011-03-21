@@ -137,9 +137,10 @@
 
 //=============== Common defines ==================
 
-typedef int boolean;
+//defined by nauty
+//typedef int boolean;
 
-#define TRUE 1;
-#define FALSE 0;
+//#define TRUE 1;
+//#define FALSE 0;
 
 #endif // end if not defined, and end the header file
