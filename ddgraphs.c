@@ -42,6 +42,7 @@ DDGRAPH *getNewDDGraph(int order){
     DDGRAPH *ddgraph = (DDGRAPH *)malloc(sizeof(DDGRAPH));
     ddgraph->order = order;
     ddgraph->dummyVertexCount = 0;
+    ddgraph->semiEdges = (int *)malloc(sizeof(int)*order);
     for(i = 0; i < order; i++){
         ddgraph->semiEdges[i] = 0;
     }
@@ -85,6 +86,15 @@ DDGRAPH *getNewDDGraph(int order){
     }
 
     return ddgraph;
+}
+
+void freeDDGraph(DDGRAPH *ddgraph){
+    free(ddgraph->underlyingGraph->d);
+    free(ddgraph->underlyingGraph->v);
+    free(ddgraph->underlyingGraph->e);
+    free(ddgraph->underlyingGraph);
+    free(ddgraph->semiEdges);
+    free(ddgraph);
 }
 
 /**
@@ -1287,7 +1297,9 @@ void connectComponentList(int vertexCount){
     DDGRAPH *graph = getNewDDGraph(vertexCount);
 
     constructBuildingBlockListAsGraph(blocks, blockCount, graph);
-    
+
+    free(graph);
+    free(blocks);
 }
 
 //================ PHASE 1: GENERATION OF COMPONENT LISTS ===================
