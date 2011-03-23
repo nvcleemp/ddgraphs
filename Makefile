@@ -8,7 +8,7 @@ SHELL = /bin/sh
 # but limits the order of the graphs to 32.
 CC32 = gcc
 CC64 = gcc
-CFLAGS = -O4 -Wall
+CFLAGS = -O4 -Wall -DWORDSIZE=32 -DMAXN=32
 COMPLETE = ddgraphs ddgraphs-64 ddgraphs-profile ddgraphs-debug
 SOURCES = ddgraphs.c ddgraphs.h util.h Makefile COPYRIGHT.txt LICENSE.txt
 DDGRAPHS_SOURCES = ddgraphs.c
