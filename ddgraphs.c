@@ -1882,8 +1882,14 @@ void connectComponentList(int vertexCount){
     BBLOCK *blocks = constructComponentList(&blockCount);
     DDGRAPH *graph = getNewDDGraph(vertexCount);
 
+    //reset counters
+    connectionsMade=0;
+    numberOfGenerators[connectionsMade]=0;
+
     //convert the blocks to a disconnected graph
     constructBuildingBlockListAsGraph(blocks, blockCount, graph);
+    //store the generators of the automorphism group of this disconnected graph
+    storeInitialGenerators(blocks, blockCount, graph);
 
     
 
@@ -2208,8 +2214,6 @@ void initComponents(int targetSize){
 
 void initStatistics(){
     componentListsCount = 0;
-    connectionsMade = 0;
-    numberOfGenerators[connectionsMade] = 0;
 }
 
 //====================== START =======================
