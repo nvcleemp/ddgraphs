@@ -1904,15 +1904,15 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
     //first we need the vertex orbits
 
     int orbitCount = 0;
-#ifdef _DEBUG
+#ifdef _DEBUGINTERMEDIATE
     {
         int i, j;
         fprintf(stderr, "Generators:\n");
         for(i=0; i<numberOfGenerators[connectionsMade]; i++){
-            fprintf(stderr, "Generator %d:\n", i+1);
+            fprintf(stderr, "  Generator %d:\n", i+1);
             for(j=0; j<ddgraph->underlyingGraph->nv; j++){
                 if((*(automorphismGroupGenerators + connectionsMade))[i][j] != j){
-                    fprintf(stderr, "%2d -> %2d\n", j,
+                    fprintf(stderr, "    %2d -> %2d\n", j,
                             (*(automorphismGroupGenerators + connectionsMade))[i][j]);
                 }
             }
@@ -1926,10 +1926,10 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
             &orbitCount,
             automorphismGroupGenerators + connectionsMade,
             numberOfGenerators[connectionsMade]);
-#ifdef _DEBUG
+#ifdef _DEBUGINTERMEDIATE
     {
         int i,j;
-        fprintf(stderr, "New list:\n");
+        fprintf(stderr, "Orbits of connection vertices:\n");
         for(i=0; i<buildingBlockCount; i++){
             for(j=0; j<(blocks+i)->connectorCount; j++){
                 if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
@@ -2076,7 +2076,7 @@ void handleComponentList(int vertexCount){
         return;
     } else {
         componentListsCount++;
-#ifdef _DEBUG
+#ifdef _DEBUGINTERMEDIATE
         int i, j;
         for(i = 0; i < Q1TypeComponentsCount; i++){
             fprintf(stderr, "(");

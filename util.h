@@ -51,6 +51,7 @@
 #define _DEBUGMESSAGES
 #define _DEBUGDUMPS
 #define _DEBUGASSERTS
+#define _DEBUGINTERMEDIATE
 
 #endif
 
