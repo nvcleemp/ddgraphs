@@ -2010,6 +2010,7 @@ void handleComponentList(int vertexCount){
     } else {
         int i, j;
         componentListsCount++;
+        connectComponentList(vertexCount);
 /*        for(i = 0; i < Q1TypeComponentsCount; i++){
             fprintf(stderr, "(");
             for(j = 0; j < maximumQ1TypeComponents; j++){
