@@ -1878,11 +1878,16 @@ void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
 
 void connectComponentList(int vertexCount){
     int blockCount = 0;
+    //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
     DDGRAPH *graph = getNewDDGraph(vertexCount);
 
+    //convert the blocks to a disconnected graph
     constructBuildingBlockListAsGraph(blocks, blockCount, graph);
 
+    
+
+    //free the memory allocated at the beginning of this method
     freeDDGraph(graph);
     free(blocks);
 }
