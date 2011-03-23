@@ -197,6 +197,75 @@ int buildingBlockTypeToNumber(BBLOCK *block){
     }
 }
 
+//union-find
+
+/* Searches the given forest to find the root of the given element and performs
+ * path compression at the same time.
+ */
+int findRootOfElement(int *forest, int element) {
+    /* find with path-compression: once the recursion finds the root, the parent
+     * for each element it met on its search is set to the root
+     */
+    if(element!=forest[element]){
+        forest[element]=findRootOfElement(forest, forest[element]);
+    }
+    return forest[element];
+}
+
+/* Connects element1 and element2 in the given forest. This is done by making
+ * the root of the largest tree the parent of the root of the smallest tree.
+ */
+void unionElements(int *forest, int *treeSizes, int *numberOfComponents, int element1, int element2){
+    int root1 = findRootOfElement(forest, element1);
+    int root2 = findRootOfElement(forest, element2);
+
+    DEBUGMSG("Union:")
+    DEBUGDUMP(element1, "%d")
+    DEBUGDUMP(element2, "%d")
+    DEBUGDUMP(root1, "%d")
+    DEBUGDUMP(root2, "%d")
+
+    //if these elements are already in the same tree, we can just return
+    if(root1==root2) return;
+
+    if(treeSizes[root1]<treeSizes[root2]){
+        forest[root1]=root2;
+        treeSizes[root2]+=treeSizes[root1];
+    } else {
+        forest[root2]=root1;
+        treeSizes[root1]+=treeSizes[root2];
+    }
+    (*numberOfComponents)--;
+}
+
+/* Determines the vertex orbits and their sizes based upon the provided generators
+ */
+void determineVertexOrbits(int vertexCount, int *vertexOrbits, int *orbitSizes,
+        int *orbitCount, permutation (*generators)[MAXN][MAXN], int generatorCount){
+    int i, j;
+
+    //initialize variables
+    for(i=0; i<vertexCount; i++){
+        vertexOrbits[i] = i;
+        orbitSizes[i] = 1;
+    }
+    *orbitCount = vertexCount;
+
+    //return in case of a trivial automorphism group
+    if(generatorCount==0) return;
+
+    for(i=0; i<generatorCount; i++){
+        for(j=0; j<vertexCount; j++){
+            unionElements(vertexOrbits, orbitSizes, orbitCount, j, (*generators)[i][j]);
+        }
+    }
+
+    //make sure that each element is connected to its root
+    for(i = 0; i < vertexCount; i++){
+        findRootOfElement(vertexOrbits, i);
+    }
+}
+
 //====================== Building block construction ==========================
 
 /*
@@ -1397,7 +1466,7 @@ void storeLockedDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
 void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
-    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter);
+    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1568,7 +1637,7 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
 void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
     block->connectionVertices[0] = *currentVertex;
-    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter);
+    block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1783,26 +1852,30 @@ BBLOCK *constructComponentList(int *blockListSize){
     for(i = 0; i < Q1TypeComponentsCount; i++){
         for(j = 0; j < maximumQ1TypeComponents; j++){
             for(k = 0; k < Q1TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 1, i, j);
+                initBuildingBlock(block + currentBlock, 1, i, j+1);
+                currentBlock++;
             }
         }
     }
     for(i = 0; i < Q2TypeComponentsCount; i++){
         for(j = 0; j < maximumQ2TypeComponents; j++){
             for(k = 0; k < Q2TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 2, i, j);
+                initBuildingBlock(block + currentBlock, 2, i, j+1);
+                currentBlock++;
             }
         }
     }
     for(i = 0; i < Q3TypeComponentsCount; i++){
         for(j = 0; j < maximumQ3TypeComponents; j++){
             for(k = 0; k < Q3TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 3, i, j);
+                initBuildingBlock(block + currentBlock, 3, i, j+1);
+                currentBlock++;
             }
         }
     }
     for(k = 0; k < Q4ComponentCount; k++){
-        initBuildingBlock(block + currentBlock, 4, 0, 0);
+        initBuildingBlock(block + currentBlock, 4, 0, 1);
+        currentBlock++;
     }
 
     return block;
@@ -1827,6 +1900,48 @@ void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     }
 }
 
+void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
+    //first we need the vertex orbits
+
+    int orbitCount = 0;
+#ifdef _DEBUG
+    {
+        int i, j;
+        fprintf(stderr, "Generators:\n");
+        for(i=0; i<numberOfGenerators[connectionsMade]; i++){
+            fprintf(stderr, "Generator %d:\n", i+1);
+            for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+                if((*(automorphismGroupGenerators + connectionsMade))[i][j] != j){
+                    fprintf(stderr, "%2d -> %2d\n", j,
+                            (*(automorphismGroupGenerators + connectionsMade))[i][j]);
+                }
+            }
+        }
+    }
+#endif
+    determineVertexOrbits(
+            ddgraph->underlyingGraph->nv,
+            vertexOrbits[connectionsMade],
+            vertexOrbitsSizes[connectionsMade],
+            &orbitCount,
+            automorphismGroupGenerators + connectionsMade,
+            numberOfGenerators[connectionsMade]);
+#ifdef _DEBUG
+    {
+        int i,j;
+        fprintf(stderr, "New list:\n");
+        for(i=0; i<buildingBlockCount; i++){
+            for(j=0; j<(blocks+i)->connectorCount; j++){
+                if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
+                    fprintf(stderr, "Orbit representative: %2d (size: %2d)\n", (blocks+i)->connectionVertices[j],
+                            vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]]);
+                }
+            }
+        }
+    }
+#endif
+}
+
 void connectComponentList(int vertexCount){
     int blockCount = 0;
     //create an array of blocks based upon the numbers in the global arrays
@@ -1842,7 +1957,8 @@ void connectComponentList(int vertexCount){
     //store the generators of the automorphism group of this disconnected graph
     storeInitialGenerators(blocks, blockCount, graph);
 
-    
+
+    connectNextComponents(blocks, blockCount, graph);
 
     //free the memory allocated at the beginning of this method
     freeDDGraph(graph);

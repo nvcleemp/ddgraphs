@@ -133,6 +133,9 @@ int connectionsMade; //the number of connections made at this point
  */
 permutation automorphismGroupGenerators[MAXN/2][MAXN][MAXN];
 int numberOfGenerators[MAXN/2];
+
+int vertexOrbits[MAXN/2][MAXN];
+int vertexOrbitsSizes[MAXN/2][MAXN];
 /******************Methods*******************************/
 
 
