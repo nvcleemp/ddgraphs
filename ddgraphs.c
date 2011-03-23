@@ -2008,10 +2008,10 @@ void handleComponentList(int vertexCount){
     } else if(!passesSimpleForbiddenConnectionsTest()){
         return;
     } else {
-        int i, j;
         componentListsCount++;
-        connectComponentList(vertexCount);
-/*        for(i = 0; i < Q1TypeComponentsCount; i++){
+#ifdef _DEBUG
+        int i, j;
+        for(i = 0; i < Q1TypeComponentsCount; i++){
             fprintf(stderr, "(");
             for(j = 0; j < maximumQ1TypeComponents; j++){
                 fprintf(stderr, "%d ", Q1TypeComponentsComponentCount[i][j]);
@@ -2034,7 +2034,9 @@ void handleComponentList(int vertexCount){
             }
             fprintf(stderr, ")");
         }
-        fprintf(stderr, "| %d\n", Q4ComponentCount);*/
+        fprintf(stderr, "| %d\n", Q4ComponentCount);
+#endif
+        connectComponentList(vertexCount);
     }
 }
 
