@@ -116,6 +116,10 @@ int** Q3TypeComponentsComponentCount;
 
 int Q4ComponentCount;
 
+void (*storeBlockAutomorphismGenerators[16])(BBLOCK *, DDGRAPH *) = {NULL};
+
+void (*storeBlocksMapping[16])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
+
 /******************Global Variables**********************/
 
 int connectionsMade; //the number of connections made at this point

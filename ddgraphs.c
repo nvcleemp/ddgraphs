@@ -97,6 +97,15 @@ void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph);
 }
 
+permutation *getIdentity(int order){
+    permutation i;
+    permutation *identity = (permutation *)malloc(sizeof(permutation)*order);
+    for(i = 0; i<order; i++){
+        identity[i]=i;
+    }
+    return identity;
+}
+
 /**
  * Configures and returns the given building block with the given details.
  * 
@@ -176,6 +185,18 @@ void storeGenerator(int count, permutation perm[], nvector orbits[],
     numberOfGenerators[connectionsMade]++;
 }
 
+int buildingBlockTypeToNumber(BBLOCK *block){
+    if(block->type==1){
+        return block->component;
+    } else if(block->type==2){
+        return Q1TypeComponentsCount + block->component;
+    } else if(block->type==3){
+        return Q1TypeComponentsCount + Q2TypeComponentsCount + block->component;
+    } else {
+        return Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount;
+    }
+}
+
 //====================== Building block construction ==========================
 
 /*
@@ -246,6 +267,56 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
     (*currentVertex)+=2;
+}
+
+void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //cyclic symmetry
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[1];
+        generator[block->connectionVertices[1]] = block->connectionVertices[3];
+        generator[block->connectionVertices[2]] = block->connectionVertices[0];
+        generator[block->connectionVertices[3]] = block->connectionVertices[2];
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        //only mirror-symmetry along long axis
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertex = block->connectionVertices[0];
+
+        int i;
+        for(i = 0; i < 2*(block->parameter); i++){
+            generator[vertex] = vertex+1;
+            generator[vertex+1] = vertex;
+            vertex+=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+void storeHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 /*
@@ -320,6 +391,38 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     (*currentVertex)+=2;
 }
 
+void storeLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //mirror symmetry along diagonal through semi-edge
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[1];
+        generator[block->connectionVertices[1]] = block->connectionVertices[0];
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } // else no symmetry
+}
+
+void storeLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a diagonal chain DC(n). This block has 2 connectors arranged
  * as follows:
@@ -388,6 +491,47 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph)
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
 
     (*currentVertex)+=2;
+}
+
+void storeDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[1];
+        generator[block->connectionVertices[1]] = block->connectionVertices[0];
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along other diagonal
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[0];
+        generator[block->connectionVertices[1]] = block->connectionVertices[1];
+        generator[block->connectionVertices[0]-1] = block->connectionVertices[1]+1;
+        generator[block->connectionVertices[1]+1] = block->connectionVertices[0]-1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } // else no symmetry
+}
+
+void storeDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 /*
@@ -464,6 +608,48 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     (*currentVertex)+=2;
 }
 
+void storeDoubleroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    //only mirror-symmetry along long axis
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int vertex = block->connectionVertices[0];
+
+    int i;
+    for(i = 0; i < 2*(block->parameter); i++){
+        generator[vertex] = vertex+1;
+        generator[vertex+1] = vertex;
+        vertex+=2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storeDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)]+0];
+    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)]+0];
+
+    generator[dummyVertex1] = dummyVertex2;
+    generator[dummyVertex2] = dummyVertex1;
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a open-roof high building OHB(n). This block has 2 connectors
  * arranged as follows:
@@ -538,6 +724,42 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     (*currentVertex)+=2;
 }
 
+void storeOpenroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    //only mirror-symmetry along long axis
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int vertex = block->connectionVertices[0];
+
+    int i;
+    for(i = 0; i < 2*(block->parameter); i++){
+        generator[vertex] = vertex+1;
+        generator[vertex+1] = vertex;
+        vertex+=2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storeOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a double-roof long building DLB(n). This block has 2 connectors
  * arranged as follows:
@@ -607,6 +829,46 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
     (*currentVertex)+=2;
+}
+
+void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    //only mirror-symmetry along short axis
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int vertexLeft = block->connectionVertices[0];
+    int vertexRight = block->connectionVertices[1];
+
+    int i;
+    for(i = 0; i < block->parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexLeft - 1] = vertexRight-1;
+        generator[vertexRight] = vertexLeft;
+        generator[vertexRight - 1] = vertexLeft-1;
+        vertexLeft+=2;
+        vertexRight-=2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storeDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 /*
@@ -683,6 +945,46 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     (*currentVertex)+=2;
 }
 
+void storeOpenroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    //only mirror-symmetry along short axis
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int vertexLeft = block->connectionVertices[0];
+    int vertexRight = block->connectionVertices[1];
+
+    int i;
+    for(i = 0; i < block->parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexLeft - 1] = vertexRight-1;
+        generator[vertexRight] = vertexLeft;
+        generator[vertexRight - 1] = vertexLeft-1;
+        vertexLeft+=2;
+        vertexRight-=2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storeOpenroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a locked diagonal chain LDC(n). This block has 1 connector
  * arranged as follows:
@@ -755,6 +1057,38 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     (*currentVertex)+=2;
 }
 
+void storeLockedDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0] - 1] = block->connectionVertices[0] + 2;
+        generator[block->connectionVertices[0] + 2] = block->connectionVertices[0] - 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } // else no symmetry
+}
+
+void storeLockedDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a locked double-roof high building LDHB(n). This block has 1
  * connector arranged as follows:
@@ -767,7 +1101,7 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
  *           o---o-...-o---o
  *          /
  *
- *
+ * This block has a trivial symmetry group.
  */
 void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
@@ -828,6 +1162,30 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     ddgraph->dummyVertexCount++;
 
     (*currentVertex)+=2;
+}
+
+void storeLockedDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)]+0];
+    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)]+0];
+
+    generator[dummyVertex1] = dummyVertex2;
+    generator[dummyVertex2] = dummyVertex1;
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 /*
@@ -905,6 +1263,38 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     (*currentVertex)+=2;
 }
 
+void storeLockedOpenroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0] + 1] = block->connectionVertices[0] + 2;
+        generator[block->connectionVertices[0] + 2] = block->connectionVertices[0] + 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } // else no symmetry
+}
+
+void storeLockedOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a locked double-roof long building LDLB(n). This block has 1
  * connector arranged as follows:
@@ -918,7 +1308,9 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
  *          /               \
  *         0
  * No special measures need to be made for the case where n is 1, because this
- * is not a legal type. *
+ * is not a legal type.
+ * 
+ * This block has a trivial symmetry group.
  */
 void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i, start;
@@ -975,6 +1367,24 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     (*currentVertex)+=2;
 }
 
+void storeLockedDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a pearl chain PC(n). This block has 2 connectors
  * arranged as follows:
@@ -1020,6 +1430,60 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
 
 }
 
+void storePearlChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int i, vertexLeft, vertexRight, dummyLeft, dummyRight, parameter;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = block->connectionVertices[0];
+    vertexRight = block->connectionVertices[1];
+    dummyLeft = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexLeft]+2];
+    dummyRight = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexRight]+2];
+    parameter = block->parameter;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+    for(i=0; i<parameter/2; i++){
+        generator[dummyLeft] = dummyRight;
+        generator[dummyRight] = dummyLeft;
+        dummyLeft++;
+        dummyRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storePearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2, dummyBlock1, dummyBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]+2];
+    vertexBlock2 = block2->connectionVertices[0];
+    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]+2];
+
+    for(i=0; i<(block1->parameter); i++){
+        generator[vertexBlock1+2*i] = vertexBlock2+2*i;
+        generator[vertexBlock2+2*i] = vertexBlock1+2*i;
+        generator[vertexBlock1+2*i+1] = vertexBlock2+2*i+1;
+        generator[vertexBlock2+2*i+1] = vertexBlock1+2*i+1;
+        generator[dummyBlock1+i] = dummyBlock2+i;
+        generator[dummyBlock2+i] = dummyBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a locked pearl chain LPC(n). This block has 1 connector
  * arranged as follows:
@@ -1028,6 +1492,8 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
  *    0--o      o-...-o      o-
  *        \____/       \____/
  *
+ * This block has a trivial symmetry group. (We don't count symmetries of the
+ * double edge).
  */
 void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
@@ -1064,6 +1530,30 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
     degrees[block->connectionVertices[1]] = 2;
     positions[block->connectionVertices[0]]++;
     positions[block->connectionVertices[1]]++;
+}
+
+void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2, dummyBlock1, dummyBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]+2];
+    vertexBlock2 = block2->connectionVertices[0];
+    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]+2];
+
+    for(i=0; i<(block1->parameter); i++){
+        generator[vertexBlock1+2*i] = vertexBlock2+2*i;
+        generator[vertexBlock2+2*i] = vertexBlock1+2*i;
+        generator[vertexBlock1+2*i+1] = vertexBlock2+2*i+1;
+        generator[vertexBlock2+2*i+1] = vertexBlock1+2*i+1;
+        generator[dummyBlock1+i] = dummyBlock2+i;
+        generator[dummyBlock2+i] = dummyBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 /*
@@ -1108,6 +1598,46 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     positions[block->connectionVertices[1]]++;
 }
 
+void storeBarbWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int i, vertexLeft, vertexRight, parameter;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = block->connectionVertices[0];
+    vertexRight = block->connectionVertices[1];
+    parameter = block->parameter;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+void storeBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<2*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a locked barb wire LBW(n). This block has 1 connector
  * arranged as follows:
@@ -1115,7 +1645,7 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
  *       |    |     |    |
  *    0--o----o-...-o----o-
  *
- *
+ * This block has a trivial symmetry group.
  */
 void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int i;
@@ -1153,12 +1683,32 @@ void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph
     positions[block->connectionVertices[0]]++;
 }
 
+void storeLockedBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    for(i=0; i<2*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 /*
  * Constructs a q4 block. This block has 1 connector
  * arranged as follows:
  *
  *    0--o<
  *
+ * This block has a trivial symmetry group (We don't consider switching the two
+ * semi-edges).
  */
 void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     ddgraph->underlyingGraph->e[(*currentVertex) + 1] = ddgraph->underlyingGraph->e[(*currentVertex) + 2] = SEMIEDGE;
@@ -1169,6 +1719,22 @@ void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     //not be used when the degree is 0.
     block->connectionVertices[0] = *currentVertex;
     (*currentVertex)++;
+}
+
+void storeQ4sMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0];
+    vertexBlock2 = block2->connectionVertices[0];
+
+    generator[vertexBlock1] = vertexBlock2;
+    generator[vertexBlock2] = vertexBlock1;
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
 }
 
 void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
@@ -1289,6 +1855,25 @@ BBLOCK *constructComponentList(int *blockListSize){
     }
 
     return block;
+}
+
+void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
+    int firstBlocks[16]; //stores the index of the first block of each type
+                         //-1 in case no block of this type was encountered yet
+    int i;
+    for(i=0;i<16;i++) firstBlocks[i]=-1;
+
+    for (i = 0; i < buildingBlockCount; i++) {
+        int number = buildingBlockTypeToNumber(blocks+i);
+        if(firstBlocks[number]==-1){
+            firstBlocks[number]=i;
+            if(storeBlockAutomorphismGenerators[number]!=NULL){
+                (*storeBlockAutomorphismGenerators[number])(blocks+i, ddgraph);
+            }
+        } else {
+            (*storeBlocksMapping[number])(blocks+firstBlocks[number], blocks+i, ddgraph);
+        }
+    }
 }
 
 void connectComponentList(int vertexCount){
@@ -1578,6 +2163,42 @@ void initComponents(int targetSize){
     }
 
     Q4ComponentCount = 0;
+
+    //set up arrays with function pointers
+
+    storeBlockAutomorphismGenerators[0] = &storeHubAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[1] = &storeLockedHubAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[2] = &storeDiagonalChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[3] = &storeDoubleroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[4] = &storeOpenroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[5] = &storeDoubleroofLongBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[6] = &storeOpenroofLongBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[7] = &storeLockedDiagonalChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[8] = NULL;
+    storeBlockAutomorphismGenerators[9] = &storeLockedOpenroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[10] = NULL;
+    storeBlockAutomorphismGenerators[11] = &storePearlChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[12] = NULL;
+    storeBlockAutomorphismGenerators[13] = &storeBarbWireAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[14] = NULL;
+    storeBlockAutomorphismGenerators[15] = NULL;
+
+    storeBlocksMapping[0] = &storeHubsMapping;
+    storeBlocksMapping[1] = &storeLockedHubsMapping;
+    storeBlocksMapping[2] = &storeDiagonalChainsMapping;
+    storeBlocksMapping[3] = &storeDoubleroofHighBuildingsMapping;
+    storeBlocksMapping[4] = &storeOpenroofHighBuildingsMapping;
+    storeBlocksMapping[5] = &storeDoubleroofLongBuildingsMapping;
+    storeBlocksMapping[6] = &storeOpenroofLongBuildingsMapping;
+    storeBlocksMapping[7] = &storeLockedDiagonalChainsMapping;
+    storeBlocksMapping[8] = &storeLockedDoubleroofHighBuildingsMapping;
+    storeBlocksMapping[9] = &storeLockedOpenroofHighBuildingsMapping;
+    storeBlocksMapping[10] = &storeLockedDoubleroofLongBuildingsMapping;
+    storeBlocksMapping[11] = &storePearlChainsMapping;
+    storeBlocksMapping[12] = &storeLockedPearlChainsMapping;
+    storeBlocksMapping[13] = &storeBarbWiresMapping;
+    storeBlocksMapping[14] = &storeLockedBarbWiresMapping;
+    storeBlocksMapping[15] = &storeQ4sMapping;
 }
 
 void initStatistics(){
@@ -1661,4 +2282,3 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-
