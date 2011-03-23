@@ -1741,57 +1741,8 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
     int i, currentVertex=0;
 
     for (i = 0; i < buildingBlockCount; i++) {
-        if((blocks+i)->type==1){
-            if((blocks+i)->component==0){
-                constructHub(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==1){
-                constructLockedHub(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==2){
-                constructDiagonalChain(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==3){
-                constructDoubleroofHighBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==4){
-                constructOpenroofHighBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==5){
-                constructDoubleroofLongBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==6){
-                constructOpenroofLongBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==7){
-                constructLockedDiagonalChain(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==8){
-                constructLockedDoubleroofHighBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==9){
-                constructLockedOpenroofHighBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==10){
-                constructLockedDoubleroofLongBuilding(&currentVertex, (blocks+i), ddgraph);
-            } else {
-                fprintf(stderr, "Illegal component number for type 1: %d (valid numbers from 0 to 10)\n", (blocks+i)->component);
-                exit(EXIT_FAILURE);
-            }
-        } else if((blocks+i)->type==2){
-            if((blocks+i)->component==0){
-                constructPearlChain(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==1){
-                constructLockedPearlChain(&currentVertex, (blocks+i), ddgraph);
-            } else {
-                fprintf(stderr, "Illegal component number for type 2: %d (valid numbers are 0 or 1)\n", (blocks+i)->component);
-                exit(EXIT_FAILURE);
-            }
-        } else if((blocks+i)->type==3){
-            if((blocks+i)->component==0){
-                constructBarbWire(&currentVertex, (blocks+i), ddgraph);
-            } else if((blocks+i)->component==1){
-                constructLockedBarbWire(&currentVertex, (blocks+i), ddgraph);
-            } else {
-                fprintf(stderr, "Illegal component number for type 3: %d (valid numbers are 0 or 1)\n", (blocks+i)->component);
-                exit(EXIT_FAILURE);
-            }
-        } else if((blocks+i)->type==4){
-            constructQ4(&currentVertex, (blocks+i), ddgraph);
-        } else {
-            fprintf(stderr, "Illegal component type: %d (valid types from 1 to 4)\n", (blocks+i)->type);
-            exit(EXIT_FAILURE);
-        }
+        int number = buildingBlockTypeToNumber(blocks + i);
+        (*constructBlock[number])(&currentVertex, (blocks+i), ddgraph);
     }
 
     ddgraph->underlyingGraph->nv = ddgraph->order + ddgraph->dummyVertexCount;
@@ -2179,6 +2130,23 @@ void initComponents(int targetSize){
     Q4ComponentCount = 0;
 
     //set up arrays with function pointers
+
+    constructBlock[0] = &constructHub;
+    constructBlock[1] = &constructLockedHub;
+    constructBlock[2] = &constructDiagonalChain;
+    constructBlock[3] = &constructDoubleroofHighBuilding;
+    constructBlock[4] = &constructOpenroofHighBuilding;
+    constructBlock[5] = &constructDoubleroofLongBuilding;
+    constructBlock[6] = &constructOpenroofLongBuilding;
+    constructBlock[7] = &constructLockedDiagonalChain;
+    constructBlock[8] = &constructLockedDoubleroofHighBuilding;
+    constructBlock[9] = &constructLockedOpenroofHighBuilding;
+    constructBlock[10] = &constructLockedDoubleroofLongBuilding;
+    constructBlock[11] = &constructPearlChain;
+    constructBlock[12] = &constructLockedPearlChain;
+    constructBlock[13] = &constructBarbWire;
+    constructBlock[14] = &constructLockedBarbWire;
+    constructBlock[15] = &constructQ4;
 
     storeBlockAutomorphismGenerators[0] = &storeHubAutomorphismGenerators;
     storeBlockAutomorphismGenerators[1] = &storeLockedHubAutomorphismGenerators;

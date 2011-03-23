@@ -116,6 +116,8 @@ int** Q3TypeComponentsComponentCount;
 
 int Q4ComponentCount;
 
+void (*constructBlock[16])(int *, BBLOCK *, DDGRAPH *) = {NULL};
+
 void (*storeBlockAutomorphismGenerators[16])(BBLOCK *, DDGRAPH *) = {NULL};
 
 void (*storeBlocksMapping[16])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
