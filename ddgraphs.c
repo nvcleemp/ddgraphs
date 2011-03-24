@@ -397,7 +397,7 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
         free(generator);
 
         //short axis
-        *generator = getIdentity(ddgraph->underlyingGraph->nv);
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
 
         int vertexLeft = block->connectionVertices[0];
         int vertexRight = block->connectionVertices[2];
