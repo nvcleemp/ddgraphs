@@ -381,7 +381,9 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         free(generator);
     } else {
-        //only mirror-symmetry along long axis
+        //mirror-symmetry along both axis
+
+        //long axis
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
         int vertex = block->connectionVertices[0];
@@ -391,6 +393,25 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
             generator[vertex] = vertex+1;
             generator[vertex+1] = vertex;
             vertex+=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        //short axis
+        *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertexLeft = block->connectionVertices[0];
+        int vertexRight = block->connectionVertices[2];
+
+        for(i = 0; i < block->parameter; i++){
+            generator[vertexLeft] = vertexRight;
+            generator[vertexRight] = vertexLeft;
+            generator[vertexLeft+1] = vertexRight+1;
+            generator[vertexRight+1] = vertexLeft+1;
+            vertexLeft+=2;
+            vertexRight-=2;
         }
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
@@ -611,7 +632,25 @@ void storeDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
         free(generator);
-    } // else no symmetry
+    } else {
+        //rotation of 180
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertexBottom = block->connectionVertices[0];
+        int vertexTop = block->connectionVertices[1];
+
+        int i;
+        for(i = 0; i < 2*(block->parameter); i++){
+            generator[vertexBottom] = vertexTop;
+            generator[vertexTop] = vertexBottom;
+            vertexBottom+=2;
+            vertexTop-=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
 }
 
 void storeDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -1987,6 +2026,7 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
         }
     }
 #endif
+    
 }
 
 void connectComponentList(int vertexCount){
