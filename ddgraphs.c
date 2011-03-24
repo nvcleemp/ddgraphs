@@ -45,9 +45,6 @@ void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "\n");
     fprintf(stderr, "nv         %d\n", graph->underlyingGraph->nv);
     fprintf(stderr, "nde        %d\n", graph->underlyingGraph->nde);
-    fprintf(stderr, "dlen       %d\n", graph->underlyingGraph->dlen);
-    fprintf(stderr, "vlen       %d\n", graph->underlyingGraph->vlen);
-    fprintf(stderr, "elen       %d\n", graph->underlyingGraph->elen);
 
     int i,j;
     for(i=0; i<graph->underlyingGraph->nv; i++){
