@@ -36,6 +36,35 @@
 
 //========================== Utility methods ================================
 
+void printDDGraph(DDGRAPH *graph){
+    fprintf(stderr, "DDGRAPH %p\n", graph);
+    fprintf(stderr, "================\n");
+    fprintf(stderr, "order      %d\n", graph->order);
+    //fprintf(stderr, "semi-edges %d\n", graph->semiEdges);
+    fprintf(stderr, "dummies    %d\n", graph->dummyVertexCount);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "nv         %d\n", graph->underlyingGraph->nv);
+    fprintf(stderr, "nde        %d\n", graph->underlyingGraph->nde);
+    fprintf(stderr, "dlen       %d\n", graph->underlyingGraph->dlen);
+    fprintf(stderr, "vlen       %d\n", graph->underlyingGraph->vlen);
+    fprintf(stderr, "elen       %d\n", graph->underlyingGraph->elen);
+
+    int i,j;
+    for(i=0; i<graph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d :", i);
+        for(j=graph->underlyingGraph->v[i]; j < graph->underlyingGraph->v[i] + graph->underlyingGraph->d[i]; j++){
+            int s = SEMIEDGE;
+            if(graph->underlyingGraph->e[j] == s){
+                fprintf(stderr, "S ");
+            } else {
+                fprintf(stderr, "%d ", graph->underlyingGraph->e[j]);
+            }
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+}
+
 DDGRAPH *getNewDDGraph(int order){
     int i;
     
@@ -708,8 +737,8 @@ void storeDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH
         generator[vertexBlock2+i] = vertexBlock1+i;
     }
 
-    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)]+0];
-    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)]+0];
+    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)-1]+0];
+    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)-1]+0];
 
     generator[dummyVertex1] = dummyVertex2;
     generator[dummyVertex2] = dummyVertex1;
@@ -1186,7 +1215,7 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     degrees[*currentVertex] = 2;
     positions[*currentVertex]++; //connection points are at position 0
 
-    edges[positions[(*currentVertex)+1]+1] = SEMIEDGE;
+    edges[positions[(*currentVertex)+1]+0] = SEMIEDGE;
     edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
     degrees[(*currentVertex)+1] = 2;
@@ -1246,8 +1275,8 @@ void storeLockedDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
         generator[vertexBlock2+i] = vertexBlock1+i;
     }
 
-    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)]+0];
-    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)]+0];
+    int dummyVertex1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1 + 4*(block1->parameter)-1]+0];
+    int dummyVertex2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2 + 4*(block2->parameter)-1]+0];
 
     generator[dummyVertex1] = dummyVertex2;
     generator[dummyVertex2] = dummyVertex1;
@@ -1507,8 +1536,9 @@ void storePearlChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     vertexLeft = block->connectionVertices[0];
     vertexRight = block->connectionVertices[1];
-    dummyLeft = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexLeft]+2];
-    dummyRight = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexRight]+2];
+    dummyLeft = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexLeft]-1+2];
+    dummyRight = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexRight]-1+2];
+    //-1 because the start of the edges of the connections points was moved
     parameter = block->parameter;
 
     for(i=0; i<parameter; i++){
@@ -1535,9 +1565,9 @@ void storePearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
     vertexBlock1 = block1->connectionVertices[0];
-    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]+2];
+    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]-1+2];
     vertexBlock2 = block2->connectionVertices[0];
-    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]+2];
+    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]-1+2];
 
     for(i=0; i<(block1->parameter); i++){
         generator[vertexBlock1+2*i] = vertexBlock2+2*i;
@@ -1594,11 +1624,11 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
 
     edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
     ddgraph->semiEdges[(*currentVertex)-1] = 1;
+    degrees[(*currentVertex)-1] = 2;
+    positions[(*currentVertex)-1]++;
 
     degrees[block->connectionVertices[0]] = 2;
-    degrees[block->connectionVertices[1]] = 2;
     positions[block->connectionVertices[0]]++;
-    positions[block->connectionVertices[1]]++;
 }
 
 void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -1780,7 +1810,8 @@ void storeLockedBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgrap
  * semi-edges).
  */
 void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
-    ddgraph->underlyingGraph->e[(*currentVertex) + 1] = ddgraph->underlyingGraph->e[(*currentVertex) + 2] = SEMIEDGE;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 1]]
+            = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 2]] = SEMIEDGE;
     ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
     ddgraph->semiEdges[(*currentVertex)] = 2;
 
@@ -1882,20 +1913,20 @@ BBLOCK *constructComponentList(int *blockListSize){
 }
 
 void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
-    int firstBlocks[16]; //stores the index of the first block of each type
+    int firstBlocks[16][MAXN]; //stores the index of the first block of each type
                          //-1 in case no block of this type was encountered yet
-    int i;
-    for(i=0;i<16;i++) firstBlocks[i]=-1;
+    int i,j;
+    for(i=0;i<16;i++) for(j=0;j<MAXN;j++) firstBlocks[i][j]=-1;
 
     for (i = 0; i < buildingBlockCount; i++) {
         int number = buildingBlockTypeToNumber(blocks+i);
-        if(firstBlocks[number]==-1){
-            firstBlocks[number]=i;
+        if(firstBlocks[number][(blocks+i)->parameter]==-1){
+            firstBlocks[number][(blocks+i)->parameter]=i;
             if(storeBlockAutomorphismGenerators[number]!=NULL){
                 (*storeBlockAutomorphismGenerators[number])(blocks+i, ddgraph);
             }
         } else {
-            (*storeBlocksMapping[number])(blocks+firstBlocks[number], blocks+i, ddgraph);
+            (*storeBlocksMapping[number])(blocks+firstBlocks[number][(blocks+i)->parameter], blocks+i, ddgraph);
         }
     }
 }
@@ -1907,15 +1938,31 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
 #ifdef _DEBUGINTERMEDIATE
     {
         int i, j;
-        fprintf(stderr, "Generators:\n");
+        fprintf(stderr, "Generators at level %2d:\n", connectionsMade);
         for(i=0; i<numberOfGenerators[connectionsMade]; i++){
-            fprintf(stderr, "  Generator %d:\n", i+1);
+            boolean done[ddgraph->underlyingGraph->nv];
             for(j=0; j<ddgraph->underlyingGraph->nv; j++){
-                if((*(automorphismGroupGenerators + connectionsMade))[i][j] != j){
-                    fprintf(stderr, "    %2d -> %2d\n", j,
-                            (*(automorphismGroupGenerators + connectionsMade))[i][j]);
+                done[j]=FALSE;
+            }
+            fprintf(stderr, "  Generator %2d: ", i+1);
+            for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+                if(!done[j] && (*(automorphismGroupGenerators + connectionsMade))[i][j] != j){
+                    fprintf(stderr, "(%d", j);
+                    done[j] = TRUE;
+                    int next = (*(automorphismGroupGenerators + connectionsMade))[i][j];
+                    done[next] = TRUE;
+                    int teller=0;
+                    while(next!=j){
+                        fprintf(stderr, " %d", next);
+                        next = (*(automorphismGroupGenerators + connectionsMade))[i][next];
+                        done[next] = TRUE;
+                        teller++;
+                        if(teller==20) break;
+                    }
+                    fprintf(stderr, ") ");
                 }
             }
+            fprintf(stderr, "\n");
         }
     }
 #endif
