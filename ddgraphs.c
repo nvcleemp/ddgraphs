@@ -1967,13 +1967,18 @@ void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     }
 }
 
-void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
+void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int orbit, int depth){
+    
+}
+
+void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
     //first we need the vertex orbits
 
     int orbitCount = 0;
+    int i,j;
+    
 #ifdef _DEBUGINTERMEDIATE
     {
-        int i, j;
         fprintf(stderr, "Generators at level %2d:\n", connectionsMade);
         for(i=0; i<numberOfGenerators[connectionsMade]; i++){
             boolean done[ddgraph->underlyingGraph->nv];
@@ -2011,7 +2016,6 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
             numberOfGenerators[connectionsMade]);
 #ifdef _DEBUGINTERMEDIATE
     {
-        int i,j;
         fprintf(stderr, "Orbits of connection vertices:\n");
         for(i=0; i<buildingBlockCount; i++){
             for(j=0; j<(blocks+i)->connectorCount; j++){
@@ -2023,7 +2027,25 @@ void connectNextComponents(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgr
         }
     }
 #endif
-    
+
+    int minimumOrbitSize = ddgraph->order;
+    int smallestOrbit = INT_MAX;
+
+    for(i=0; i<buildingBlockCount; i++){
+        for(j=0; j<(blocks+i)->connectorCount; j++){
+            if((blocks+i)->connections[j]==NULL){
+                //only look at connections that haven't been made
+                if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
+                    if(vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]] < minimumOrbitSize){
+                        minimumOrbitSize = vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]];
+                        smallestOrbit = (blocks+i)->connectionVertices[j];
+                    }
+                }
+            }
+        }
+    }
+
+    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, smallestOrbit, connectionsMade);
 }
 
 void connectComponentList(int vertexCount){
@@ -2042,7 +2064,7 @@ void connectComponentList(int vertexCount){
     storeInitialGenerators(blocks, blockCount, graph);
 
 
-    connectNextComponents(blocks, blockCount, graph);
+    findNextOrbitToConnect(blocks, blockCount, graph);
 
     //free the memory allocated at the beginning of this method
     freeDDGraph(graph);
