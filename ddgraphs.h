@@ -138,6 +138,7 @@ int vertexOrbits[MAXN/2][MAXN];
 int vertexOrbitsSizes[MAXN/2][MAXN];
 /******************Methods*******************************/
 
+void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph);
 
 #endif	/* _DDGRAPHS_H */
 
