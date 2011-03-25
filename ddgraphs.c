@@ -1967,8 +1967,14 @@ void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     }
 }
 
-void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int orbit, int depth){
-    
+void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int orbit, int depth, int openConnectionsLeftInOrbit){
+
+    //
+    if(openConnectionsLeftInOrbit - 1 == 0){ //or -2 if we connected a vertex of the orbit to another vertex in the orbit
+        //we've just made the final connection for the orbit currently under consideration
+
+        findNextOrbitToConnect(blocks, buildingBlockCount, ddgraph);
+    }
 }
 
 void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
@@ -2045,7 +2051,7 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
         }
     }
 
-    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, smallestOrbit, connectionsMade);
+    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, smallestOrbit, connectionsMade, minimumOrbitSize);
 }
 
 void connectComponentList(int vertexCount){
