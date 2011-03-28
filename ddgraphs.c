@@ -141,7 +141,8 @@ permutation *getIdentity(int order){
  * @param parameter
  * @return 
  */
-BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter){
+BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter, int id){
+    block->id = id;
     block->type = type;
     block->component = component;
     block->parameter = parameter;
@@ -180,9 +181,9 @@ BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter)
  * @param parameter
  * @return
  */
-BBLOCK *getBuildingBlock(int type, int component, int parameter){
+BBLOCK *getBuildingBlock(int type, int component, int parameter, int id){
     BBLOCK *block = (BBLOCK *) malloc(sizeof(BBLOCK));
-    return initBuildingBlock(block, type, component, parameter);
+    return initBuildingBlock(block, type, component, parameter, id);
 }
 
 /**
@@ -307,12 +308,18 @@ void determineVertexOrbits(int vertexCount, int *vertexOrbits, int *orbitSizes,
  *         1                 3
  *
  */
-void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = (*currentVertex)+1;
     block->connectionVertices[2] = (*currentVertex)+(block->parameter-1)*4+2;
     block->connectionVertices[3] = (*currentVertex)+(block->parameter-1)*4+3;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1] = 1;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 2;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 3;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -332,6 +339,11 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -351,6 +363,9 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
         (*currentVertex)+=4;
     }
 
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+    
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)-2;
     degrees[*currentVertex] = 2;
@@ -449,11 +464,16 @@ void storeHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *         0                 2
  *
  */
-void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+2;
     block->connectionVertices[2] = (*currentVertex)+(block->parameter-1)*4+3;
+    vertexToConnector[(*currentVertex)+1] = 0;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 1;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 2;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -475,6 +495,11 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -493,6 +518,9 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
 
         (*currentVertex)+=4;
     }
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)-2;
@@ -554,10 +582,14 @@ void storeLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *         0
  *
  */
-void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, start;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+2;
+    vertexToConnector[(*currentVertex)+1] = 0;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     start = *currentVertex;
 
@@ -578,6 +610,11 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph)
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -596,6 +633,9 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph)
 
         (*currentVertex)+=4;
     }
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)-2;
@@ -682,10 +722,14 @@ void storeDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph
  *         1
  *
  */
-void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = (*currentVertex)+1;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -705,6 +749,11 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -725,6 +774,10 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     }
 
     int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+    vertexToBlock[dummyVertex] = block->id;
 
     edges[positions[*currentVertex]+0] = dummyVertex;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -798,10 +851,15 @@ void storeDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH
  *         1
  *
  */
-void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = (*currentVertex)+1;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -821,6 +879,11 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -840,6 +903,8 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         (*currentVertex)+=4;
     }
 
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -910,10 +975,15 @@ void storeOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *
  * No special measures need to be made for the case where n is 1, because this
  * is not a legal type.
  */
-void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, start;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+3;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+
 
     start = *currentVertex;
 
@@ -934,6 +1004,11 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -952,6 +1027,9 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
 
         (*currentVertex)+=4;
     }
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+0] = start;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1019,10 +1097,14 @@ void storeDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH
  *         0                 1
  *
  */
-void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+3;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
     
 
     //store some pointers to limit the amount of typing in the next lines
@@ -1045,6 +1127,12 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1063,6 +1151,9 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
 
         (*currentVertex)+=4;
     }
+    
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+1] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1135,9 +1226,12 @@ void storeOpenroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *
  *         0
  *
  */
-void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, start;
     block->connectionVertices[0] = (*currentVertex)+1;
+    vertexToConnector[(*currentVertex)+1] = 0;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     start = *currentVertex;
 
@@ -1158,6 +1252,11 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1176,6 +1275,9 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
 
         (*currentVertex)+=4;
     }
+    
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1237,9 +1339,12 @@ void storeLockedDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *d
  *
  * This block has a trivial symmetry group.
  */
-void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1261,6 +1366,11 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1281,6 +1391,10 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     }
 
     int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+    vertexToBlock[dummyVertex] = block->id;
 
     edges[positions[*currentVertex]+0] = dummyVertex;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1336,9 +1450,12 @@ void storeLockedDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
  *         
  *
  */
-void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1360,6 +1477,11 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+        
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1379,6 +1501,8 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
         (*currentVertex)+=4;
     }
 
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1446,9 +1570,12 @@ void storeLockedOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDG
  * 
  * This block has a trivial symmetry group.
  */
-void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, start;
     block->connectionVertices[0] = (*currentVertex)+1;
+    vertexToConnector[(*currentVertex)+1] = 0;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     start = *currentVertex;
 
@@ -1469,6 +1596,11 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1487,6 +1619,9 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
 
         (*currentVertex)+=4;
     }
+    
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
 
     edges[positions[*currentVertex]+0] = start;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1528,10 +1663,12 @@ void storeLockedDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
  *        \____/       \____/
  *
  */
-void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1+2*(block->parameter-1)] = 1;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1541,6 +1678,10 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     for(i=0; i<block->parameter; i++){
         int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
         ddgraph->dummyVertexCount++;
+
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[dummyVertex] = block->id;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
@@ -1630,9 +1771,10 @@ void storePearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  * This block has a trivial symmetry group. (We don't count symmetries of the
  * double edge).
  */
-void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    vertexToConnector[*currentVertex] = 0;
     
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1642,6 +1784,10 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
     for(i=0; i<block->parameter; i++){
         int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
         ddgraph->dummyVertexCount++;
+
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[dummyVertex] = block->id;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
@@ -1700,10 +1846,12 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
  *
  *
  */
-void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
+    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1+2*(block->parameter-1)] = 1;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1711,6 +1859,8 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     int *degrees = ddgraph->underlyingGraph->d;
 
     for(i=0; i<block->parameter; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
@@ -1782,9 +1932,10 @@ void storeBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *
  * This block has a trivial symmetry group.
  */
-void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
+    vertexToConnector[*currentVertex] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1792,6 +1943,8 @@ void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph
     int *degrees = ddgraph->underlyingGraph->d;
 
     for(i=0; i<block->parameter; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)-1;
         //for the first vertex this will be overwritten when making the connections
@@ -1845,7 +1998,7 @@ void storeLockedBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgrap
  * This block has a trivial symmetry group (We don't consider switching the two
  * semi-edges).
  */
-void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
+void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 1]]
             = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 2]] = SEMIEDGE;
     ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
@@ -1854,6 +2007,8 @@ void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph){
     //it is not necessary to adjust ddgraph->underlyingGraph->v because it will
     //not be used when the degree is 0.
     block->connectionVertices[0] = *currentVertex;
+    vertexToConnector[*currentVertex] = 0;
+    vertexToBlock[*currentVertex] = block->id;
     (*currentVertex)++;
 }
 
@@ -1873,12 +2028,12 @@ void storeQ4sMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
     free(generator);
 }
 
-void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
+void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, currentVertex=0;
 
     for (i = 0; i < buildingBlockCount; i++) {
         int number = buildingBlockTypeToNumber(blocks + i);
-        (*constructBlock[number])(&currentVertex, (blocks+i), ddgraph);
+        (*constructBlock[number])(&currentVertex, (blocks+i), ddgraph, vertexToBlock, vertexToConnector);
     }
 
     ddgraph->underlyingGraph->nv = ddgraph->order + ddgraph->dummyVertexCount;
@@ -1919,7 +2074,7 @@ BBLOCK *constructComponentList(int *blockListSize){
     for(i = 0; i < Q1TypeComponentsCount; i++){
         for(j = 0; j < maximumQ1TypeComponents; j++){
             for(k = 0; k < Q1TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 1, i, j+1);
+                initBuildingBlock(block + currentBlock, 1, i, j+1, currentBlock);
                 currentBlock++;
             }
         }
@@ -1927,7 +2082,7 @@ BBLOCK *constructComponentList(int *blockListSize){
     for(i = 0; i < Q2TypeComponentsCount; i++){
         for(j = 0; j < maximumQ2TypeComponents; j++){
             for(k = 0; k < Q2TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 2, i, j+1);
+                initBuildingBlock(block + currentBlock, 2, i, j+1, currentBlock);
                 currentBlock++;
             }
         }
@@ -1935,13 +2090,13 @@ BBLOCK *constructComponentList(int *blockListSize){
     for(i = 0; i < Q3TypeComponentsCount; i++){
         for(j = 0; j < maximumQ3TypeComponents; j++){
             for(k = 0; k < Q3TypeComponentsComponentCount[i][j]; k++){
-                initBuildingBlock(block + currentBlock, 3, i, j+1);
+                initBuildingBlock(block + currentBlock, 3, i, j+1, currentBlock);
                 currentBlock++;
             }
         }
     }
     for(k = 0; k < Q4ComponentCount; k++){
-        initBuildingBlock(block + currentBlock, 4, 0, 1);
+        initBuildingBlock(block + currentBlock, 4, 0, 1, currentBlock);
         currentBlock++;
     }
 
@@ -2059,13 +2214,15 @@ void connectComponentList(int vertexCount){
     //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
     DDGRAPH *graph = getNewDDGraph(vertexCount);
+    int vertexToBlock[graph->underlyingGraph->nv];
+    int vertexToConnector[graph->underlyingGraph->nv];
 
     //reset counters
     connectionsMade=0;
     numberOfGenerators[connectionsMade]=0;
 
     //convert the blocks to a disconnected graph
-    constructBuildingBlockListAsGraph(blocks, blockCount, graph);
+    constructBuildingBlockListAsGraph(blocks, blockCount, graph, vertexToBlock, vertexToConnector);
     //store the generators of the automorphism group of this disconnected graph
     storeInitialGenerators(blocks, blockCount, graph);
 

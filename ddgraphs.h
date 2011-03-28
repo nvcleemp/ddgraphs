@@ -46,6 +46,8 @@
 #define SEMIEDGE INT_MAX;
 
 struct _buildingblock {
+    int id; //normally this is the index of this block in the list
+
     int type; //1, 2, 3 or 4
     int component;
     int parameter;
@@ -116,7 +118,7 @@ int** Q3TypeComponentsComponentCount;
 
 int Q4ComponentCount;
 
-void (*constructBlock[16])(int *, BBLOCK *, DDGRAPH *) = {NULL};
+void (*constructBlock[16])(int *, BBLOCK *, DDGRAPH *, int *, int *) = {NULL};
 
 void (*storeBlockAutomorphismGenerators[16])(BBLOCK *, DDGRAPH *) = {NULL};
 
