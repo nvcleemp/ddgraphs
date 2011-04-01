@@ -129,6 +129,8 @@ void (*storeBlocksMapping[16])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
 int connectionsMade; //the number of connections made at this point
                      //the maximum value is vertexCount/2
 
+unsigned int graphsCount;
+
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
  * of each generator is n.

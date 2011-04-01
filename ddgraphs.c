@@ -2454,6 +2454,7 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
     queue[0] = block1;
     queue[1] = block2;
     visited[block1]=TRUE;
+    visited[block2]=TRUE;
     
     while(head!=tail){
         head++;
@@ -2644,7 +2645,9 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     if(vertexOrbits[depth][v2] == orbit) inCurrentOrbit++;
 
                     //
-                    if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
+                    if(totalConnectionsLeft - inCurrentOrbit == 0){
+                        graphsCount++;
+                    } else if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
                         //we've just made the final connection for the orbit currently under consideration
                         findNextOrbitToConnect(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
                     } else {
@@ -2687,7 +2690,7 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     printConnectorOrbits(blocks, buildingBlockCount, connectionsMade);
 #endif
 
-    int minimumOrbitSize = ddgraph->order;
+    int minimumOrbitSize = ddgraph->order + 1;
     int smallestOrbit = INT_MAX;
     int connectionCount = 0;
 
@@ -3089,6 +3092,7 @@ void initComponents(int targetSize){
 
 void initStatistics(){
     componentListsCount = 0;
+    graphsCount = 0;
 }
 
 void initNautyOptions(int order) {
@@ -3123,6 +3127,7 @@ void startGeneration(int targetSize){
     q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0);
 
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
+    fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
 
 }
 
