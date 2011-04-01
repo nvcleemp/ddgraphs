@@ -69,6 +69,20 @@
 
 #endif
 
+//=============== TRACING MACRO'S ===============
+
+#ifdef _DEBUGTRACING
+
+#define DEBUGTRACE_ENTER { fprintf(stderr, "%s:%u Entering %s\n", __FILE__, __LINE__, __func__); fflush(stderr); }
+#define DEBUGTRACE_EXIT { fprintf(stderr, "%s:%u Exiting %s\n", __FILE__, __LINE__, __func__); fflush(stderr); }
+
+#else
+
+#define DEBUGTRACE_ENTER
+#define DEBUGTRACE_EXIT
+
+#endif
+
 //=============== DUMP MACRO'S ===============
 
 #ifdef _DEBUGDUMPS

@@ -2598,6 +2598,7 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
 void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int orbit, int depth,
         int openConnectionsLeftInOrbit, int totalConnectionsLeft, boolean *freeConnectors){
+    DEBUGTRACE_ENTER
     //find all pairs of possible connections with the current orbit
     int i, j;
     int possibleConnections[openConnectionsLeftInOrbit*totalConnectionsLeft][2];
@@ -2661,10 +2662,12 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
             }
         }
     }
+    DEBUGTRACE_EXIT
 
 }
 
 void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector, boolean *freeConnectors){
+    DEBUGTRACE_ENTER
     //first we need the vertex orbits
 
     int orbitCount = 0;
@@ -2705,9 +2708,11 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, vertexToBlock,
             vertexToConnector, smallestOrbit, connectionsMade, minimumOrbitSize,
             connectionCount, freeConnectors);
+    DEBUGTRACE_EXIT
 }
 
 void connectComponentList(int vertexCount){
+    DEBUGTRACE_ENTER
     int blockCount = 0;
     //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
@@ -2741,6 +2746,7 @@ void connectComponentList(int vertexCount){
     //free the memory allocated at the beginning of this method
     freeDDGraph(ddgraph);
     free(blocks);
+    DEBUGTRACE_EXIT
 }
 
 //================ PHASE 1: GENERATION OF COMPONENT LISTS ===================
@@ -2848,9 +2854,12 @@ boolean passesSimpleForbiddenConnectionsTest(){
 }
 
 void handleComponentList(int vertexCount){
+    DEBUGTRACE_ENTER
     if(!isMaybeRealizableComponentList()){
+        DEBUGTRACE_EXIT
         return;
     } else if(!passesSimpleForbiddenConnectionsTest()){
+        DEBUGTRACE_EXIT
         return;
     } else {
         componentListsCount++;
@@ -2883,6 +2892,7 @@ void handleComponentList(int vertexCount){
 #endif
         connectComponentList(vertexCount);
     }
+    DEBUGTRACE_EXIT
 }
 
 void q4Components(int targetSize, int currentSize){
