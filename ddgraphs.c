@@ -2630,7 +2630,7 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 
             //check if connecting v1 to v2 is legal
             if(isLegalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, v1, v2)){
-
+                
                 //connect v1 to v2
                 connectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, v1, v2);
                 connectionsMade++;
@@ -2645,7 +2645,7 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     if(vertexOrbits[depth][v2] == orbit) inCurrentOrbit++;
 
                     //
-                    if(totalConnectionsLeft - inCurrentOrbit == 0){
+                    if(totalConnectionsLeft - 2 == 0){
                         graphsCount++;
                     } else if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
                         //we've just made the final connection for the orbit currently under consideration
