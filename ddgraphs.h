@@ -138,9 +138,18 @@ int numberOfGenerators[MAXN/2];
 
 int vertexOrbits[MAXN/2][MAXN];
 int vertexOrbitsSizes[MAXN/2][MAXN];
+
+/* Variables for nauty */
+int nautyLabelling[MAXN], nautyPtn[MAXN];
+DEFAULTOPTIONS_SPARSEGRAPH(nautyOptions);
+statsblk nautyStats;
+setword nautyWorkspace[50 * MAXM];
+sparsegraph canonGraph;
+
 /******************Methods*******************************/
 
-void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph);
+void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, boolean *freeConnectors);
 
 #endif	/* _DDGRAPHS_H */
 

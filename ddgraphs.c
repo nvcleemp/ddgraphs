@@ -36,6 +36,105 @@
 
 //========================== Utility methods ================================
 
+#ifdef _DEBUG
+void show_stackframe() {
+  void *trace[16];
+  char **messages = (char **)NULL;
+  int i, trace_size = 0;
+
+  trace_size = backtrace(trace, 16);
+  messages = backtrace_symbols(trace, trace_size);
+  fprintf(stderr, "[bt] Execution path:\n");
+  for (i=0; i<trace_size; ++i){
+	fprintf(stderr, "[bt] %s\n", messages[i]);
+  }
+}
+#endif
+
+
+
+#ifdef _DEBUGINTERMEDIATE
+void printGenerators (DDGRAPH *ddgraph, int printDepth){
+    int i, j;
+    fprintf(stderr, "Generators at level %2d:\n", printDepth);
+    for(i=0; i<numberOfGenerators[printDepth]; i++){
+        boolean done[ddgraph->underlyingGraph->nv];
+        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+            done[j]=FALSE;
+        }
+        fprintf(stderr, "  Generator %2d: ", i+1);
+        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+            if(!done[j] && (*(automorphismGroupGenerators + printDepth))[i][j] != j){
+                fprintf(stderr, "(%d", j);
+                done[j] = TRUE;
+                int next = (*(automorphismGroupGenerators + printDepth))[i][j];
+                done[next] = TRUE;
+                int teller=0;
+                while(next!=j){
+                    fprintf(stderr, " %d", next);
+                    next = (*(automorphismGroupGenerators + printDepth))[i][next];
+                    done[next] = TRUE;
+                    teller++;
+                    if(teller==MAXN) break;
+                }
+                fprintf(stderr, ") ");
+            }
+        }
+        fprintf(stderr, "\n");
+    }
+}
+
+void printOrbits(int n, int printDepth){
+    int i;
+    fprintf(stderr, "Orbits: [%d", vertexOrbits[printDepth][0]);
+    for(i=1; i<n; i++){
+        fprintf(stderr, ", %d", vertexOrbits[printDepth][i]);
+    }
+    fprintf(stderr, "]\n");
+}
+
+void printConnectorOrbits(BBLOCK* blocks, int buildingBlockCount, int printDepth){
+    int i, j;
+    fprintf(stderr, "Orbits of connection vertices:\n");
+    for(i=0; i<buildingBlockCount; i++){
+        for(j=0; j<(blocks+i)->connectorCount; j++){
+            if((blocks+i)->connectionVertices[j] == vertexOrbits[printDepth][(blocks+i)->connectionVertices[j]]){
+                fprintf(stderr, "Orbit representative: %2d (size: %2d)\n", (blocks+i)->connectionVertices[j],
+                        vertexOrbitsSizes[printDepth][(blocks+i)->connectionVertices[j]]);
+            }
+        }
+    }
+}
+
+void printComponentList(){
+    int i, j;
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        fprintf(stderr, "(%d", Q1TypeComponentsComponentCount[i][0]);
+        for(j = 1; j < maximumQ1TypeComponents; j++){
+            fprintf(stderr, " %d", Q1TypeComponentsComponentCount[i][j]);
+        }
+        fprintf(stderr, ")");
+    }
+    fprintf(stderr, "| ");
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        fprintf(stderr, "(%d", Q2TypeComponentsComponentCount[i][0]);
+        for(j = 1; j < maximumQ2TypeComponents; j++){
+            fprintf(stderr, " %d", Q2TypeComponentsComponentCount[i][j]);
+        }
+        fprintf(stderr, ")");
+    }
+    fprintf(stderr, "| ");
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        fprintf(stderr, "(%d", Q3TypeComponentsComponentCount[i][0]);
+        for(j = 1; j < maximumQ3TypeComponents; j++){
+            fprintf(stderr, " %d", Q3TypeComponentsComponentCount[i][j]);
+        }
+        fprintf(stderr, ")");
+    }
+    fprintf(stderr, "| %d\n", Q4ComponentCount);
+}
+#endif
+
 void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -45,8 +144,20 @@ void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "\n");
     fprintf(stderr, "nv         %d\n", graph->underlyingGraph->nv);
     fprintf(stderr, "nde        %d\n", graph->underlyingGraph->nde);
+#ifdef _DEBUG
+    fprintf(stderr, "\n");
+    fprintf(stderr, "vlen       %d\n", graph->underlyingGraph->vlen);
+    fprintf(stderr, "dlen       %d\n", graph->underlyingGraph->dlen);
+    fprintf(stderr, "elen       %d\n", graph->underlyingGraph->elen);
+#endif
 
     int i,j;
+    fprintf(stderr, "v :");
+    for(i=0; i<graph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", graph->underlyingGraph->v[i]);
+    }
+    fprintf(stderr, "\n");
+
     for(i=0; i<graph->underlyingGraph->nv; i++){
         fprintf(stderr, "%d :", i);
         for(j=graph->underlyingGraph->v[i]; j < graph->underlyingGraph->v[i] + graph->underlyingGraph->d[i]; j++){
@@ -86,7 +197,7 @@ DDGRAPH *getNewDDGraph(int order){
         }
         for(i = order; i < 4; i++){
             ddgraph->underlyingGraph->d[i]=2;
-            ddgraph->underlyingGraph->v[i]=3*order + 2*i;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*(i-order);
         }
         ddgraph->underlyingGraph->dlen = 4;
         ddgraph->underlyingGraph->vlen = 4;
@@ -104,7 +215,7 @@ DDGRAPH *getNewDDGraph(int order){
         }
         for(i = order; i < maxVertices; i++){
             ddgraph->underlyingGraph->d[i]=2;
-            ddgraph->underlyingGraph->v[i]=3*order + 2*i;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*(i-order);
         }
         ddgraph->underlyingGraph->dlen = maxVertices;
         ddgraph->underlyingGraph->vlen = maxVertices;
@@ -169,6 +280,10 @@ BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter,
     } else {
         fprintf(stderr, "Illegal component type: %d (valid types from 1 to 4)\n", type);
         exit(EXIT_FAILURE);
+    }
+    int i;
+    for(i=0; i<block->connectorCount; i++){
+        block->connections[i]=NULL;
     }
     return block;
 }
@@ -293,6 +408,106 @@ void determineVertexOrbits(int vertexCount, int *vertexOrbits, int *orbitSizes,
     }
 }
 
+void callNautyForGraph(DDGRAPH *ddgraph){
+    int i, j;
+    //calculate automorphisms of the new graph
+    int currentOrbits[ddgraph->underlyingGraph->nv];
+
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        nautyPtn[i] = 1;
+    }
+    int counter = 0;
+    for(j = 2; j>=0; j--){
+        for(i=0; i<ddgraph->order; i++){
+            if(ddgraph->semiEdges[i]==j){
+                nautyLabelling[counter] = i;
+                counter++;
+            }
+        }
+        if(counter>0){
+            nautyPtn[counter-1]=0;
+        }
+    }
+    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
+        nautyLabelling[i] = i;
+    }
+    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+
+#ifdef _DEBUG
+    fprintf(stderr, "nautyLab: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyLabelling[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "nautyPtn: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyPtn[i]);
+    }
+    fprintf(stderr, "\n");
+#endif
+
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+            &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
+            ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
+
+#ifdef _DEBUG
+    fprintf(stderr, "nauty Orbits: [%d", currentOrbits[0]);
+    for(i=1; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, ", %d", currentOrbits[i]);
+    }
+    fprintf(stderr, "]\n");
+#endif
+}
+
+void determineVertexPairsOrbits(int (*vertexPairList)[2], int vertexPairListSize, int *vertexPairOrbits, int *orbitCount,
+        permutation (*currentGenerators)[MAXN][MAXN] , int currentNumberOfGenerators){
+
+    int i, j, k, temp;
+    int orbitSize[vertexPairListSize];
+
+    //initialization of the variables
+    for(i=0; i<vertexPairListSize; i++){
+        vertexPairOrbits[i]=i;
+        orbitSize[i]=1;
+    }
+    *orbitCount=vertexPairListSize;
+
+    if(currentNumberOfGenerators==0){
+        return;
+    }
+
+    permutation *permutation;
+    int pair[2];
+    for(i = 0; i < currentNumberOfGenerators; i++) {
+        permutation = (*currentGenerators)[i];
+
+        for(j = 0; j<vertexPairListSize; j++){
+            //apply permutation to current vertex pair
+            pair[0] = permutation[vertexPairList[j][0]];
+            pair[1] = permutation[vertexPairList[j][1]];
+
+            //canonical form of vertex pair
+            if(pair[0]>pair[1]){
+                temp = pair[1];
+                pair[1] = pair[0];
+                pair[0] = temp;
+            }
+
+            //search the pair in the list
+            for(k = 0; k<vertexPairListSize; k++){
+                if(pair[0] == vertexPairList[k][0] && pair[1] == vertexPairList[k][1]){
+                    unionElements(vertexPairOrbits, orbitSize, orbitCount, j, k);
+                    break; //the list of pairs doesn't contain any duplicates so we can stop
+                }
+            }
+        }
+    }
+
+    //make sure that each element is connected to its root
+    for(i = 0; i < vertexPairListSize; i++){
+        findRootOfElement(vertexPairOrbits, i);
+    }
+}
 //====================== Building block construction ==========================
 
 /*
@@ -642,7 +857,7 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     degrees[*currentVertex] = 2;
     positions[*currentVertex]++; //connection points are at position 0
 
-    edges[positions[(*currentVertex)+1]+1] = start;
+    edges[positions[(*currentVertex)+1]+0] = start;
     edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
 
@@ -979,7 +1194,7 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     int i, start;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+3;
-    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1] = 0;
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
@@ -1101,7 +1316,7 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     int i;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+3;
-    vertexToConnector[*currentVertex] = 0;
+    vertexToConnector[(*currentVertex)+1] = 0;
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
@@ -1286,7 +1501,7 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     positions[*currentVertex]++; //semi-edge is at position 0
     ddgraph->semiEdges[*currentVertex] = 1;
 
-    edges[positions[(*currentVertex)+1]+1] = start;
+    edges[positions[(*currentVertex)+1]+0] = start;
     edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
 
@@ -1525,7 +1740,7 @@ void storeLockedOpenroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAP
     if(block->parameter==1){
         //mirror symmetry along diagonal
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
-
+        
         generator[block->connectionVertices[0] + 1] = block->connectionVertices[0] + 2;
         generator[block->connectionVertices[0] + 2] = block->connectionVertices[0] + 1;
 
@@ -1866,6 +2081,7 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int 
         //for the first vertex this will be overwritten when making the connections
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = SEMIEDGE;
+        ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
         (*currentVertex)++;
 
@@ -1873,6 +2089,7 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int 
         //for the last vertex this will be overwritten when making the connections
         edges[positions[*currentVertex]+1] = (*currentVertex)-1;
         edges[positions[*currentVertex]+2] = SEMIEDGE;
+        ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
         (*currentVertex)++;
     }
@@ -1999,8 +2216,9 @@ void storeLockedBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgrap
  * semi-edges).
  */
 void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
-    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 1]]
-            = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex) + 2]] = SEMIEDGE;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex)] + 1]
+            = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex)] + 2] = SEMIEDGE;
+    ddgraph->underlyingGraph->v[(*currentVertex)]++;
     ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
     ddgraph->semiEdges[(*currentVertex)] = 2;
 
@@ -2122,51 +2340,338 @@ void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     }
 }
 
-void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int orbit, int depth, int openConnectionsLeftInOrbit){
+inline void connectConnectors(BBLOCK* blocks, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int connector1, int connector2){
+    int block1 = vertexToBlock[connector1];
+    int block2 = vertexToBlock[connector2];
+    int connectorPosition1 = vertexToConnector[connector1];
+    int connectorPosition2 = vertexToConnector[connector2];
 
-    //
-    if(openConnectionsLeftInOrbit - 1 == 0){ //or -2 if we connected a vertex of the orbit to another vertex in the orbit
-        //we've just made the final connection for the orbit currently under consideration
-
-        findNextOrbitToConnect(blocks, buildingBlockCount, ddgraph);
-    }
+    (blocks+block1)->connections[connectorPosition1] = blocks+block2;
+    (blocks+block2)->connections[connectorPosition2] = blocks+block1;
+    (blocks+block1)->targetConnector[connectorPosition1] = connectorPosition2;
+    (blocks+block2)->targetConnector[connectorPosition2] = connectorPosition1;
+    ddgraph->underlyingGraph->d[connector1]++;
+    ddgraph->underlyingGraph->v[connector1]--;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[connector1]] = connector2;
+    ddgraph->underlyingGraph->d[connector2]++;
+    ddgraph->underlyingGraph->v[connector2]--;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[connector2]] = connector1;
+    ddgraph->underlyingGraph->nde+=2;
 }
 
-void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
+inline void disconnectConnectors(BBLOCK* blocks, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int connector1, int connector2){
+    int block1 = vertexToBlock[connector1];
+    int block2 = vertexToBlock[connector2];
+    int connectorPosition1 = vertexToConnector[connector1];
+    int connectorPosition2 = vertexToConnector[connector2];
+
+    (blocks+block1)->connections[connectorPosition1] = NULL;
+    (blocks+block2)->connections[connectorPosition2] = NULL;
+    ddgraph->underlyingGraph->d[connector1]--;
+    ddgraph->underlyingGraph->v[connector1]++;
+    ddgraph->underlyingGraph->d[connector2]--;
+    ddgraph->underlyingGraph->v[connector2]++;
+    ddgraph->underlyingGraph->nde-=2;
+}
+
+boolean areNeighbouringConnections(int family, int parameter, int connection1, int connection2){
+    if(family == 3 || family == 4){
+        return TRUE;
+    } else if(family == 0){
+        if(parameter==1){
+            return TRUE;
+        } else {
+            int min = connection1 < connection2 ? connection1 : connection2;
+            int max = connection1 < connection2 ? connection2 : connection1;
+            return (min==0 && max==1) || (min==2 && max==3);
+        }
+    } else if(family == 1){
+        if(parameter==1){
+            return TRUE;
+        } else {
+            return !(connection1==0 || connection2==0);
+        }
+    }
+    return FALSE;
+}
+
+boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int connector1, int connector2){
+    int i;
+    int block1 = vertexToBlock[connector1];
+    int block2 = vertexToBlock[connector2];
+    int connectorPosition1 = vertexToConnector[connector1];
+    int connectorPosition2 = vertexToConnector[connector2];
+    int type1 = (blocks+block1)->type;
+    int type2 = (blocks+block2)->type;
+
+    if(type1 == type2){
+        if(type1 == 2 || type1 == 3){
+            //type 2 and type 3 can't be connected to blocks of the same type
+            return FALSE;
+        }
+
+        if(type1 == 4 && ddgraph->order != 2){
+            //connecting two type 4 blocks leads to a component without open connections
+            return FALSE;
+        }
+
+        if(type1 == 1){
+            int family1 = (blocks+block1)->component;
+            int family2 = (blocks+block2)->component;
+
+            if((family1 == 0 || family1 == 1 || family1 == 3 || family1 == 4) &&
+                    (family2 == 0 || family2 == 1 || family2 == 3 || family2 == 4)){
+                for(i=0; i<(blocks+block1)->connectorCount; i++){
+                    if((blocks+block1)->connections[i]==(blocks+block2)){
+                        //there already exists a connection between these blocks
+                        //so we need to verify that that connection doesn't conflict with this one
+                        if(areNeighbouringConnections(family1,
+                                                    (blocks+block1)->parameter,
+                                                     connectorPosition1, i) &&
+                                areNeighbouringConnections(family2,
+                                                    (blocks+block2)->parameter,
+                                                     connectorPosition2,
+                                                    (blocks+block1)->targetConnector[i])){
+                            return FALSE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    int currentBlock;
+
+    int queue[buildingBlockCount];
+    int visited[buildingBlockCount];
+    for(i=0; i<buildingBlockCount; i++){
+        visited[i]=FALSE;
+    }
+    int head = -1, tail = 1;
+    queue[0] = block1;
+    queue[1] = block2;
+    visited[block1]=TRUE;
+    
+    while(head!=tail){
+        head++;
+        currentBlock = queue[head];
+        for(i=0; i<(blocks+currentBlock)->connectorCount; i++){
+            if((currentBlock==block1 && i == connectorPosition1)||
+                    (currentBlock==block2 && i == connectorPosition2)){
+                //ignore the new connections
+                continue;
+            }
+            if((blocks+currentBlock)->connections[i]==NULL){
+                //there still is an open connection in this component after making the new connection
+                return TRUE;
+            } else {
+                int neighbour = (blocks+currentBlock)->connections[i]->id;
+                if(!visited[neighbour]){
+                    tail++;
+                    queue[tail]=neighbour;
+                    visited[neighbour]=TRUE;
+                }
+            }
+        }
+    }
+
+    i=0;
+    while(i<buildingBlockCount && visited[i]) i++;
+
+    return i==buildingBlockCount;
+}
+
+boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int orbit, int depth, int connector1, int connector2){
+    int i, j;
+
+    int smallest = (connector1 < connector2 ? connector1 : connector2);
+    int biggest = (connector1 < connector2 ? connector2 : connector1);
+    int newConnection = -1;
+
+    //construct list of made connections in this orbit
+    int madeConnections[vertexOrbitsSizes[depth][orbit]][2];
+    int madeConnectionsCount = 0;
+    for(i=0; i<ddgraph->order; i++){ //dummy vertices can never be connectors
+        if(vertexOrbits[depth][i] == orbit && (blocks+vertexToBlock[i])->connections[vertexToConnector[i]] != NULL){
+            int opposite = (blocks+vertexToBlock[i])->connections[vertexToConnector[i]]->connectionVertices[(blocks+vertexToBlock[i])->targetConnector[vertexToConnector[i]]];
+            if(vertexOrbits[depth][opposite] != orbit || i<opposite){
+                int localSmallest = (i < opposite ? i : opposite);
+                int localBiggest = (i < opposite ? opposite : i);
+                if(localSmallest==smallest && localBiggest==biggest){
+                    newConnection = madeConnectionsCount;
+                }
+                madeConnections[madeConnectionsCount][0]=localSmallest;
+                madeConnections[madeConnectionsCount][1]=localBiggest;
+                madeConnectionsCount++;
+            }
+        }
+    }
+    DEBUGASSERT(newConnection!=-1)
+
+    //calculate automorphisms of the new graph
+    int currentOrbits[ddgraph->underlyingGraph->nv];
+
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        nautyPtn[i] = 1;
+    }
+    int counter = 0;
+    for(j = 2; j>=0; j--){
+        for(i=0; i<ddgraph->order; i++){
+            if(ddgraph->semiEdges[i]==j){
+                nautyLabelling[counter] = i;
+                counter++;
+            }
+        }
+        if(counter>0){
+            nautyPtn[counter-1]=0;
+        }
+    }
+    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
+        nautyLabelling[i] = i;
+    }
+    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+
+#ifdef _DEBUG
+    printComponentList();
+    fprintf(stderr, "nautyLab: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyLabelling[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "nautyPtn: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyPtn[i]);
+    }
+    fprintf(stderr, "\n");
+#endif
+
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+            &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
+            ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
+
+#ifdef _DEBUG
+    fprintf(stderr, "nauty Orbits: [%d", currentOrbits[0]);
+    for(i=1; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, ", %d", currentOrbits[i]);
+    }
+    fprintf(stderr, "]\n");
+#endif
+
+
+    int madeConnectionOrbits[madeConnectionsCount];
+    int madeConnectionOrbitsCount;
+    determineVertexPairsOrbits(madeConnections, madeConnectionsCount, madeConnectionOrbits,
+            &madeConnectionOrbitsCount, automorphismGroupGenerators + connectionsMade, numberOfGenerators[connectionsMade]);
+
+    int smallestConnection = 0;
+    int temp1 = currentOrbits[madeConnections[smallestConnection][0]];
+    int temp2 = currentOrbits[madeConnections[smallestConnection][1]];
+    
+    int smallestConnectionSmallest = temp1 < temp2 ? temp1 : temp2;
+    int smallestConnectionBiggest = temp1 < temp2 ? temp2 : temp1;
+    for(i=1; i<madeConnectionsCount; i++){
+        if(madeConnectionOrbits[i]==i){
+            int localTemp1 = currentOrbits[madeConnections[i][0]];
+            int localTemp2 = currentOrbits[madeConnections[i][1]];
+
+            int localSmallest = localTemp1 < localTemp2 ? localTemp1 : localTemp2;
+            int localBiggest = localTemp1 < localTemp2 ? localTemp2 : localTemp1;
+
+            if(localSmallest < smallestConnectionSmallest){
+                smallestConnectionSmallest = localSmallest;
+                smallestConnectionBiggest = localBiggest;
+                smallestConnection = i;
+            } else if(localSmallest == smallestConnectionSmallest && localBiggest < smallestConnectionBiggest){
+                smallestConnectionSmallest = localSmallest;
+                smallestConnectionBiggest = localBiggest;
+                smallestConnection = i;
+            }
+        }
+    }
+    return madeConnectionOrbits[smallestConnection] == madeConnectionOrbits[newConnection];
+}
+
+void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int orbit, int depth,
+        int openConnectionsLeftInOrbit, int totalConnectionsLeft, boolean *freeConnectors){
+    //find all pairs of possible connections with the current orbit
+    int i, j;
+    int possibleConnections[openConnectionsLeftInOrbit*totalConnectionsLeft][2];
+    int possibleConnectionsCount = 0;
+    for(i=0; i<ddgraph->order; i++){ //dummy vertices can never be connectors
+        if(vertexOrbits[depth][i] == orbit && (blocks+vertexToBlock[i])->connections[vertexToConnector[i]] == NULL){
+            for(j=0; j<ddgraph->order; j++){
+                if(vertexOrbits[depth][j] == orbit && j<i) continue;
+                if(i!=j && freeConnectors[j] && vertexToBlock[i]!=vertexToBlock[j]){
+                    possibleConnections[possibleConnectionsCount][0] = (i<j ? i : j);
+                    possibleConnections[possibleConnectionsCount][1] = (i<j ? j : i);
+                    possibleConnectionsCount++;
+                    DEBUGASSERT(possibleConnectionsCount <= openConnectionsLeftInOrbit*totalConnectionsLeft)
+                }
+            }
+        }
+    }
+    int connectorOrbits[possibleConnectionsCount];
+    int connectorOrbitCount;
+    determineVertexPairsOrbits(possibleConnections, possibleConnectionsCount, connectorOrbits,
+            &connectorOrbitCount, automorphismGroupGenerators + connectionsMade, numberOfGenerators[connectionsMade]);
+
+    for(i=0; i<possibleConnectionsCount; i++){
+        if(connectorOrbits[i]==i){
+            //try connection
+            int v1 = possibleConnections[i][0];
+            int v2 = possibleConnections[i][1];
+
+            //check if connecting v1 to v2 is legal
+            if(isLegalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, v1, v2)){
+
+                //connect v1 to v2
+                connectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, v1, v2);
+                connectionsMade++;
+                numberOfGenerators[connectionsMade]=0;
+                freeConnectors[v1]=FALSE;
+                freeConnectors[v2]=FALSE;
+
+                //check canonicity of operation and recurse
+                if(isCanonicalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, orbit, depth, v1, v2)){
+                    int inCurrentOrbit = 0;
+                    if(vertexOrbits[depth][v1] == orbit) inCurrentOrbit++;
+                    if(vertexOrbits[depth][v2] == orbit) inCurrentOrbit++;
+
+                    //
+                    if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
+                        //we've just made the final connection for the orbit currently under consideration
+                        findNextOrbitToConnect(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
+                    } else {
+                        connectCompleteOrbit(blocks, buildingBlockCount, ddgraph,
+                                vertexToBlock, vertexToConnector, orbit, depth,
+                                openConnectionsLeftInOrbit - inCurrentOrbit, totalConnectionsLeft-2, freeConnectors);
+                    }
+                }
+
+                //disconnect v1 from v2
+                freeConnectors[v1]=TRUE;
+                freeConnectors[v2]=TRUE;
+                connectionsMade--;
+                disconnectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, v1, v2);
+            }
+        }
+    }
+
+}
+
+void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector, boolean *freeConnectors){
     //first we need the vertex orbits
 
     int orbitCount = 0;
     int i,j;
     
 #ifdef _DEBUGINTERMEDIATE
-    {
-        fprintf(stderr, "Generators at level %2d:\n", connectionsMade);
-        for(i=0; i<numberOfGenerators[connectionsMade]; i++){
-            boolean done[ddgraph->underlyingGraph->nv];
-            for(j=0; j<ddgraph->underlyingGraph->nv; j++){
-                done[j]=FALSE;
-            }
-            fprintf(stderr, "  Generator %2d: ", i+1);
-            for(j=0; j<ddgraph->underlyingGraph->nv; j++){
-                if(!done[j] && (*(automorphismGroupGenerators + connectionsMade))[i][j] != j){
-                    fprintf(stderr, "(%d", j);
-                    done[j] = TRUE;
-                    int next = (*(automorphismGroupGenerators + connectionsMade))[i][j];
-                    done[next] = TRUE;
-                    int teller=0;
-                    while(next!=j){
-                        fprintf(stderr, " %d", next);
-                        next = (*(automorphismGroupGenerators + connectionsMade))[i][next];
-                        done[next] = TRUE;
-                        teller++;
-                        if(teller==20) break;
-                    }
-                    fprintf(stderr, ") ");
-                }
-            }
-            fprintf(stderr, "\n");
-        }
-    }
+    printGenerators(ddgraph, connectionsMade);
 #endif
     determineVertexOrbits(
             ddgraph->underlyingGraph->nv,
@@ -2176,25 +2681,17 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
             automorphismGroupGenerators + connectionsMade,
             numberOfGenerators[connectionsMade]);
 #ifdef _DEBUGINTERMEDIATE
-    {
-        fprintf(stderr, "Orbits of connection vertices:\n");
-        for(i=0; i<buildingBlockCount; i++){
-            for(j=0; j<(blocks+i)->connectorCount; j++){
-                if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
-                    fprintf(stderr, "Orbit representative: %2d (size: %2d)\n", (blocks+i)->connectionVertices[j],
-                            vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]]);
-                }
-            }
-        }
-    }
+    printConnectorOrbits(blocks, buildingBlockCount, connectionsMade);
 #endif
 
     int minimumOrbitSize = ddgraph->order;
     int smallestOrbit = INT_MAX;
+    int connectionCount = 0;
 
     for(i=0; i<buildingBlockCount; i++){
         for(j=0; j<(blocks+i)->connectorCount; j++){
             if((blocks+i)->connections[j]==NULL){
+                connectionCount++;
                 //only look at connections that haven't been made
                 if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
                     if(vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]] < minimumOrbitSize){
@@ -2205,32 +2702,44 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
             }
         }
     }
-
-    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, smallestOrbit, connectionsMade, minimumOrbitSize);
+    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, vertexToBlock,
+            vertexToConnector, smallestOrbit, connectionsMade, minimumOrbitSize,
+            connectionCount, freeConnectors);
 }
 
 void connectComponentList(int vertexCount){
     int blockCount = 0;
     //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
-    DDGRAPH *graph = getNewDDGraph(vertexCount);
-    int vertexToBlock[graph->underlyingGraph->nv];
-    int vertexToConnector[graph->underlyingGraph->nv];
+    DDGRAPH *ddgraph = getNewDDGraph(vertexCount);
+    int vertexToBlock[ddgraph->underlyingGraph->vlen];
+    int vertexToConnector[ddgraph->underlyingGraph->vlen];
 
     //reset counters
     connectionsMade=0;
     numberOfGenerators[connectionsMade]=0;
 
     //convert the blocks to a disconnected graph
-    constructBuildingBlockListAsGraph(blocks, blockCount, graph, vertexToBlock, vertexToConnector);
+    constructBuildingBlockListAsGraph(blocks, blockCount, ddgraph, vertexToBlock, vertexToConnector);
     //store the generators of the automorphism group of this disconnected graph
-    storeInitialGenerators(blocks, blockCount, graph);
+    storeInitialGenerators(blocks, blockCount, ddgraph);
+
+    boolean freeConnectors[vertexCount];
+    int i, j;
+    for(i=0; i<vertexCount; i++){
+        freeConnectors[i] = FALSE;
+    }
+    for(i=0; i<blockCount; i++){
+        for(j=0; j<(blocks+i)->connectorCount; j++){
+            freeConnectors[(blocks+i)->connectionVertices[j]] = TRUE;
+        }
+    }
 
 
-    findNextOrbitToConnect(blocks, blockCount, graph);
+    findNextOrbitToConnect(blocks, blockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
 
     //free the memory allocated at the beginning of this method
-    freeDDGraph(graph);
+    freeDDGraph(ddgraph);
     free(blocks);
 }
 
@@ -2572,12 +3081,34 @@ void initStatistics(){
     componentListsCount = 0;
 }
 
+void initNautyOptions(int order) {
+    nautyOptions.defaultptn = FALSE;
+    nautyOptions.getcanon = TRUE;
+    nautyOptions.userautomproc = storeGenerator;
+    #ifdef _DEBUGINTERMEDIATE
+    nautyOptions.writeautoms = TRUE;
+    nautyOptions.writemarkers = TRUE;
+    nautyOptions.outfile = stderr;
+    #endif
+
+    int maxVertices = order + order/2 + 1;
+    canonGraph.nv = 0;
+    canonGraph.nde = 0;
+    canonGraph.d = (int *)malloc(maxVertices*sizeof(int));
+    canonGraph.v = (int *)malloc(maxVertices*sizeof(int));
+    canonGraph.e = (int *)malloc((3*order + 2*(order/2) + 2)*sizeof(int));
+    canonGraph.dlen = maxVertices;
+    canonGraph.vlen = maxVertices;
+    canonGraph.elen = 3*order + 2*(order/2) + 2;
+}
+
 //====================== START =======================
 
 void startGeneration(int targetSize){
 
     initComponents(targetSize);
     initStatistics();
+    initNautyOptions(targetSize);
 
     q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0);
 
