@@ -52,6 +52,7 @@
 #define _DEBUGDUMPS
 #define _DEBUGASSERTS
 #define _DEBUGINTERMEDIATE
+#define _DEBUGMETHODS
 
 #endif
 

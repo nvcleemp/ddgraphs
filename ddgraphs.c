@@ -53,7 +53,7 @@ void show_stackframe() {
 
 
 
-#ifdef _DEBUGINTERMEDIATE
+#ifdef _DEBUGMETHODS
 void printGenerators (DDGRAPH *ddgraph, int printDepth){
     int i, j;
     fprintf(stderr, "Generators at level %2d:\n", printDepth);
