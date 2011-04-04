@@ -133,6 +133,49 @@ void printComponentList(){
     }
     fprintf(stderr, "| %d\n", Q4ComponentCount);
 }
+
+char (*blockName[ComponentsTypesCount]);
+
+void printBlockName(int count, int blockNumber, int parameter, boolean first){
+    if(!first){
+        fprintf(stderr, ", ");
+    }
+    fprintf(stderr, "%dx", count);
+    fprintf(stderr, blockName[blockNumber], parameter+1);
+}
+
+void printHumanReadableComponentList(){
+    int i, j;
+    boolean first = TRUE;
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ1TypeComponents; j++){
+            if(Q1TypeComponentsComponentCount[i][j]){
+                printBlockName(Q1TypeComponentsComponentCount[i][j], i, j, first);
+                first = FALSE;
+            }
+        }
+    }
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ2TypeComponents; j++){
+            if(Q2TypeComponentsComponentCount[i][j]){
+                printBlockName(Q2TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + i, j, first);
+                first = FALSE;
+            }
+        }
+    }
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ3TypeComponents; j++){
+            if(Q3TypeComponentsComponentCount[i][j]){
+                printBlockName(Q3TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + Q2TypeComponentsCount + i, j, first);
+                first = FALSE;
+            }
+        }
+    }
+    if(Q4ComponentCount){
+        printBlockName(Q4ComponentCount, ComponentsTypesCount - 1, 0, first);
+    }
+    fprintf(stderr, "\n");
+}
 #endif
 
 void printDDGraph(DDGRAPH *graph){
@@ -3238,6 +3281,27 @@ void initComponents(int targetSize){
     storeBlocksMapping[14] = &storeBarbWiresMapping;
     storeBlocksMapping[15] = &storeLockedBarbWiresMapping;
     storeBlocksMapping[16] = &storeQ4sMapping;
+    
+#ifdef _DEBUGMETHODS
+    blockName[0] = "H(%d)";
+    blockName[1] = "LH(%d)";
+    blockName[2] = "DLH(%d)";
+    blockName[3] = "DC(%d)";
+    blockName[4] = "DHB(%d)";
+    blockName[5] = "OHB(%d)";
+    blockName[6] = "DLB(%d)";
+    blockName[7] = "OLB(%d)";
+    blockName[8] = "LDC(%d)";
+    blockName[9] = "LDHB(%d)";
+    blockName[10] = "LOHB(%d)";
+    blockName[11] = "LDLB(%d)";
+    blockName[12] = "PC(%d)";
+    blockName[13] = "LPC(%d)";
+    blockName[14] = "BW(%d)";
+    blockName[15] = "LBW(%d)";
+    blockName[16] = "Q4";
+
+#endif
 }
 
 void initStatistics(){
