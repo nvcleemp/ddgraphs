@@ -2578,7 +2578,7 @@ boolean areNeighbouringConnections(int family, int parameter, int connection1, i
         }
     } else if(family == 1){
         if(parameter==1){
-            return TRUE;
+            return (connection1 + connection2) != 1;
         } else {
             return !(connection1==0 || connection2==0);
         }
