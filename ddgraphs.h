@@ -95,7 +95,7 @@ typedef struct _ddgraph DDGRAPH;
 
 unsigned int componentListsCount;
 
-#define Q1TypeComponentsCount 11
+#define Q1TypeComponentsCount 12
 
 int maximumQ1TypeComponents;
 int Q1TypeComponentsConnectors[Q1TypeComponentsCount];
@@ -118,11 +118,13 @@ int** Q3TypeComponentsComponentCount;
 
 int Q4ComponentCount;
 
-void (*constructBlock[16])(int *, BBLOCK *, DDGRAPH *, int *, int *) = {NULL};
+#define ComponentsTypesCount (Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount + 1)
 
-void (*storeBlockAutomorphismGenerators[16])(BBLOCK *, DDGRAPH *) = {NULL};
+void (*constructBlock[ComponentsTypesCount])(int *, BBLOCK *, DDGRAPH *, int *, int *) = {NULL};
 
-void (*storeBlocksMapping[16])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
+void (*storeBlockAutomorphismGenerators[ComponentsTypesCount])(BBLOCK *, DDGRAPH *) = {NULL};
+
+void (*storeBlocksMapping[ComponentsTypesCount])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
 
 /******************Global Variables**********************/
 

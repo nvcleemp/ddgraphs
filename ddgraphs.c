@@ -783,6 +783,151 @@ void storeLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 }
 
 /*
+ * Constructs a double locked hub DLH(n). This block has 2 connectors arranged
+ * as follows:
+ *
+ *                           1
+ *          \               /
+ *           o---o-...-o---o
+ *           |   |     |   |
+ *           |   |     |   |
+ *           o---o-...-o---o
+ *          /               \
+ *         0
+ *
+ */
+void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    int i, start;
+    block->connectionVertices[0] = (*currentVertex)+1;
+    block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+2;
+    vertexToConnector[(*currentVertex)+1] = 0;
+    vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 1;
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+
+    start = *currentVertex;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    edges[positions[*currentVertex]+0] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+1] = (*currentVertex)+2;
+    edges[positions[*currentVertex]+2] = SEMIEDGE;
+    degrees[*currentVertex] = 2;
+    ddgraph->semiEdges[*currentVertex] = 1;
+
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+    degrees[(*currentVertex)+1] = 2;
+    positions[(*currentVertex)+1]++; //connection points are at position 0
+
+    (*currentVertex)+=2;
+
+    for(i=0; i<block->parameter-1; i++){
+        vertexToBlock[(*currentVertex)+0] = block->id;
+        vertexToBlock[(*currentVertex)+1] = block->id;
+        vertexToBlock[(*currentVertex)+2] = block->id;
+        vertexToBlock[(*currentVertex)+3] = block->id;
+
+        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+        edges[positions[*currentVertex]+2] = (*currentVertex)+2;
+
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
+        edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
+
+        edges[positions[(*currentVertex)+2]+0] = (*currentVertex);
+        edges[positions[(*currentVertex)+2]+1] = (*currentVertex)+3;
+        edges[positions[(*currentVertex)+2]+2] = (*currentVertex)+4;
+
+        edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
+        edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
+        edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        (*currentVertex)+=4;
+    }
+
+    vertexToBlock[*currentVertex] = block->id;
+    vertexToBlock[(*currentVertex)+1] = block->id;
+
+    edges[positions[*currentVertex]+1] = (*currentVertex)+1;
+    edges[positions[*currentVertex]+2] = (*currentVertex)-2;
+    degrees[*currentVertex] = 2;
+    positions[*currentVertex]++; //connection points are at position 0
+
+    edges[positions[(*currentVertex)+1]+0] = (*currentVertex);
+    edges[positions[(*currentVertex)+1]+1] = (*currentVertex)-1;
+    edges[positions[(*currentVertex)+1]+2] = SEMIEDGE;
+    degrees[(*currentVertex)+1] = 2;
+    ddgraph->semiEdges[(*currentVertex)+1] = 1;
+
+    (*currentVertex)+=2;
+}
+
+void storeDoubleLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[1];
+        generator[block->connectionVertices[1]] = block->connectionVertices[0];
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along other diagonal
+
+        generator[block->connectionVertices[0]] = block->connectionVertices[0];
+        generator[block->connectionVertices[1]] = block->connectionVertices[1];
+        generator[block->connectionVertices[0]-1] = block->connectionVertices[1]+1;
+        generator[block->connectionVertices[1]+1] = block->connectionVertices[0]-1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        //rotation of 180
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertexBottom = block->connectionVertices[0];
+        int vertexTop = block->connectionVertices[1];
+
+        int i;
+        for(i = 0; i < 2*(block->parameter); i++){
+            generator[vertexBottom] = vertexTop;
+            generator[vertexTop] = vertexBottom;
+            vertexBottom+=2;
+            vertexTop-=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+void storeDoubleLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+    int i, vertexBlock1, vertexBlock2;
+
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexBlock1 = block1->connectionVertices[0]-1;
+    vertexBlock2 = block2->connectionVertices[0]-1;
+
+    for(i=0; i<4*(block1->parameter); i++){
+        generator[vertexBlock1+i] = vertexBlock2+i;
+        generator[vertexBlock2+i] = vertexBlock1+i;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+
+/*
  * Constructs a diagonal chain DC(n). This block has 2 connectors arranged
  * as follows:
  *              _______________
@@ -821,7 +966,7 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
-    
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2322,10 +2467,10 @@ BBLOCK *constructComponentList(int *blockListSize){
 }
 
 void storeInitialGenerators(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph){
-    int firstBlocks[16][MAXN]; //stores the index of the first block of each type
+    int firstBlocks[ComponentsTypesCount][MAXN]; //stores the index of the first block of each type
                          //-1 in case no block of this type was encountered yet
     int i,j;
-    for(i=0;i<16;i++) for(j=0;j<MAXN;j++) firstBlocks[i][j]=-1;
+    for(i=0;i<ComponentsTypesCount;i++) for(j=0;j<MAXN;j++) firstBlocks[i][j]=-1;
 
     for (i = 0; i < buildingBlockCount; i++) {
         int number = buildingBlockTypeToNumber(blocks+i);
@@ -2973,27 +3118,29 @@ void initComponents(int targetSize){
 
     Q1TypeComponentsConnectors[0] = 4; //Hub
     Q1TypeComponentsConnectors[1] = 3; //Locked Hub
-    Q1TypeComponentsConnectors[2] = 2; //Diagonal Chain
-    Q1TypeComponentsConnectors[3] = 2; //Double-roof High Building
-    Q1TypeComponentsConnectors[4] = 2; //Open-roof High Building
-    Q1TypeComponentsConnectors[5] = 2; //Double-roof Long Building
-    Q1TypeComponentsConnectors[6] = 2; //Open-roof Long Building
-    Q1TypeComponentsConnectors[7] = 1; //Locked Diagonal Chain
-    Q1TypeComponentsConnectors[8] = 1; //Locked Double-roof High Building
-    Q1TypeComponentsConnectors[9] = 1; //Locked Open-roof High Building
-    Q1TypeComponentsConnectors[10] = 1; //Locked Double-roof Long Building
+    Q1TypeComponentsConnectors[2] = 2; //Double Locked Hub
+    Q1TypeComponentsConnectors[3] = 2; //Diagonal Chain
+    Q1TypeComponentsConnectors[4] = 2; //Double-roof High Building
+    Q1TypeComponentsConnectors[5] = 2; //Open-roof High Building
+    Q1TypeComponentsConnectors[6] = 2; //Double-roof Long Building
+    Q1TypeComponentsConnectors[7] = 2; //Open-roof Long Building
+    Q1TypeComponentsConnectors[8] = 1; //Locked Diagonal Chain
+    Q1TypeComponentsConnectors[9] = 1; //Locked Double-roof High Building
+    Q1TypeComponentsConnectors[10] = 1; //Locked Open-roof High Building
+    Q1TypeComponentsConnectors[11] = 1; //Locked Double-roof Long Building
 
     Q1TypeComponentsSmallestCase[0] = 1;
     Q1TypeComponentsSmallestCase[1] = 1;
     Q1TypeComponentsSmallestCase[2] = 1;
     Q1TypeComponentsSmallestCase[3] = 1;
     Q1TypeComponentsSmallestCase[4] = 1;
-    Q1TypeComponentsSmallestCase[5] = 2;
+    Q1TypeComponentsSmallestCase[5] = 1;
     Q1TypeComponentsSmallestCase[6] = 2;
-    Q1TypeComponentsSmallestCase[7] = 1;
+    Q1TypeComponentsSmallestCase[7] = 2;
     Q1TypeComponentsSmallestCase[8] = 1;
     Q1TypeComponentsSmallestCase[9] = 1;
-    Q1TypeComponentsSmallestCase[10] = 2;
+    Q1TypeComponentsSmallestCase[10] = 1;
+    Q1TypeComponentsSmallestCase[11] = 2;
 
     Q1TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q1TypeComponentsCount);
 
@@ -3040,54 +3187,57 @@ void initComponents(int targetSize){
 
     constructBlock[0] = &constructHub;
     constructBlock[1] = &constructLockedHub;
-    constructBlock[2] = &constructDiagonalChain;
-    constructBlock[3] = &constructDoubleroofHighBuilding;
-    constructBlock[4] = &constructOpenroofHighBuilding;
-    constructBlock[5] = &constructDoubleroofLongBuilding;
-    constructBlock[6] = &constructOpenroofLongBuilding;
-    constructBlock[7] = &constructLockedDiagonalChain;
-    constructBlock[8] = &constructLockedDoubleroofHighBuilding;
-    constructBlock[9] = &constructLockedOpenroofHighBuilding;
-    constructBlock[10] = &constructLockedDoubleroofLongBuilding;
-    constructBlock[11] = &constructPearlChain;
-    constructBlock[12] = &constructLockedPearlChain;
-    constructBlock[13] = &constructBarbWire;
-    constructBlock[14] = &constructLockedBarbWire;
-    constructBlock[15] = &constructQ4;
+    constructBlock[2] = &constructDoubleLockedHub;
+    constructBlock[3] = &constructDiagonalChain;
+    constructBlock[4] = &constructDoubleroofHighBuilding;
+    constructBlock[5] = &constructOpenroofHighBuilding;
+    constructBlock[6] = &constructDoubleroofLongBuilding;
+    constructBlock[7] = &constructOpenroofLongBuilding;
+    constructBlock[8] = &constructLockedDiagonalChain;
+    constructBlock[9] = &constructLockedDoubleroofHighBuilding;
+    constructBlock[10] = &constructLockedOpenroofHighBuilding;
+    constructBlock[11] = &constructLockedDoubleroofLongBuilding;
+    constructBlock[12] = &constructPearlChain;
+    constructBlock[13] = &constructLockedPearlChain;
+    constructBlock[14] = &constructBarbWire;
+    constructBlock[15] = &constructLockedBarbWire;
+    constructBlock[16] = &constructQ4;
 
     storeBlockAutomorphismGenerators[0] = &storeHubAutomorphismGenerators;
     storeBlockAutomorphismGenerators[1] = &storeLockedHubAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[2] = &storeDiagonalChainAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[3] = &storeDoubleroofHighBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[4] = &storeOpenroofHighBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[5] = &storeDoubleroofLongBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[6] = &storeOpenroofLongBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[7] = &storeLockedDiagonalChainAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[8] = NULL;
-    storeBlockAutomorphismGenerators[9] = &storeLockedOpenroofHighBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[10] = NULL;
-    storeBlockAutomorphismGenerators[11] = &storePearlChainAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[12] = NULL;
-    storeBlockAutomorphismGenerators[13] = &storeBarbWireAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[14] = NULL;
+    storeBlockAutomorphismGenerators[2] = &storeDoubleLockedHubAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[3] = &storeDiagonalChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[4] = &storeDoubleroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[5] = &storeOpenroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[6] = &storeDoubleroofLongBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[7] = &storeOpenroofLongBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[8] = &storeLockedDiagonalChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[9] = NULL;
+    storeBlockAutomorphismGenerators[10] = &storeLockedOpenroofHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[11] = NULL;
+    storeBlockAutomorphismGenerators[12] = &storePearlChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[13] = NULL;
+    storeBlockAutomorphismGenerators[14] = &storeBarbWireAutomorphismGenerators;
     storeBlockAutomorphismGenerators[15] = NULL;
+    storeBlockAutomorphismGenerators[16] = NULL;
 
     storeBlocksMapping[0] = &storeHubsMapping;
     storeBlocksMapping[1] = &storeLockedHubsMapping;
-    storeBlocksMapping[2] = &storeDiagonalChainsMapping;
-    storeBlocksMapping[3] = &storeDoubleroofHighBuildingsMapping;
-    storeBlocksMapping[4] = &storeOpenroofHighBuildingsMapping;
-    storeBlocksMapping[5] = &storeDoubleroofLongBuildingsMapping;
-    storeBlocksMapping[6] = &storeOpenroofLongBuildingsMapping;
-    storeBlocksMapping[7] = &storeLockedDiagonalChainsMapping;
-    storeBlocksMapping[8] = &storeLockedDoubleroofHighBuildingsMapping;
-    storeBlocksMapping[9] = &storeLockedOpenroofHighBuildingsMapping;
-    storeBlocksMapping[10] = &storeLockedDoubleroofLongBuildingsMapping;
-    storeBlocksMapping[11] = &storePearlChainsMapping;
-    storeBlocksMapping[12] = &storeLockedPearlChainsMapping;
-    storeBlocksMapping[13] = &storeBarbWiresMapping;
-    storeBlocksMapping[14] = &storeLockedBarbWiresMapping;
-    storeBlocksMapping[15] = &storeQ4sMapping;
+    storeBlocksMapping[2] = &storeDoubleLockedHubsMapping;
+    storeBlocksMapping[3] = &storeDiagonalChainsMapping;
+    storeBlocksMapping[4] = &storeDoubleroofHighBuildingsMapping;
+    storeBlocksMapping[5] = &storeOpenroofHighBuildingsMapping;
+    storeBlocksMapping[6] = &storeDoubleroofLongBuildingsMapping;
+    storeBlocksMapping[7] = &storeOpenroofLongBuildingsMapping;
+    storeBlocksMapping[8] = &storeLockedDiagonalChainsMapping;
+    storeBlocksMapping[9] = &storeLockedDoubleroofHighBuildingsMapping;
+    storeBlocksMapping[10] = &storeLockedOpenroofHighBuildingsMapping;
+    storeBlocksMapping[11] = &storeLockedDoubleroofLongBuildingsMapping;
+    storeBlocksMapping[12] = &storePearlChainsMapping;
+    storeBlocksMapping[13] = &storeLockedPearlChainsMapping;
+    storeBlocksMapping[14] = &storeBarbWiresMapping;
+    storeBlocksMapping[15] = &storeLockedBarbWiresMapping;
+    storeBlocksMapping[16] = &storeQ4sMapping;
 }
 
 void initStatistics(){
