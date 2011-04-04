@@ -2565,11 +2565,12 @@ inline void disconnectConnectors(BBLOCK* blocks, DDGRAPH *ddgraph,
 }
 
 boolean areNeighbouringConnections(int family, int parameter, int connection1, int connection2){
-    if(family == 3 || family == 4){
+    DEBUGASSERT(Q1TypeComponentsCount==12)
+    if(family == 4 || family == 5){
         return TRUE;
     } else if(family == 0){
         if(parameter==1){
-            return TRUE;
+            return (connection1 + connection2) != 3;
         } else {
             int min = connection1 < connection2 ? connection1 : connection2;
             int max = connection1 < connection2 ? connection2 : connection1;
