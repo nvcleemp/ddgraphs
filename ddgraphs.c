@@ -3107,7 +3107,7 @@ void q3Components(int currentType, int currentParameter, int targetSize, int cur
         Q3TypeComponentsComponentCount[currentType][currentParameter-1]=i;
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
-        if(targetSize - newSize > 2*(currentParameter+1)){
+        if(targetSize - newSize >= 2*(currentParameter+1)){
             q3Components(currentType, currentParameter+1, targetSize, newSize);
         } else if(currentType+1==Q3TypeComponentsCount){
             q4Components(targetSize, newSize);
@@ -3127,7 +3127,7 @@ void q2Components(int currentType, int currentParameter, int targetSize, int cur
         Q2TypeComponentsComponentCount[currentType][currentParameter-1]=i;
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
-        if(targetSize - newSize > 2*(currentParameter+1)){
+        if(targetSize - newSize >= 2*(currentParameter+1)){
             q2Components(currentType, currentParameter+1, targetSize, newSize);
         } else if(currentType+1==Q2TypeComponentsCount){
             q3Components(0, Q3TypeComponentsSmallestCase[0], targetSize, newSize);
@@ -3147,7 +3147,7 @@ void q1Components(int currentType, int currentParameter, int targetSize, int cur
         Q1TypeComponentsComponentCount[currentType][currentParameter-1]=i;
         int newSize = currentSize + 4*currentParameter*i; //each q1 component has 4n vertices
 
-        if(targetSize - newSize > 4*(currentParameter+1)){
+        if(targetSize - newSize >= 4*(currentParameter+1)){
             q1Components(currentType, currentParameter+1, targetSize, newSize);
         } else if(currentType+1==Q1TypeComponentsCount){
             q2Components(0, Q2TypeComponentsSmallestCase[0], targetSize, newSize);
