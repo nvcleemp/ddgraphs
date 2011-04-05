@@ -2588,6 +2588,7 @@ boolean areNeighbouringConnections(int family, int parameter, int connection1, i
 
 boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int connector1, int connector2){
+    DEBUGASSERT(Q1TypeComponentsCount==12)
     int i;
     int block1 = vertexToBlock[connector1];
     int block2 = vertexToBlock[connector2];
@@ -2611,8 +2612,8 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
             int family1 = (blocks+block1)->component;
             int family2 = (blocks+block2)->component;
 
-            if((family1 == 0 || family1 == 1 || family1 == 3 || family1 == 4) &&
-                    (family2 == 0 || family2 == 1 || family2 == 3 || family2 == 4)){
+            if((family1 == 0 || family1 == 1 || family1 == 4 || family1 == 5) &&
+                    (family2 == 0 || family2 == 1 || family2 == 4 || family2 == 5)){
                 for(i=0; i<(blocks+block1)->connectorCount; i++){
                     if((blocks+block1)->connections[i]==(blocks+block2)){
                         //there already exists a connection between these blocks
