@@ -3424,7 +3424,7 @@ void startFromListFile(char *filename){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
                 Q1TypeComponentsComponentCount[family][parameter-1] = count;
-                realVertexCount += 4*count;
+                realVertexCount += 4*count*parameter;
             } else if(type==2){
                 if(!fscanf(f, "%d", &family)){
                     ERRORMSG("Error while parsing file.")
@@ -3449,7 +3449,7 @@ void startFromListFile(char *filename){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
                 Q2TypeComponentsComponentCount[family][parameter-1] = count;
-                realVertexCount += 2*count;
+                realVertexCount += 2*count*parameter;
             } else if(type==3){
                 if(!fscanf(f, "%d", &family)){
                     ERRORMSG("Error while parsing file.")
@@ -3474,7 +3474,7 @@ void startFromListFile(char *filename){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
                 Q3TypeComponentsComponentCount[family][parameter-1] = count;
-                realVertexCount += 2*count;
+                realVertexCount += 2*count*parameter;
             } else if(type==4){
                 if(fscanf(f, "%d", &count)){
                     if(Q4ComponentCount!=0){
