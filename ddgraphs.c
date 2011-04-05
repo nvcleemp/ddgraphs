@@ -3160,6 +3160,48 @@ void initComponents(int targetSize){
     maximumQ1TypeComponents = targetSize/4;
     maximumQ2TypeComponents = maximumQ3TypeComponents = targetSize/2;
 
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        Q1TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ1TypeComponents);
+        for(j = 0; j < maximumQ1TypeComponents; j++){
+            Q1TypeComponentsComponentCount[i][j]=0;
+        }
+    }
+
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        Q2TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ2TypeComponents);
+        for(j = 0; j < maximumQ2TypeComponents; j++){
+            Q2TypeComponentsComponentCount[i][j]=0;
+        }
+    }
+
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        Q3TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ3TypeComponents);
+        for(j = 0; j < maximumQ3TypeComponents; j++){
+            Q3TypeComponentsComponentCount[i][j]=0;
+        }
+    }
+
+    Q4ComponentCount = 0;
+}
+
+void freeComponents(){
+    int i;
+
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        free(Q1TypeComponentsComponentCount[i]);
+    }
+
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        free(Q2TypeComponentsComponentCount[i]);
+    }
+
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        free(Q3TypeComponentsComponentCount[i]);
+    }
+}
+
+void initComponentsStatic(){
+    
     Q1TypeComponentsConnectors[0] = 4; //Hub
     Q1TypeComponentsConnectors[1] = 3; //Locked Hub
     Q1TypeComponentsConnectors[2] = 2; //Double Locked Hub
@@ -3188,13 +3230,6 @@ void initComponents(int targetSize){
 
     Q1TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q1TypeComponentsCount);
 
-    for(i = 0; i < Q1TypeComponentsCount; i++){
-        Q1TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ1TypeComponents);
-        for(j = 0; j < maximumQ1TypeComponents; j++){
-            Q1TypeComponentsComponentCount[i][j]=0;
-        }
-    }
-
     Q2TypeComponentsConnectors[0] = 2; //Pearl Chain
     Q2TypeComponentsConnectors[1] = 1; //Locked Pearl Chain
 
@@ -3202,13 +3237,6 @@ void initComponents(int targetSize){
     Q2TypeComponentsSmallestCase[1] = 1;
 
     Q2TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q2TypeComponentsCount);
-
-    for(i = 0; i < Q2TypeComponentsCount; i++){
-        Q2TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ2TypeComponents);
-        for(j = 0; j < maximumQ2TypeComponents; j++){
-            Q2TypeComponentsComponentCount[i][j]=0;
-        }
-    }
 
     Q3TypeComponentsConnectors[0] = 2; //Barb Wire
     Q3TypeComponentsConnectors[1] = 1; //Locked Barb Wire
@@ -3218,14 +3246,6 @@ void initComponents(int targetSize){
 
     Q3TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q3TypeComponentsCount);
 
-    for(i = 0; i < Q3TypeComponentsCount; i++){
-        Q3TypeComponentsComponentCount[i] = (int*)malloc(sizeof(int)*maximumQ3TypeComponents);
-        for(j = 0; j < maximumQ3TypeComponents; j++){
-            Q3TypeComponentsComponentCount[i][j]=0;
-        }
-    }
-
-    Q4ComponentCount = 0;
 
     //set up arrays with function pointers
 
@@ -3282,7 +3302,7 @@ void initComponents(int targetSize){
     storeBlocksMapping[14] = &storeBarbWiresMapping;
     storeBlocksMapping[15] = &storeLockedBarbWiresMapping;
     storeBlocksMapping[16] = &storeQ4sMapping;
-    
+
 #ifdef _DEBUGMETHODS
     blockName[0] = "H(%d)";
     blockName[1] = "LH(%d)";
@@ -3335,6 +3355,7 @@ void initNautyOptions(int order) {
 
 void startGeneration(int targetSize){
 
+    initComponentsStatic();
     initComponents(targetSize);
     initStatistics();
     initNautyOptions(targetSize);
@@ -3344,6 +3365,138 @@ void startGeneration(int targetSize){
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
     fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
 
+}
+
+void startFromListFile(char *filename){
+    //read a list of components from a file
+    FILE *f = fopen(filename, "r");
+    if(f==NULL)
+        ERRORMSG("Could not open file for input.")
+
+    initComponentsStatic();
+    initStatistics();
+
+    int vertexCount = 0;
+    while(fscanf(f, "%d", &vertexCount)!=-1){
+        if(vertexCount<=0){
+            ERRORMSG("Error while parsing file: illegal graph order.")
+        }
+        int realVertexCount = 0;
+
+        initComponents(vertexCount);
+        initNautyOptions(vertexCount);
+
+        int type = 0;
+        int family = 0;
+        int parameter = 0;
+        int count = 0;
+        while(fscanf(f, "%d", &type)!=-1){
+            if(type==0){
+                break;
+                //end of graph
+            } else if(type==1){
+                if(!fscanf(f, "%d", &family)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &parameter)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &count)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(family >= Q1TypeComponentsCount){
+                    ERRORMSG("Error while parsing file: illegal family for type 1.")
+                }
+                if(parameter < Q1TypeComponentsSmallestCase[family] ||
+                        parameter >maximumQ1TypeComponents){
+                    ERRORMSG("Error while parsing file: illegal parameter.")
+                }
+                if(Q1TypeComponentsComponentCount[family][parameter-1]!=0){
+                    ERRORMSG("Error while parsing file: this block type was already set.")
+                }
+                if(count <= 0){
+                    ERRORMSG("Error while parsing file: illegal count.")
+                }
+                Q1TypeComponentsComponentCount[family][parameter-1] = count;
+                realVertexCount += 4*count;
+            } else if(type==2){
+                if(!fscanf(f, "%d", &family)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &parameter)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &count)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(family >= Q2TypeComponentsCount){
+                    ERRORMSG("Error while parsing file: illegal family for type 2.")
+                }
+                if(parameter < Q2TypeComponentsSmallestCase[family] ||
+                        parameter >maximumQ2TypeComponents){
+                    ERRORMSG("Error while parsing file: illegal parameter.")
+                }
+                if(Q2TypeComponentsComponentCount[family][parameter-1]!=0){
+                    ERRORMSG("Error while parsing file: this block type was already set.")
+                }
+                if(count <= 0){
+                    ERRORMSG("Error while parsing file: illegal count.")
+                }
+                Q2TypeComponentsComponentCount[family][parameter-1] = count;
+                realVertexCount += 2*count;
+            } else if(type==3){
+                if(!fscanf(f, "%d", &family)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &parameter)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &count)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(family >= Q3TypeComponentsCount){
+                    ERRORMSG("Error while parsing file: illegal family for type 3.")
+                }
+                if(parameter < Q3TypeComponentsSmallestCase[family] ||
+                        parameter >maximumQ3TypeComponents){
+                    ERRORMSG("Error while parsing file: illegal parameter.")
+                }
+                if(Q3TypeComponentsComponentCount[family][parameter-1]!=0){
+                    ERRORMSG("Error while parsing file: this block type was already set.")
+                }
+                if(count <= 0){
+                    ERRORMSG("Error while parsing file: illegal count.")
+                }
+                Q3TypeComponentsComponentCount[family][parameter-1] = count;
+                realVertexCount += 2*count;
+            } else if(type==4){
+                if(fscanf(f, "%d", &count)){
+                    if(Q4ComponentCount!=0){
+                        ERRORMSG("Error while parsing file: this block type was already set.")
+                    }
+                    if(count <= 0){
+                        ERRORMSG("Error while parsing file: illegal count.")
+                    }
+                    Q4ComponentCount = count;
+                    realVertexCount += count;
+                } else {
+                    ERRORMSG("Error while parsing file.")
+                }
+            } else {
+                ERRORMSG("Error while parsing file: illegal type.")
+            }
+        }
+        
+        if(realVertexCount!=vertexCount){
+            ERRORMSG("Error while parsing file: incorrect vertex count.")
+        }
+
+        handleComponentList(vertexCount);
+        freeComponents();
+    }
+
+    fprintf(stderr, "Read %d component lists.\n", componentListsCount);
+    fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
 }
 
 //====================== USAGE =======================
@@ -3371,12 +3524,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
 
     int c;
     char *name = argv[0];
+    char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "h")) != -1) {
+    while ((c = getopt(argc, argv, "hl:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
                 return EXIT_SUCCESS;
+            case 'l': //(defaults to stdin)
+                listFilename = optarg;
+                break;
             default:
                 fprintf(stderr, "Illegal option %c.\n", c);
                 usage(name);
@@ -3385,20 +3542,25 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     }
 
     // check the non-option arguments
-    if (argc - optind != 1) {
+    if (argc - optind != 1 && listFilename==NULL) {
         usage(name);
         return EXIT_FAILURE;
     }
-
-    //parse the order
-    int vertexCount = strtol(argv[optind], NULL, 10);
-    DEBUGDUMP(vertexCount, "%d")
 
     /*=========== initialization ===========*/
     struct tms TMS;
     unsigned int oldtime = 0;
 
-    startGeneration(vertexCount);
+    if(listFilename!=NULL){
+        startFromListFile(listFilename);
+    } else {
+
+        //parse the order
+        int vertexCount = strtol(argv[optind], NULL, 10);
+        DEBUGDUMP(vertexCount, "%d")
+
+        startGeneration(vertexCount);
+    }
 
 
 
