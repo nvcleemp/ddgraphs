@@ -2758,16 +2758,21 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     determineVertexPairsOrbits(madeConnections, madeConnectionsCount, madeConnectionOrbits,
             &madeConnectionOrbitsCount, automorphismGroupGenerators + connectionsMade, numberOfGenerators[connectionsMade]);
 
+    int reverseLabelling[ddgraph->underlyingGraph->nv];
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        reverseLabelling[nautyLabelling[i]] = i;
+    }
+
     int smallestConnection = 0;
-    int temp1 = currentOrbits[madeConnections[smallestConnection][0]];
-    int temp2 = currentOrbits[madeConnections[smallestConnection][1]];
+    int temp1 = reverseLabelling[madeConnections[smallestConnection][0]];
+    int temp2 = reverseLabelling[madeConnections[smallestConnection][1]];
     
     int smallestConnectionSmallest = temp1 < temp2 ? temp1 : temp2;
     int smallestConnectionBiggest = temp1 < temp2 ? temp2 : temp1;
     for(i=1; i<madeConnectionsCount; i++){
         if(madeConnectionOrbits[i]==i){
-            int localTemp1 = currentOrbits[madeConnections[i][0]];
-            int localTemp2 = currentOrbits[madeConnections[i][1]];
+            int localTemp1 = reverseLabelling[madeConnections[i][0]];
+            int localTemp2 = reverseLabelling[madeConnections[i][1]];
 
             int localSmallest = localTemp1 < localTemp2 ? localTemp1 : localTemp2;
             int localBiggest = localTemp1 < localTemp2 ? localTemp2 : localTemp1;
