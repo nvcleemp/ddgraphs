@@ -874,11 +874,11 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
