@@ -602,11 +602,11 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -758,11 +758,11 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1018,11 +1018,11 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1157,11 +1157,11 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1287,11 +1287,11 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1412,11 +1412,11 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1536,11 +1536,11 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         vertexToBlock[(*currentVertex)+3] = block->id;
 
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1660,11 +1660,11 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1774,11 +1774,11 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -1885,11 +1885,11 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
         
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -2004,11 +2004,11 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
         vertexToBlock[(*currentVertex)+2] = block->id;
         vertexToBlock[(*currentVertex)+3] = block->id;
 
-        edges[positions[*currentVertex]+0] = (*currentVertex)-1;
+        edges[positions[*currentVertex]+0] = (*currentVertex)-2;
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = (*currentVertex)+2;
 
-        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-2;
+        edges[positions[(*currentVertex)+1]+0] = (*currentVertex)-1;
         edges[positions[(*currentVertex)+1]+1] = (*currentVertex);
         edges[positions[(*currentVertex)+1]+2] = (*currentVertex)+3;
 
@@ -3507,7 +3507,7 @@ void startFromListFile(char *filename){
                 ERRORMSG("Error while parsing file: illegal type.")
             }
         }
-        
+
         if(realVertexCount!=vertexCount){
             ERRORMSG("Error while parsing file: incorrect vertex count.")
         }
