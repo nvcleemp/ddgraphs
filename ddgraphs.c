@@ -2241,7 +2241,7 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
 }
 
 /*
- * Constructs a barb wire BW(n). This block has 2 connectors
+ * Constructs a barbed wire BW(n). This block has 2 connectors
  * arranged as follows:
  *
  *       |    |     |    |
@@ -2249,7 +2249,7 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
  *
  *
  */
-void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
@@ -2288,7 +2288,7 @@ void constructBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int 
     positions[block->connectionVertices[1]]++;
 }
 
-void storeBarbWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+void storeBarbedWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
     int i, vertexLeft, vertexRight, parameter;
 
     //mirror symmetry
@@ -2310,7 +2310,7 @@ void storeBarbWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
     free(generator);
 }
 
-void storeBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+void storeBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
     int i, vertexBlock1, vertexBlock2;
 
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -2329,7 +2329,7 @@ void storeBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 }
 
 /*
- * Constructs a locked barb wire LBW(n). This block has 1 connector
+ * Constructs a locked barbed wire LBW(n). This block has 1 connector
  * arranged as follows:
  *
  *       |    |     |    |
@@ -2337,7 +2337,7 @@ void storeBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *
  * This block has a trivial symmetry group.
  */
-void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i;
     block->connectionVertices[0] = *currentVertex;
     vertexToConnector[*currentVertex] = 0;
@@ -2376,7 +2376,7 @@ void constructLockedBarbWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph
     positions[block->connectionVertices[0]]++;
 }
 
-void storeLockedBarbWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
+void storeLockedBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
     int i, vertexBlock1, vertexBlock2;
 
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -3244,8 +3244,8 @@ void initComponentsStatic(){
 
     Q2TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q2TypeComponentsCount);
 
-    Q3TypeComponentsConnectors[0] = 2; //Barb Wire
-    Q3TypeComponentsConnectors[1] = 1; //Locked Barb Wire
+    Q3TypeComponentsConnectors[0] = 2; //Barbed Wire
+    Q3TypeComponentsConnectors[1] = 1; //Locked Barbed Wire
 
     Q3TypeComponentsSmallestCase[0] = 1;
     Q3TypeComponentsSmallestCase[1] = 1;
@@ -3269,8 +3269,8 @@ void initComponentsStatic(){
     constructBlock[11] = &constructLockedDoubleroofLongBuilding;
     constructBlock[12] = &constructPearlChain;
     constructBlock[13] = &constructLockedPearlChain;
-    constructBlock[14] = &constructBarbWire;
-    constructBlock[15] = &constructLockedBarbWire;
+    constructBlock[14] = &constructBarbedWire;
+    constructBlock[15] = &constructLockedBarbedWire;
     constructBlock[16] = &constructQ4;
 
     storeBlockAutomorphismGenerators[0] = &storeHubAutomorphismGenerators;
@@ -3287,7 +3287,7 @@ void initComponentsStatic(){
     storeBlockAutomorphismGenerators[11] = NULL;
     storeBlockAutomorphismGenerators[12] = &storePearlChainAutomorphismGenerators;
     storeBlockAutomorphismGenerators[13] = NULL;
-    storeBlockAutomorphismGenerators[14] = &storeBarbWireAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[14] = &storeBarbedWireAutomorphismGenerators;
     storeBlockAutomorphismGenerators[15] = NULL;
     storeBlockAutomorphismGenerators[16] = NULL;
 
@@ -3305,8 +3305,8 @@ void initComponentsStatic(){
     storeBlocksMapping[11] = &storeLockedDoubleroofLongBuildingsMapping;
     storeBlocksMapping[12] = &storePearlChainsMapping;
     storeBlocksMapping[13] = &storeLockedPearlChainsMapping;
-    storeBlocksMapping[14] = &storeBarbWiresMapping;
-    storeBlocksMapping[15] = &storeLockedBarbWiresMapping;
+    storeBlocksMapping[14] = &storeBarbedWiresMapping;
+    storeBlocksMapping[15] = &storeLockedBarbedWiresMapping;
     storeBlocksMapping[16] = &storeQ4sMapping;
 
 #ifdef _DEBUGMETHODS
