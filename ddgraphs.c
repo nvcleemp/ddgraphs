@@ -2632,6 +2632,21 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
             }
         }
     }
+    
+    if(!markedTwoFactors){
+        int family1 = (blocks+block1)->component;
+        int family2 = (blocks+block2)->component;
+        int param1 = (blocks+block1)->parameter;
+        int param2 = (blocks+block2)->parameter;
+        if((type1 == 1 && family1 == 4 && type2 == 3 && family2 == 0 && param2 == 1) ||
+                (type1 == 3 && family1 == 0 && type2 == 1 && family2 == 4 && param1 == 1)){
+            for(i=0; i<(blocks+block1)->connectorCount; i++){
+                if((blocks+block1)->connections[i]==(blocks+block2)){
+                    return FALSE;
+                }
+            }
+        }
+    }
 
     int currentBlock;
 
@@ -3532,13 +3547,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "hl:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:t")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
                 return EXIT_SUCCESS;
-            case 'l': //(defaults to stdin)
+            case 'l':
                 listFilename = optarg;
+                break;
+            case 't':
+                markedTwoFactors = TRUE;
                 break;
             default:
                 fprintf(stderr, "Illegal option %c.\n", c);

@@ -133,6 +133,8 @@ int connectionsMade; //the number of connections made at this point
 
 unsigned int graphsCount;
 
+boolean markedTwoFactors = FALSE;
+
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
  * of each generator is n.
