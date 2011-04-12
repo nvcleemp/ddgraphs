@@ -2106,6 +2106,7 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     edges[positions[(*currentVertex)+1]+2] = (*currentVertex)-1;
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //semi-edge is at position 0
+    ddgraph->semiEdges[(*currentVertex)+1] = 1;
 
     (*currentVertex)+=2;
 }
