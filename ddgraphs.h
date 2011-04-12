@@ -45,6 +45,8 @@
 
 #define SEMIEDGE INT_MAX;
 
+short endian = LITTLE_ENDIAN; // defines which endian should be used while exporting pregraph code
+
 struct _buildingblock {
     int id; //normally this is the index of this block in the list
 

@@ -178,6 +178,77 @@ void printHumanReadableComponentList(){
 }
 #endif
 
+char write_2byte_number(FILE *f, unsigned short n, short writeEndian) {
+    if (writeEndian == BIG_ENDIAN) {
+        fprintf(f, "%c%c", n / 256, n % 256);
+    } else {
+        fprintf(f, "%c%c", n % 256, n / 256);
+    }
+    return (ferror(f) ? 2 : 1);
+}
+
+char writePregraphCode(FILE *f, DDGRAPH *ddgraph, boolean firstInFile) {
+    unsigned short i, j;
+    unsigned short semiEdge = ddgraph->order + 1;
+    if (firstInFile) { //if first graph
+        fprintf(f, ">>pregraph_code %s<<", (endian == LITTLE_ENDIAN ? "le" : "be"));
+    }
+    if (ddgraph->order + 1 <= UCHAR_MAX) {
+        fprintf(f, "%c", (unsigned char) ddgraph->order);
+    } else {
+        fprintf(f, "%c", 0);
+        /* big graph */
+        if (write_2byte_number(f, (unsigned short) ddgraph->order, endian) == 2) {
+            return (2);
+        }
+    }
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for (i = 0; i < ddgraph->order; i++) {
+        for (j = 0; j < degrees[i]; j++) {
+            int neighbour = edges[positions[i]+j];
+            if(neighbour >= ddgraph->order){
+                //neighbour is a dummy vertex
+                neighbour = edges[positions[neighbour]+0] + edges[positions[neighbour]+1]-i;
+            }
+            if(neighbour>i){
+                //only include adjacency information for vertices with a larger index
+                if (ddgraph->order + 1 <= UCHAR_MAX) {
+                    fprintf(f, "%c", (unsigned char) (neighbour + 1));
+                } else {
+                    if (write_2byte_number(f, neighbour + 1, endian) == 2) {
+                        return (2);
+                    }
+                }
+            }
+        }
+        //add semi-edges
+        for(j = 0; j < ddgraph->semiEdges[i]; j++){
+            if (ddgraph->order + 1 <= UCHAR_MAX) {
+                fprintf(f, "%c", (unsigned char)semiEdge);
+            } else {
+                if (write_2byte_number(f, semiEdge, endian) == 2) {
+                    return (2);
+                }
+            }
+        }
+        //closing 0
+        if (ddgraph->order + 1 <= UCHAR_MAX) {
+            fprintf(f, "%c", 0);
+        } else {
+            if (write_2byte_number(f, 0, endian) == 2) {
+                return (2);
+            }
+        }
+    }
+    return (ferror(f) ? 2 : 1);
+}
+
+
 void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -2449,6 +2520,17 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
     }
 }
 
+//========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
+boolean first = TRUE;
+
+void handleDelaneyDressGraph(DDGRAPH *ddgraph){
+    fprintf(stderr, "Found graph based on: ");
+    printHumanReadableComponentList();
+    //printDDGraph(ddgraph);
+    writePregraphCode(stdout, ddgraph, first);
+    first = FALSE;
+}
+
 
 //=============== PHASE 2: CONNECTING THE BUILDING BLOCKS ===================
 
@@ -2857,6 +2939,7 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     //
                     if(totalConnectionsLeft - 2 == 0){
                         graphsCount++;
+                        handleDelaneyDressGraph(ddgraph);
                     } else if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
                         //we've just made the final connection for the orbit currently under consideration
                         findNextOrbitToConnect(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
