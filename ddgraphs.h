@@ -88,6 +88,13 @@ struct _ddgraph {
      */
     int *semiEdges;
 
+    /* This array is used to store a 1-factor (i.e. the complement of 2-factor)
+     * for the Delaney-Dress graph. For each vertex the position in the
+     * adjacency list is given of the neighbour that is connected to this vertex
+     * through the edge of the 1-factor.
+     */
+    int *oneFactor;
+
     int dummyVertexCount;
 };
 

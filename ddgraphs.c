@@ -297,6 +297,10 @@ DDGRAPH *getNewDDGraph(int order){
     for(i = 0; i < order; i++){
         ddgraph->semiEdges[i] = 0;
     }
+    ddgraph->oneFactor = (int *)malloc(sizeof(int)*order);
+    for(i = 0; i < order; i++){
+        ddgraph->oneFactor[i] = INT_MAX;
+    }
     ddgraph->underlyingGraph = (sparsegraph *)malloc(sizeof(sparsegraph));
     if(order==2){
         //order 2 is a bit special because we need to store the theta-graph
@@ -345,6 +349,7 @@ void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph->underlyingGraph->e);
     free(ddgraph->underlyingGraph);
     free(ddgraph->semiEdges);
+    free(ddgraph->oneFactor);
     free(ddgraph);
 }
 
@@ -655,6 +660,12 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
     degrees[*currentVertex] = 2;
@@ -688,6 +699,12 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+        
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -809,6 +826,12 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 2;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+1;
     edges[positions[*currentVertex]+1] = (*currentVertex)+2;
     edges[positions[*currentVertex]+2] = SEMIEDGE;
@@ -844,6 +867,12 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -926,6 +955,12 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 2;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 2;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+1;
     edges[positions[*currentVertex]+1] = (*currentVertex)+2;
     edges[positions[*currentVertex]+2] = SEMIEDGE;
@@ -960,6 +995,12 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1072,6 +1113,12 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1104,6 +1151,12 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1210,6 +1263,12 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
     degrees[*currentVertex] = 2;
@@ -1243,6 +1302,12 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1340,6 +1405,12 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
     degrees[*currentVertex] = 2;
@@ -1373,6 +1444,12 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1466,6 +1543,12 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1498,6 +1581,12 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1586,6 +1675,12 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1623,13 +1718,19 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
 
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
+
         (*currentVertex)+=4;
     }
     
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
 
-    edges[positions[*currentVertex]+1] = SEMIEDGE;
+    edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)-2;
     degrees[*currentVertex] = 2;
@@ -1714,6 +1815,12 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1746,6 +1853,12 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1825,6 +1938,12 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
     degrees[*currentVertex] = 2;
@@ -1860,6 +1979,12 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -1936,6 +2061,12 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
     degrees[*currentVertex] = 2;
@@ -1971,6 +2102,12 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -2058,6 +2195,12 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     int *edges = ddgraph->underlyingGraph->e;
     int *degrees = ddgraph->underlyingGraph->d;
 
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[*currentVertex] = 0;
+    ddgraph->oneFactor[(*currentVertex)+1] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
+    ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -2090,6 +2233,12 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
         edges[positions[(*currentVertex)+3]+0] = (*currentVertex)+1;
         edges[positions[(*currentVertex)+3]+1] = (*currentVertex)+2;
         edges[positions[(*currentVertex)+3]+2] = (*currentVertex)+5;
+
+        //set the one factor
+        ddgraph->oneFactor[*currentVertex] = 2;
+        ddgraph->oneFactor[(*currentVertex)+1] = 2;
+        ddgraph->oneFactor[(*currentVertex)+2] = 0;
+        ddgraph->oneFactor[(*currentVertex)+3] = 0;
 
         (*currentVertex)+=4;
     }
@@ -2163,6 +2312,7 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = (*currentVertex);
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2170,6 +2320,7 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+1] = (*currentVertex)-1;
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = (*currentVertex);
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
     }
 
@@ -2269,6 +2420,7 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+1] = (*currentVertex)+1;
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = (*currentVertex);
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2276,6 +2428,7 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+1] = (*currentVertex)-1;
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = (*currentVertex);
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
     }
 
@@ -2343,6 +2496,7 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+2] = SEMIEDGE;
         ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2351,6 +2505,7 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+2] = SEMIEDGE;
         ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
     }
 
@@ -2429,6 +2584,7 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+2] = SEMIEDGE;
         degrees[*currentVertex] = 2;
         ddgraph->semiEdges[(*currentVertex)] = 1;
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2437,6 +2593,7 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+2] = SEMIEDGE;
         degrees[*currentVertex] = 2;
         ddgraph->semiEdges[(*currentVertex)] = 1;
+        ddgraph->oneFactor[*currentVertex] = 0;
         (*currentVertex)++;
     }
     edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
@@ -2481,6 +2638,7 @@ void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *verte
     ddgraph->underlyingGraph->v[(*currentVertex)]++;
     ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
     ddgraph->semiEdges[(*currentVertex)] = 2;
+    ddgraph->oneFactor[*currentVertex] = 0;
 
     //it is not necessary to adjust ddgraph->underlyingGraph->v because it will
     //not be used when the degree is 0.
