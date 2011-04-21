@@ -249,6 +249,102 @@ char writePregraphCode(FILE *f, DDGRAPH *ddgraph, boolean firstInFile) {
 }
 
 
+char writePregraphColorCode2Factor(FILE *f, DDGRAPH *ddgraph, boolean firstInFile) {
+    unsigned short i, j;
+    unsigned short semiEdge = ddgraph->order + 1;
+    if (firstInFile) { //if first graph
+        fprintf(f, ">>pregraphcolor_code %s<<", (endian == LITTLE_ENDIAN ? "le" : "be"));
+    }
+    if (ddgraph->order + 1 <= UCHAR_MAX) {
+        fprintf(f, "%c", (unsigned char) ddgraph->order);
+    } else {
+        fprintf(f, "%c", 0);
+        /* big graph */
+        if (write_2byte_number(f, (unsigned short) ddgraph->order, endian) == 2) {
+            return (2);
+        }
+    }
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    int colours[3];
+    int adjacencyListSize;
+
+    for (i = 0; i < ddgraph->order; i++) {
+        adjacencyListSize = 0;
+        for (j = 0; j < 3; j++) {
+            int neighbour = edges[3*i+j]; //don't use the current positions, but the initial ones!!
+            if(neighbour==SEMIEDGE){
+                if (ddgraph->order + 1 <= UCHAR_MAX) {
+                    fprintf(f, "%c", (unsigned char)semiEdge);
+                } else {
+                    if (write_2byte_number(f, semiEdge, endian) == 2) {
+                        return (2);
+                    }
+                }
+                if(ddgraph->oneFactor[i]==j){
+                    colours[adjacencyListSize] = 1;
+                } else {
+                    colours[adjacencyListSize] = 2;
+                }
+                adjacencyListSize++;
+            } else {
+                if(neighbour >= ddgraph->order){
+                    //neighbour is a dummy vertex
+                    neighbour = edges[positions[neighbour]+0] + edges[positions[neighbour]+1]-i;
+                }
+                if(neighbour>i){
+                    //only include adjacency information for vertices with a larger index
+                    if (ddgraph->order + 1 <= UCHAR_MAX) {
+                        fprintf(f, "%c", (unsigned char) (neighbour + 1));
+                    } else {
+                        if (write_2byte_number(f, neighbour + 1, endian) == 2) {
+                            return (2);
+                        }
+                    }
+                    if(ddgraph->oneFactor[i]==j){
+                        colours[adjacencyListSize] = 1;
+                    } else {
+                        colours[adjacencyListSize] = 2;
+                    }
+                    adjacencyListSize++;
+                }
+            }
+        }
+        //closing 0
+        if (ddgraph->order + 1 <= UCHAR_MAX) {
+            fprintf(f, "%c", 0);
+        } else {
+            if (write_2byte_number(f, 0, endian) == 2) {
+                return (2);
+            }
+        }
+        //colour list
+        for(j=0; j<adjacencyListSize; j++){
+            if (ddgraph->order + 1 <= UCHAR_MAX) {
+                fprintf(f, "%c", colours[j]);
+            } else {
+                if (write_2byte_number(f, colours[j], endian) == 2) {
+                    return (2);
+                }
+            }
+        }
+        //closing 0
+        if (ddgraph->order + 1 <= UCHAR_MAX) {
+            fprintf(f, "%c", 0);
+        } else {
+            if (write_2byte_number(f, 0, endian) == 2) {
+                return (2);
+            }
+        }
+    }
+    return (ferror(f) ? 2 : 1);
+}
+
+
 void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -2686,7 +2782,11 @@ void handleDelaneyDressGraph(DDGRAPH *ddgraph){
     fprintf(stderr, "Found graph based on: ");
     printHumanReadableComponentList();
     //printDDGraph(ddgraph);
-    writePregraphCode(stdout, ddgraph, first);
+    if(markedTwoFactors){
+        writePregraphColorCode2Factor(stdout, ddgraph, first);
+    } else {
+        writePregraphCode(stdout, ddgraph, first);
+    }
     first = FALSE;
 }
 
