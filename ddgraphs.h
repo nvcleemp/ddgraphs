@@ -43,7 +43,7 @@
 
 /******************Defines*******************************/
 
-#define SEMIEDGE INT_MAX;
+#define SEMIEDGE INT_MAX
 
 short endian = LITTLE_ENDIAN; // defines which endian should be used while exporting pregraph code
 
