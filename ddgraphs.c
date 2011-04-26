@@ -2760,6 +2760,1268 @@ void storeQ4sMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
     free(generator);
 }
 
+/*
+ * Constructs a tristar. This block has 0 connectors.
+ *
+ *       /
+ *    --o
+ *       \
+ *
+ */
+void constructTristar(DDGRAPH *ddgraph){
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+0] = SEMIEDGE;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+1] = SEMIEDGE;
+    ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+2] = SEMIEDGE;
+    ddgraph->semiEdges[0] = 3;
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->underlyingGraph->d[0] = 0;
+}
+
+/*
+ * Constructs a double locked pearl chain DLPC(n). This block has 0 connectors.
+ *        ____         ____
+ *       /    \       /    \
+ *    --o      o-...-o      o--
+ *       \____/       \____/
+ *
+ */
+void constructDoubleLockedPearlChain(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for(i=0; i<parameter; i++){
+        int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+        ddgraph->dummyVertexCount++;
+
+        edges[positions[2*i]+0] = 2*i-1;
+        //for the first vertex this will be overwritten when making the connections
+        edges[positions[2*i]+1] = 2*i+1;
+        edges[positions[2*i]+2] = dummyVertex;
+        edges[positions[dummyVertex]+0] = 2*i;
+        ddgraph->oneFactor[2*i] = 0;
+
+        edges[positions[2*i+1]+0] = 2*i+2;
+        //for the last vertex this will be overwritten when making the connections
+        edges[positions[2*i+1]+1] = 2*i;
+        edges[positions[2*i+1]+2] = dummyVertex;
+        edges[positions[dummyVertex]+1] = 2*i+1;
+        ddgraph->oneFactor[2*i+1] = 0;
+    }
+
+    edges[positions[0]+0] = SEMIEDGE;
+    ddgraph->semiEdges[0] = 1;
+    degrees[0] = 2;
+    positions[0]++;
+
+    edges[positions[2*parameter-1]+0] = SEMIEDGE;
+    ddgraph->semiEdges[2*parameter-1] = 1;
+    degrees[2*parameter-1] = 2;
+    positions[2*parameter-1]++;
+}
+
+void storeDoubleLockedPearlChainAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    int i, vertexLeft, vertexRight, dummyLeft, dummyRight;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = 0;
+    vertexRight = 2*parameter-1;
+    dummyLeft = 2*parameter;
+    dummyRight = 3*parameter-1;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+    for(i=0; i<parameter/2; i++){
+        generator[dummyLeft] = dummyRight;
+        generator[dummyRight] = dummyLeft;
+        dummyLeft++;
+        dummyRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+/*
+ * Constructs a pearl necklace DLPC(n). This block has 0 connectors.
+ *     _______________________
+ *    |   ____         ____   |
+ *    |  /    \       /    \  |
+ *    `-o      o-...-o      o-'
+ *       \____/       \____/
+ *
+ */
+void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for(i=0; i<parameter; i++){
+        int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
+        ddgraph->dummyVertexCount++;
+
+        edges[positions[2*i]+0] = 2*i-1;
+        //for the first vertex this will be overwritten when making the connections
+        edges[positions[2*i]+1] = 2*i+1;
+        edges[positions[2*i]+2] = dummyVertex;
+        edges[positions[dummyVertex]+0] = 2*i;
+        ddgraph->oneFactor[2*i] = 0;
+
+        edges[positions[2*i+1]+0] = 2*i+2;
+        //for the last vertex this will be overwritten when making the connections
+        edges[positions[2*i+1]+1] = 2*i;
+        edges[positions[2*i+1]+2] = dummyVertex;
+        edges[positions[dummyVertex]+1] = 2*i+1;
+        ddgraph->oneFactor[2*i+1] = 0;
+    }
+
+    edges[positions[0]+0] = 2*parameter-1;
+    edges[positions[2*parameter-1]+0] = 0;
+}
+
+void storePearlNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    int i, vertexLeft, vertexRight, dummyLeft, dummyRight;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = 0;
+    vertexRight = 2*parameter-1;
+    dummyLeft = 2*parameter;
+    dummyRight = 3*parameter-1;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+    for(i=0; i<parameter/2; i++){
+        generator[dummyLeft] = dummyRight;
+        generator[dummyRight] = dummyLeft;
+        dummyLeft++;
+        dummyRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    if(parameter>1){
+        //rotation symmetry
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i=0; i<parameter-1; i++){
+            generator[2*i] = 2*(i+1);
+            generator[2*i+1] = 2*(i+1)+1;
+            generator[2*parameter+i] = 2*parameter+i+1;
+        }
+
+        generator[2*(parameter-1)] = 0;
+        generator[2*(parameter-1)+1] = 1;
+        generator[3*parameter-1] = 2*parameter;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a double locked barbed wire DLBW(n). This block has 0 connectors.
+ *
+ *      |    |     |    |
+ *    --o----o-...-o----o--
+ *
+ *
+ */
+void constructDoubleLockedBarbedWire(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for(i=0; i<parameter; i++){
+
+        edges[positions[2*i]+0] = 2*i-1;
+        //for the first vertex this will be overwritten when making the connections
+        edges[positions[2*i]+1] = 2*i+1;
+        edges[positions[2*i]+2] = SEMIEDGE;
+        ddgraph->semiEdges[2*i] = 1;
+        degrees[2*i] = 2;
+        ddgraph->oneFactor[2*i] = 0;
+
+        edges[positions[2*i+1]+0] = 2*i+2;
+        //for the last vertex this will be overwritten when making the connections
+        edges[positions[2*i+1]+1] = 2*i;
+        edges[positions[2*i+1]+2] = SEMIEDGE;
+        ddgraph->semiEdges[2*i+1] = 1;
+        degrees[2*i+1] = 2;
+        ddgraph->oneFactor[2*i+1] = 0;
+    }
+    edges[positions[0]+0] = SEMIEDGE;
+    degrees[0] = 1;
+    ddgraph->semiEdges[0] = 2;
+    positions[0]++;
+    edges[positions[2*parameter-1]+0] = SEMIEDGE;
+    degrees[2*parameter-1] = 1;
+    ddgraph->semiEdges[2*parameter-1] = 2;
+    positions[2*parameter-1]++;
+}
+
+void storeDoubleLockedBarbedWireAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    int i, vertexLeft, vertexRight;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = 0;
+    vertexRight = 2*parameter-1;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+/*
+ * Constructs a barbed wire necklace BWN(n). This block has 0 connectors.
+ *     _____________________
+ *    |                     |
+ *    |  |    |     |    |  |
+ *    `--o----o-...-o----o--'
+ *
+ *
+ */
+void constructBarbedWireNecklace(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    for(i=0; i<parameter; i++){
+
+        edges[positions[2*i]+0] = 2*i-1;
+        //for the first vertex this will be overwritten when making the connections
+        edges[positions[2*i]+1] = 2*i+1;
+        edges[positions[2*i]+2] = SEMIEDGE;
+        ddgraph->semiEdges[2*i] = 1;
+        degrees[2*i] = 2;
+        ddgraph->oneFactor[2*i] = 0;
+
+        edges[positions[2*i+1]+0] = 2*i+2;
+        //for the last vertex this will be overwritten when making the connections
+        edges[positions[2*i+1]+1] = 2*i;
+        edges[positions[2*i+1]+2] = SEMIEDGE;
+        ddgraph->semiEdges[2*i+1] = 1;
+        degrees[2*i+1] = 2;
+        ddgraph->oneFactor[2*i+1] = 0;
+    }
+    edges[positions[0]+0] = 2*parameter-1;
+    edges[positions[2*parameter-1]+0] = 0;
+}
+
+void storeBarbedWireNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    int i, vertexLeft, vertexRight;
+
+    //mirror symmetry
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexLeft = 0;
+    vertexRight = 2*parameter-1;
+
+    for(i=0; i<parameter; i++){
+        generator[vertexLeft] = vertexRight;
+        generator[vertexRight] = vertexLeft;
+        vertexLeft++;
+        vertexRight--;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    if(parameter>1){
+
+        //rotation symmetry
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i=0; i<2*parameter-1; i++){
+            generator[i] = i+1;
+        }
+
+        generator[2*parameter-1] = 0;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        //rotation symmetry
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i=0; i<parameter-1; i++){
+            generator[2*i] = 2*(i+1);
+            generator[2*i+1] = 2*(i+1)+1;
+        }
+
+        generator[2*(parameter-1)] = 0;
+        generator[2*(parameter-1)+1] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a double locked diagonal chain DLDC(n). This block has 0 connectors.
+ *              _______________
+ *             /               |
+ *            /                |
+ *           /              /  |
+ *           o---o-...-o---o  /
+ *           |   |     |   | /
+ *           |   |     |   |/
+ *           o---o-...-o---o
+ *          /
+ *
+ */
+void constructDoubleLockedDiagonalChain(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = parameter*4-1;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+
+    edges[positions[1]+0] = SEMIEDGE;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+    degrees[1] = 2;
+    positions[1]++;
+    ddgraph->semiEdges[1] = 1;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = SEMIEDGE;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+    degrees[parameter*4-2] = 2;
+    positions[parameter*4-2]++;
+    ddgraph->semiEdges[parameter*4-2] = 1;
+
+    edges[positions[parameter*4-1]+0] = 0;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+}
+
+void storeDoubleLockedDiagonalChainAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    if(parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[0] = 3;
+        generator[3] = 0;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along other diagonal
+
+        generator[0] = 0;
+        generator[3] = 3;
+        generator[1] = 2;
+        generator[2] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        //rotation of 180
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertexBottom = 1;
+        int vertexTop = parameter*4-2;
+
+        int i;
+        for(i = 0; i < 2*parameter; i++){
+            generator[vertexBottom] = vertexTop;
+            generator[vertexTop] = vertexBottom;
+            vertexBottom+=2;
+            vertexTop-=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a Mobius ladder ML(n). This block has 0 connectors.
+ *              _______________
+ *             /               |
+ *            /              __|_
+ *           /              /  | |
+ *           o---o-...-o---o  / /
+ *           |   |     |   | / /
+ *           |   |     |   |/ /
+ *           o---o-...-o---o /
+ *            \_____________/
+ *
+ */
+void constructMobiusLadder(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = parameter*4-1;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+
+    edges[positions[1]+0] = parameter*4-2;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = 1;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+
+    edges[positions[parameter*4-1]+0] = 0;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+}
+
+void storeMobiusLadderAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    if(parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[0] = 3;
+        generator[3] = 0;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along other diagonal
+
+        generator[0] = 0;
+        generator[3] = 3;
+        generator[1] = 2;
+        generator[2] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along vertical axis
+
+        generator[0] = 2;
+        generator[1] = 3;
+        generator[2] = 0;
+        generator[3] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along horizontal axis
+
+        generator[0] = 1;
+        generator[1] = 0;
+        generator[2] = 3;
+        generator[3] = 2;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        //rotation of 180
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int vertexBottom = 1;
+        int vertexTop = parameter*4-2;
+
+        int i;
+        for(i = 0; i < 2*parameter; i++){
+            generator[vertexBottom] = vertexTop;
+            generator[vertexTop] = vertexBottom;
+            vertexBottom+=2;
+            vertexTop-=2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        vertexTop = 0;
+        vertexBottom = 1;
+
+        for(i = 0; i < 2*parameter-1; i++){
+            generator[vertexTop] = vertexTop + 2;
+            generator[vertexBottom] = vertexBottom + 2;
+            vertexBottom+=2;
+            vertexTop+=2;
+        }
+        generator[vertexTop] = 1;
+        generator[vertexBottom] = 0;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter-1; i++){
+            generator[4*i] = 4*(i+1);
+            generator[4*i+1] = 4*(i+1)+1;
+            generator[4*i+2] = 4*(i+1)+2;
+            generator[4*i+3] = 4*(i+1)+3;
+        }
+        generator[4*(parameter-1)] = 1;
+        generator[4*(parameter-1)+1] = 0;
+        generator[4*(parameter-1)+2] = 3;
+        generator[4*(parameter-1)+3] = 2;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*i+1;
+            generator[4*i+1] = 4*i;
+            generator[4*i+2] = 4*i+3;
+            generator[4*i+3] = 4*i+2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*(parameter-i) - 2;
+            generator[4*i+1] = 4*(parameter-i) - 1;
+            generator[4*i+2] = 4*(parameter-i) - 4;
+            generator[4*i+3] = 4*(parameter-i) - 3;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a prism P(n). This block has 0 connectors.
+ *             ___________
+ *            /           \
+ *           o---o-...-o---o
+ *           |   |     |   |
+ *           |   |     |   |
+ *           o---o-...-o---o
+ *            \___________/
+ *
+ */
+void constructPrism(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = parameter*4-2;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+
+    edges[positions[1]+0] = parameter*4-1;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = 0;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+
+    edges[positions[parameter*4-1]+0] = 1;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+}
+
+void storePrismAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    DEBUGASSERTMSG(parameter>1, "Use DDHB instead.")
+    //rotation of 180
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int vertexBottom = 1;
+    int vertexTop = parameter*4-2;
+
+    int i;
+    for(i = 0; i < 2*parameter; i++){
+        generator[vertexBottom] = vertexTop;
+        generator[vertexTop] = vertexBottom;
+        vertexBottom+=2;
+        vertexTop-=2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    vertexTop = 0;
+    vertexBottom = 1;
+
+    for(i = 0; i < 2*parameter-1; i++){
+        generator[vertexTop] = vertexTop + 2;
+        generator[vertexBottom] = vertexBottom + 2;
+        vertexBottom+=2;
+        vertexTop+=2;
+    }
+    generator[vertexTop] = 0;
+    generator[vertexBottom] = 1;
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    for(i = 0; i < parameter-1; i++){
+        generator[4*i] = 4*(i+1);
+        generator[4*i+1] = 4*(i+1)+1;
+        generator[4*i+2] = 4*(i+1)+2;
+        generator[4*i+3] = 4*(i+1)+3;
+    }
+    generator[4*(parameter-1)] = 0;
+    generator[4*(parameter-1)+1] = 1;
+    generator[4*(parameter-1)+2] = 2;
+    generator[4*(parameter-1)+3] = 3;
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    for(i = 0; i < parameter; i++){
+        generator[4*i] = 4*i+1;
+        generator[4*i+1] = 4*i;
+        generator[4*i+2] = 4*i+3;
+        generator[4*i+3] = 4*i+2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+
+    generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    for(i = 0; i < parameter; i++){
+        generator[4*i] = 4*(parameter-i) - 2;
+        generator[4*i+1] = 4*(parameter-i) - 1;
+        generator[4*i+2] = 4*(parameter-i) - 4;
+        generator[4*i+3] = 4*(parameter-i) - 3;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
+/*
+ * Constructs a double locked double roof long building DLDLB(n). This block has 0 connectors.
+ *             ___________
+ *            /           \
+ *           o---o-...-o---o
+ *           |   |     |   |
+ *           |   |     |   |
+ *           o---o-...-o---o
+ *          /               \
+ *
+ */
+void constructDoubleLockedDoubleroofLongBuilding(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = parameter*4-2;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+
+    edges[positions[1]+0] = SEMIEDGE;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+    degrees[1] = 2;
+    positions[1]++;
+    ddgraph->semiEdges[1] = 1;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = 0;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+
+    edges[positions[parameter*4-1]+0] = SEMIEDGE;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+    degrees[parameter*4-1] = 2;
+    positions[parameter*4-1]++;
+    ddgraph->semiEdges[parameter*4-1] = 1;
+}
+
+void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    if(parameter==1){
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along vertical axis
+
+        generator[0] = 2;
+        generator[1] = 3;
+        generator[2] = 0;
+        generator[3] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        int i;
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*(parameter-i) - 2;
+            generator[4*i+1] = 4*(parameter-i) - 1;
+            generator[4*i+2] = 4*(parameter-i) - 4;
+            generator[4*i+3] = 4*(parameter-i) - 3;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a completely locked hub CLH(n). This block has 0 connectors.
+ *
+ *          \               /
+ *           o---o-...-o---o
+ *           |   |     |   |
+ *           |   |     |   |
+ *           o---o-...-o---o
+ *          /               \
+ *
+ */
+void constructCompletelyLockedHub(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = SEMIEDGE;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+    degrees[0] = 2;
+    positions[0]++;
+    ddgraph->semiEdges[0] = 1;
+
+    edges[positions[1]+0] = SEMIEDGE;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+    degrees[1] = 2;
+    positions[1]++;
+    ddgraph->semiEdges[1] = 1;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = SEMIEDGE;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+    degrees[parameter*4-2] = 2;
+    positions[parameter*4-2]++;
+    ddgraph->semiEdges[parameter*4-2] = 1;
+
+    edges[positions[parameter*4-1]+0] = SEMIEDGE;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+    degrees[parameter*4-1] = 2;
+    positions[parameter*4-1]++;
+    ddgraph->semiEdges[parameter*4-1] = 1;
+}
+
+void storeCompletelyLockedHubAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    if(parameter==1){
+        //mirror symmetry along diagonal
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[0] = 3;
+        generator[3] = 0;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along other diagonal
+
+        generator[0] = 0;
+        generator[3] = 3;
+        generator[1] = 2;
+        generator[2] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along vertical axis
+
+        generator[0] = 2;
+        generator[1] = 3;
+        generator[2] = 0;
+        generator[3] = 1;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along horizontal axis
+
+        generator[0] = 1;
+        generator[1] = 0;
+        generator[2] = 3;
+        generator[3] = 2;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        int i;
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*i+1;
+            generator[4*i+1] = 4*i;
+            generator[4*i+2] = 4*i+3;
+            generator[4*i+3] = 4*i+2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*(parameter-i) - 2;
+            generator[4*i+1] = 4*(parameter-i) - 1;
+            generator[4*i+2] = 4*(parameter-i) - 4;
+            generator[4*i+3] = 4*(parameter-i) - 3;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a double roof double floor high building DDHB(n). This block has 0 connectors.
+ *
+ *           o---o-...-o---o
+ *          /|   |     |   |\
+ *          \|   |     |   |/
+ *           o---o-...-o---o
+ *
+ */
+void constructDoubleroofDoublefloorHighBuilding(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = 4*parameter;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+
+    edges[positions[1]+0] = 4*parameter;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+
+    edges[positions[4*parameter]+0] = 0;
+    edges[positions[4*parameter]+1] = 1;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = parameter*4+1;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+
+    edges[positions[parameter*4-1]+0] = parameter*4+1;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+
+    edges[positions[4*parameter+1]+0] = parameter*4-2;
+    edges[positions[4*parameter+1]+1] = parameter*4-1;
+}
+
+void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    if(parameter==1){
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along vertical axis
+
+        generator[0] = 2;
+        generator[1] = 3;
+        generator[2] = 0;
+        generator[3] = 1;
+        generator[4] = 5;
+        generator[5] = 4;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        //mirror symmetry along horizontal axis
+
+        generator[0] = 1;
+        generator[1] = 0;
+        generator[2] = 3;
+        generator[3] = 2;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int i;
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*i+1;
+            generator[4*i+1] = 4*i;
+            generator[4*i+2] = 4*i+3;
+            generator[4*i+3] = 4*i+2;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*(parameter-i) - 2;
+            generator[4*i+1] = 4*(parameter-i) - 1;
+            generator[4*i+2] = 4*(parameter-i) - 4;
+            generator[4*i+3] = 4*(parameter-i) - 3;
+        }
+        generator[4*parameter] = 4*parameter+1;
+        generator[4*parameter+1] = 4*parameter;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
+}
+
+/*
+ * Constructs a double locked double roof high building DLDHB(n). This block has 0 connectors.
+ *
+ *          \
+ *           o---o-...-o---o
+ *           |   |     |   |\
+ *           |   |     |   |/
+ *           o---o-...-o---o
+ *          /
+ *
+ */
+void constructDoubleLockedDoubleroofHighBuilding(DDGRAPH *ddgraph, int parameter){
+    int i;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+
+    //the connections correspond to the one-factor
+    ddgraph->oneFactor[0] = 0;
+    ddgraph->oneFactor[1] = 0;
+    ddgraph->oneFactor[parameter*4-2] = 0;
+    ddgraph->oneFactor[parameter*4-1] = 0;
+
+    edges[positions[0]+0] = SEMIEDGE;
+    edges[positions[0]+1] = 1;
+    edges[positions[0]+2] = 2;
+    degrees[0] = 2;
+    positions[0]++;
+    ddgraph->semiEdges[0] = 1;
+
+    edges[positions[1]+0] = SEMIEDGE;
+    edges[positions[1]+1] = 0;
+    edges[positions[1]+2] = 3;
+    degrees[1] = 2;
+    positions[1]++;
+    ddgraph->semiEdges[1] = 1;
+
+    for(i=1; i<parameter; i++){
+
+        edges[positions[4*i-2]+0] = 4*i-4;
+        edges[positions[4*i-2]+1] = 4*i-1;
+        edges[positions[4*i-2]+2] = 4*i;
+
+        edges[positions[4*i-1]+0] = 4*i-3;
+        edges[positions[4*i-1]+1] = 4*i-2;
+        edges[positions[4*i-1]+2] = 4*i+1;
+
+        edges[positions[4*i]+0] = 4*i-2;
+        edges[positions[4*i]+1] = 4*i+1;
+        edges[positions[4*i]+2] = 4*i+2;
+
+        edges[positions[4*i+1]+0] = 4*i-1;
+        edges[positions[4*i+1]+1] = 4*i;
+        edges[positions[4*i+1]+2] = 4*i+3;
+
+        //set the one factor
+        ddgraph->oneFactor[4*i-2] = 2;
+        ddgraph->oneFactor[4*i-1] = 2;
+        ddgraph->oneFactor[4*i] = 0;
+        ddgraph->oneFactor[4*i+1] = 0;
+    }
+
+    edges[positions[parameter*4-2]+0] = parameter*4;
+    edges[positions[parameter*4-2]+1] = parameter*4-1;
+    edges[positions[parameter*4-2]+2] = parameter*4-4;
+
+    edges[positions[parameter*4-1]+0] = parameter*4;
+    edges[positions[parameter*4-1]+1] = parameter*4-2;
+    edges[positions[parameter*4-1]+2] = parameter*4-3;
+
+    edges[positions[4*parameter]+0] = parameter*4-2;
+    edges[positions[4*parameter]+1] = parameter*4-1;
+}
+
+void storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+    permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+    int i;
+
+    for(i = 0; i < parameter; i++){
+        generator[4*i] = 4*i+1;
+        generator[4*i+1] = 4*i;
+        generator[4*i+2] = 4*i+3;
+        generator[4*i+3] = 4*i+2;
+    }
+
+    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+    free(generator);
+}
+
 void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
     int i, currentVertex=0;
 
@@ -2779,8 +4041,6 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 boolean first = TRUE;
 
 void handleDelaneyDressGraph(DDGRAPH *ddgraph){
-    fprintf(stderr, "Found graph based on: ");
-    printHumanReadableComponentList();
     //printDDGraph(ddgraph);
     if(markedTwoFactors){
         writePregraphColorCode2Factor(stdout, ddgraph, first);
@@ -3198,6 +4458,8 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     //
                     if(totalConnectionsLeft - 2 == 0){
                         graphsCount++;
+                        //fprintf(stderr, "Found graph based on: ");
+                        //printHumanReadableComponentList();
                         handleDelaneyDressGraph(ddgraph);
                     } else if(openConnectionsLeftInOrbit - inCurrentOrbit == 0){
                         //we've just made the final connection for the orbit currently under consideration
@@ -3715,6 +4977,302 @@ void initNautyOptions(int order) {
 }
 
 //====================== START =======================
+void finishGraph(DDGRAPH *ddgraph){
+    int i;
+
+    ddgraph->underlyingGraph->nv = ddgraph->order + ddgraph->dummyVertexCount;
+
+    for(i = 0; i < ddgraph->underlyingGraph->nv; i++){
+        ddgraph->underlyingGraph->nde += ddgraph->underlyingGraph->d[i];
+    }
+}
+
+void extraUnconstructableGraphs_1(){
+    DDGRAPH * ddgraph = getNewDDGraph(1);
+    constructTristar(ddgraph);
+    finishGraph(ddgraph);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+}
+
+void extraUnconstructableGraphs_2(){
+    DDGRAPH * ddgraph = getNewDDGraph(2);
+    constructDoubleLockedPearlChain(ddgraph, 1);
+    finishGraph(ddgraph);
+    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, 1);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(2);
+    constructPearlNecklace(ddgraph, 1);
+    finishGraph(ddgraph);
+    storePearlNecklaceAutomorphismGenerators(ddgraph, 1);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    if(markedTwoFactors){
+        ddgraph = getNewDDGraph(2);
+        constructDoubleLockedBarbedWire(ddgraph, 1);
+        finishGraph(ddgraph);
+        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, 1);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(2);
+        //isomorph to DLPC(1) in unmarked case
+        constructBarbedWireNecklace(ddgraph, 1);
+        finishGraph(ddgraph);
+        storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, 1);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+    }
+}
+
+void extraUnconstructableGraphs_4(){
+    DDGRAPH *ddgraph = getNewDDGraph(4);
+    constructDoubleLockedPearlChain(ddgraph, 2);
+    finishGraph(ddgraph);
+    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, 2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(4);
+    constructPearlNecklace(ddgraph, 2);
+    finishGraph(ddgraph);
+    storePearlNecklaceAutomorphismGenerators(ddgraph, 2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(4);
+    constructBarbedWireNecklace(ddgraph, 2);
+    finishGraph(ddgraph);
+    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, 2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(4);
+    constructDoubleLockedDiagonalChain(ddgraph, 1);
+    finishGraph(ddgraph);
+    storeDoubleLockedDiagonalChainAutomorphismGenerators(ddgraph, 1);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(4);
+    constructMobiusLadder(ddgraph, 1);
+    finishGraph(ddgraph);
+    storeMobiusLadderAutomorphismGenerators(ddgraph, 1);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    if(markedTwoFactors){
+        ddgraph = getNewDDGraph(4);
+        constructDoubleLockedBarbedWire(ddgraph, 2);
+        finishGraph(ddgraph);
+        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, 2);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(4);
+        constructCompletelyLockedHub(ddgraph, 1);
+        finishGraph(ddgraph);
+        storeCompletelyLockedHubAutomorphismGenerators(ddgraph, 1);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(4);
+        constructDoubleroofDoublefloorHighBuilding(ddgraph, 1);
+        finishGraph(ddgraph);
+        storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(ddgraph, 1);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(4);
+        constructDoubleLockedDoubleroofHighBuilding(ddgraph, 1);
+        finishGraph(ddgraph);
+        storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(ddgraph, 1);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+    }
+}
+
+void extraUnconstructableGraphs_4n(int targetSize){
+    DDGRAPH * ddgraph = getNewDDGraph(targetSize);
+    constructDoubleLockedPearlChain(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructPearlNecklace(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storePearlNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructBarbedWireNecklace(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructDoubleLockedDiagonalChain(ddgraph, targetSize/4);
+    finishGraph(ddgraph);
+    storeDoubleLockedDiagonalChainAutomorphismGenerators(ddgraph, targetSize/4);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructMobiusLadder(ddgraph, targetSize/4);
+    finishGraph(ddgraph);
+    storeMobiusLadderAutomorphismGenerators(ddgraph, targetSize/4);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructPrism(ddgraph, targetSize/4);
+    finishGraph(ddgraph);
+    storePrismAutomorphismGenerators(ddgraph, targetSize/4);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
+    finishGraph(ddgraph);
+    storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(ddgraph, targetSize/4);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    if(markedTwoFactors){
+        ddgraph = getNewDDGraph(targetSize);
+        constructCompletelyLockedHub(ddgraph, targetSize/4);
+        finishGraph(ddgraph);
+        storeCompletelyLockedHubAutomorphismGenerators(ddgraph, targetSize/4);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(targetSize);
+        constructDoubleroofDoublefloorHighBuilding(ddgraph, targetSize/4);
+        finishGraph(ddgraph);
+        storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(ddgraph, targetSize/4);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+        ddgraph = getNewDDGraph(targetSize);
+        constructDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
+        finishGraph(ddgraph);
+        storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(ddgraph, targetSize/4);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+
+    }
+}
+
+void extraUnconstructableGraphs_4n2(int targetSize){
+    DDGRAPH * ddgraph = getNewDDGraph(targetSize);
+    constructDoubleLockedPearlChain(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructPearlNecklace(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storePearlNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    ddgraph = getNewDDGraph(targetSize);
+    constructBarbedWireNecklace(ddgraph, targetSize/2);
+    finishGraph(ddgraph);
+    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
+    graphsCount++;
+    componentListsCount++;
+    handleDelaneyDressGraph(ddgraph);
+    freeDDGraph(ddgraph);
+
+    if(markedTwoFactors){
+        ddgraph = getNewDDGraph(targetSize);
+        constructDoubleLockedBarbedWire(ddgraph, targetSize/2);
+        finishGraph(ddgraph);
+        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, targetSize/2);
+        graphsCount++;
+        componentListsCount++;
+        handleDelaneyDressGraph(ddgraph);
+        freeDDGraph(ddgraph);
+    }
+    
+}
+
+void extraUnconstructableGraphs(int targetSize){
+    if(targetSize == 1){
+        extraUnconstructableGraphs_1();
+    } else if(targetSize == 2){
+        extraUnconstructableGraphs_2();
+    } else if(targetSize == 4){
+        extraUnconstructableGraphs_4();
+    } else if(targetSize % 4 == 2){
+        extraUnconstructableGraphs_4n2(targetSize);
+    } else if(targetSize % 4 == 0){
+        extraUnconstructableGraphs_4n(targetSize);
+    }
+}
 
 void startGeneration(int targetSize){
 
@@ -3724,6 +5282,8 @@ void startGeneration(int targetSize){
     initNautyOptions(targetSize);
 
     q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0);
+
+    extraUnconstructableGraphs(targetSize);
 
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
     fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
