@@ -134,6 +134,14 @@ void printOrbits(int n, int printDepth){
     fprintf(stderr, "]\n");
 }
 
+void printConnectionsMade(){
+    int i;
+    fprintf(stderr, "Connections:\n");
+    for(i=0; i<connectionsMade; i++){
+        fprintf(stderr, "  %2d) %2d - %2d\n", i, connections[i][0], connections[i][1]);
+    }
+}
+
 void printConnectorOrbits(BBLOCK* blocks, int buildingBlockCount, int printDepth){
     int i, j;
     fprintf(stderr, "Orbits of connection vertices:\n");
@@ -4425,24 +4433,23 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     int smallestConnectionSmallest = temp1 < temp2 ? temp1 : temp2;
     int smallestConnectionBiggest = temp1 < temp2 ? temp2 : temp1;
     for(i=1; i<madeConnectionsCount; i++){
-        if(madeConnectionOrbits[i]==i){
-            int localTemp1 = reverseLabelling[madeConnections[i][0]];
-            int localTemp2 = reverseLabelling[madeConnections[i][1]];
+        int localTemp1 = reverseLabelling[madeConnections[i][0]];
+        int localTemp2 = reverseLabelling[madeConnections[i][1]];
 
-            int localSmallest = localTemp1 < localTemp2 ? localTemp1 : localTemp2;
-            int localBiggest = localTemp1 < localTemp2 ? localTemp2 : localTemp1;
+        int localSmallest = localTemp1 < localTemp2 ? localTemp1 : localTemp2;
+        int localBiggest = localTemp1 < localTemp2 ? localTemp2 : localTemp1;
 
-            if(localSmallest < smallestConnectionSmallest){
-                smallestConnectionSmallest = localSmallest;
-                smallestConnectionBiggest = localBiggest;
-                smallestConnection = i;
-            } else if(localSmallest == smallestConnectionSmallest && localBiggest < smallestConnectionBiggest){
-                smallestConnectionSmallest = localSmallest;
-                smallestConnectionBiggest = localBiggest;
-                smallestConnection = i;
-            }
+        if(localSmallest < smallestConnectionSmallest){
+            smallestConnectionSmallest = localSmallest;
+            smallestConnectionBiggest = localBiggest;
+            smallestConnection = madeConnectionOrbits[i];
+        } else if(localSmallest == smallestConnectionSmallest && localBiggest < smallestConnectionBiggest){
+            smallestConnectionSmallest = localSmallest;
+            smallestConnectionBiggest = localBiggest;
+            smallestConnection = madeConnectionOrbits[i];
         }
     }
+
     return madeConnectionOrbits[smallestConnection] == madeConnectionOrbits[newConnection];
 }
 
@@ -4483,6 +4490,8 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                 
                 //connect v1 to v2
                 connectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, v1, v2);
+                connections[connectionsMade][0] = v1;
+                connections[connectionsMade][1] = v2;
                 connectionsMade++;
                 numberOfGenerators[connectionsMade]=0;
                 freeConnectors[v1]=FALSE;
