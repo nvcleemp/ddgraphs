@@ -306,7 +306,6 @@ char writePregraphColorCode2Factor(FILE *f, DDGRAPH *ddgraph, boolean firstInFil
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
     int *edges = ddgraph->underlyingGraph->e;
-    int *degrees = ddgraph->underlyingGraph->d;
 
     int colours[3];
     int adjacencyListSize;
@@ -2905,7 +2904,6 @@ void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
     int *edges = ddgraph->underlyingGraph->e;
-    int *degrees = ddgraph->underlyingGraph->d;
 
     for(i=0; i<parameter; i++){
         int dummyVertex = ddgraph->order + ddgraph->dummyVertexCount;
