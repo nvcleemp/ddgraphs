@@ -54,6 +54,44 @@ void show_stackframe() {
 
 
 #ifdef _DEBUGMETHODS
+
+void printCanonicalLabelling(DDGRAPH *ddgraph){
+    int i, j;
+
+    //calculate automorphisms of the new graph
+    int currentOrbits[ddgraph->underlyingGraph->nv];
+
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        nautyPtn[i] = 1;
+    }
+    int counter = 0;
+    for(j = 2; j>=0; j--){
+        for(i=0; i<ddgraph->order; i++){
+            if(ddgraph->semiEdges[i]==j){
+                nautyLabelling[counter] = i;
+                counter++;
+            }
+        }
+        if(counter>0){
+            nautyPtn[counter-1]=0;
+        }
+    }
+    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
+        nautyLabelling[i] = i;
+    }
+    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+            &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
+            ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
+
+    fprintf(stderr, "Canonical order of vertices: [%d", nautyLabelling[0]);
+    for(i=1; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, ", %d", nautyLabelling[i]);
+    }
+    fprintf(stderr, "]");
+}
+
 void printGenerators (DDGRAPH *ddgraph, int printDepth){
     int i, j;
     fprintf(stderr, "Generators at level %2d:\n", printDepth);
