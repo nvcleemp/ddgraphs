@@ -140,6 +140,8 @@ void (*storeBlocksMapping[ComponentsTypesCount])(BBLOCK *, BBLOCK *, DDGRAPH *) 
 int connectionsMade; //the number of connections made at this point
                      //the maximum value is vertexCount/2
 
+int connections[MAXN/2][2];
+
 unsigned int graphsCount;
 
 boolean markedTwoFactors = FALSE;
