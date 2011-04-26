@@ -144,6 +144,8 @@ int connections[MAXN/2][2];
 
 unsigned int graphsCount;
 
+char outputType = 'n'; //defaults to no output
+
 boolean markedTwoFactors = FALSE;
 
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)

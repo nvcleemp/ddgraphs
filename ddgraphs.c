@@ -4088,11 +4088,15 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 boolean first = TRUE;
 
 void handleDelaneyDressGraph(DDGRAPH *ddgraph){
-    //printDDGraph(ddgraph);
-    if(markedTwoFactors){
-        writePregraphColorCode2Factor(stdout, ddgraph, first);
-    } else {
-        writePregraphCode(stdout, ddgraph, first);
+    if(outputType=='c'){
+        if(markedTwoFactors){
+            writePregraphColorCode2Factor(stdout, ddgraph, first);
+        } else {
+            writePregraphCode(stdout, ddgraph, first);
+        }
+    } else if(outputType=='h'){
+        //TODO
+        //printDDGraph(ddgraph);
     }
     first = FALSE;
 }
@@ -4506,6 +4510,10 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     //
                     if(totalConnectionsLeft - 2 == 0){
                         graphsCount++;
+                        //printConnectionsMade();
+                        //printGenerators(ddgraph, 6);
+                        //fprintf(stderr, "Graph %2d: ", graphsCount);
+                        //printCanonicalLabelling(ddgraph);
                         //fprintf(stderr, "Found graph based on: ");
                         //printHumanReadableComponentList();
                         handleDelaneyDressGraph(ddgraph);
@@ -5497,7 +5505,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "hl:t")) != -1) {
+    while ((c = getopt(argc, argv, "hl:to:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
@@ -5507,6 +5515,19 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                 break;
             case 't':
                 markedTwoFactors = TRUE;
+                break;
+            case 'o':
+                outputType = optarg[0];
+                switch (outputType) {
+                    case 'n': //no output (default)
+                    case 'c': //pregraphcode, pregraphcolorcode
+                    case 'h': //human-readable
+                        break;
+                    default:
+                        fprintf(stderr, "Illegal output format %c.\n", c);
+                        usage(name);
+                        return 1;
+                }
                 break;
             default:
                 fprintf(stderr, "Illegal option %c.\n", c);
