@@ -81,15 +81,18 @@ void printCanonicalLabelling(DDGRAPH *ddgraph){
     }
     nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
 
+    void (*userautomproc) (int,permutation*,int*,int,int,int) = nautyOptions.userautomproc;
+    nautyOptions.userautomproc = NULL;
     nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
             &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
             ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
+    nautyOptions.userautomproc = userautomproc;
 
     fprintf(stderr, "Canonical order of vertices: [%d", nautyLabelling[0]);
     for(i=1; i<ddgraph->underlyingGraph->nv; i++){
         fprintf(stderr, ", %d", nautyLabelling[i]);
     }
-    fprintf(stderr, "]");
+    fprintf(stderr, "]\n");
 }
 
 void printGenerators (DDGRAPH *ddgraph, int printDepth){
