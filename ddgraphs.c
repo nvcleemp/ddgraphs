@@ -1930,6 +1930,19 @@ void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
+    if(block->parameter == 2){
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int firstVertex = block->connectionVertices[0]-1;
+
+        generator[firstVertex] = firstVertex + 3;
+        generator[firstVertex + 3] = firstVertex;
+        generator[firstVertex + 5] = firstVertex + 6;
+        generator[firstVertex + 6] = firstVertex + 5;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+    }
+
     free(generator);
 }
 
@@ -2613,6 +2626,23 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     ddgraph->semiEdges[(*currentVertex)+1] = 1;
 
     (*currentVertex)+=2;
+}
+
+void storeLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    if(block->parameter == 2){
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        int firstVertex = block->connectionVertices[0]-1;
+
+        generator[firstVertex] = firstVertex + 3;
+        generator[firstVertex + 3] = firstVertex;
+        generator[firstVertex + 5] = firstVertex + 6;
+        generator[firstVertex + 6] = firstVertex + 5;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
 }
 
 void storeLockedDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -5326,7 +5356,7 @@ void initComponentsStatic(){
     storeBlockAutomorphismGenerators[8] = &storeLockedDiagonalChainAutomorphismGenerators;
     storeBlockAutomorphismGenerators[9] = NULL;
     storeBlockAutomorphismGenerators[10] = &storeLockedOpenroofHighBuildingAutomorphismGenerators;
-    storeBlockAutomorphismGenerators[11] = NULL;
+    storeBlockAutomorphismGenerators[11] = &storeLockedDoubleroofLongBuildingAutomorphismGenerators;
     storeBlockAutomorphismGenerators[12] = &storePearlChainAutomorphismGenerators;
     storeBlockAutomorphismGenerators[13] = NULL;
     storeBlockAutomorphismGenerators[14] = &storeBarbedWireAutomorphismGenerators;
