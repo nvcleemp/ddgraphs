@@ -4473,11 +4473,15 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
 boolean first = TRUE;
 
-void assignEdgeColours(DDGRAPH *ddgraph){
+void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     if(outputType=='c'){
         writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
         first = FALSE;
     }
+}
+
+void assignEdgeColours(DDGRAPH *ddgraph){
+    handleColouredDelaneyDressGraph(ddgraph);
 }
 
 void handleDelaneyDressGraph(DDGRAPH *ddgraph){
