@@ -3989,11 +3989,30 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(DDGRAPH *ddgr
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
         free(generator);
-    } else {
+    } else if(parameter==2){
         int i;
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
+        generator[0] = 3;
+        generator[3] = 0;
+        generator[5] = 6;
+        generator[6] = 5;
+
         generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        for(i = 0; i < parameter; i++){
+            generator[4*i] = 4*(parameter-i) - 2;
+            generator[4*i+1] = 4*(parameter-i) - 1;
+            generator[4*i+2] = 4*(parameter-i) - 4;
+            generator[4*i+3] = 4*(parameter-i) - 3;
+        }
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    } else {
+        int i;
+        permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
         for(i = 0; i < parameter; i++){
             generator[4*i] = 4*(parameter-i) - 2;
