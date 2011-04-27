@@ -393,6 +393,92 @@ char writePregraphColorCode2Factor(FILE *f, DDGRAPH *ddgraph, boolean firstInFil
 }
 
 
+char writePregraphColorCodeEdgeColouring(FILE *f, DDGRAPH *ddgraph, boolean firstInFile) {
+    unsigned short i, j;
+    unsigned short semiEdge = ddgraph->order + 1;
+    if (firstInFile) { //if first graph
+        fprintf(f, ">>pregraphcolor_code %s<<", (endian == LITTLE_ENDIAN ? "le" : "be"));
+    }
+    if (ddgraph->order + 1 <= UCHAR_MAX) {
+        fprintf(f, "%c", (unsigned char) ddgraph->order);
+    } else {
+        fprintf(f, "%c", 0);
+        /* big graph */
+        if (write_2byte_number(f, (unsigned short) ddgraph->order, endian) == 2) {
+            return (2);
+        }
+    }
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+
+    int colours[3];
+    int adjacencyListSize;
+
+    for (i = 0; i < ddgraph->order; i++) {
+        adjacencyListSize = 0;
+        for (j = 0; j < 3; j++) {
+            int neighbour = edges[3*i+j]; //don't use the current positions, but the initial ones!!
+            if(neighbour==SEMIEDGE){
+                if (ddgraph->order + 1 <= UCHAR_MAX) {
+                    fprintf(f, "%c", (unsigned char)semiEdge);
+                } else {
+                    if (write_2byte_number(f, semiEdge, endian) == 2) {
+                        return (2);
+                    }
+                }
+                colours[adjacencyListSize] = ddgraph->colours[4*i+j] == INT_MAX ? 4 : ddgraph->colours[4*i+j] + 1;
+                adjacencyListSize++;
+            } else {
+                if(neighbour >= ddgraph->order){
+                    //neighbour is a dummy vertex
+                    neighbour = edges[positions[neighbour]+0] + edges[positions[neighbour]+1]-i;
+                }
+                if(neighbour>i){
+                    //only include adjacency information for vertices with a larger index
+                    if (ddgraph->order + 1 <= UCHAR_MAX) {
+                        fprintf(f, "%c", (unsigned char) (neighbour + 1));
+                    } else {
+                        if (write_2byte_number(f, neighbour + 1, endian) == 2) {
+                            return (2);
+                        }
+                    }
+                    colours[adjacencyListSize] = ddgraph->colours[4*i+j] == INT_MAX ? 4 : ddgraph->colours[4*i+j] + 1;
+                    adjacencyListSize++;
+                }
+            }
+        }
+        //closing 0
+        if (ddgraph->order + 1 <= UCHAR_MAX) {
+            fprintf(f, "%c", 0);
+        } else {
+            if (write_2byte_number(f, 0, endian) == 2) {
+                return (2);
+            }
+        }
+        //colour list
+        for(j=0; j<adjacencyListSize; j++){
+            if (ddgraph->order + 1 <= UCHAR_MAX) {
+                fprintf(f, "%c", colours[j]);
+            } else {
+                if (write_2byte_number(f, colours[j], endian) == 2) {
+                    return (2);
+                }
+            }
+        }
+        //closing 0
+        if (ddgraph->order + 1 <= UCHAR_MAX) {
+            fprintf(f, "%c", 0);
+        } else {
+            if (write_2byte_number(f, 0, endian) == 2) {
+                return (2);
+            }
+        }
+    }
+    return (ferror(f) ? 2 : 1);
+}
+
 void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -445,6 +531,10 @@ DDGRAPH *getNewDDGraph(int order){
     for(i = 0; i < order; i++){
         ddgraph->oneFactor[i] = INT_MAX;
     }
+    ddgraph->colours = (int *)malloc(sizeof(int)*order*4);
+    for(i = 0; i < 4*order; i++){
+        ddgraph->colours[i] = INT_MAX;
+    }
     ddgraph->underlyingGraph = (sparsegraph *)malloc(sizeof(sparsegraph));
     if(order==2){
         //order 2 is a bit special because we need to store the theta-graph
@@ -494,6 +584,7 @@ void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph->underlyingGraph);
     free(ddgraph->semiEdges);
     free(ddgraph->oneFactor);
+    free(ddgraph->colours);
     free(ddgraph);
 }
 
@@ -809,6 +900,11 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -849,6 +945,11 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -975,6 +1076,11 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+2] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+1;
     edges[positions[*currentVertex]+1] = (*currentVertex)+2;
@@ -1017,6 +1123,11 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1104,6 +1215,11 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 2;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+2] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+2] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+1;
     edges[positions[*currentVertex]+1] = (*currentVertex)+2;
@@ -1145,6 +1261,11 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1262,6 +1383,11 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1301,6 +1427,11 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1412,6 +1543,11 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1452,6 +1588,11 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1554,6 +1695,11 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -1594,6 +1740,11 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1692,6 +1843,11 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1731,6 +1887,11 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1824,6 +1985,11 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = SEMIEDGE;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -1867,6 +2033,11 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -1964,6 +2135,11 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+3;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -2003,6 +2179,11 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -2087,6 +2268,11 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -2129,6 +2315,11 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -2210,6 +2401,11 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
     edges[positions[*currentVertex]+2] = (*currentVertex)+2;
@@ -2252,6 +2448,11 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -2344,6 +2545,11 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     ddgraph->oneFactor[(*currentVertex)+1] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+2] = 0;
     ddgraph->oneFactor[(*currentVertex)+(block->parameter-1)*4+3] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+1)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+2)+0] = 1;
+    ddgraph->colours[4*((*currentVertex)+(block->parameter-1)*4+3)+0] = 1;
 
     edges[positions[*currentVertex]+0] = (*currentVertex)+(block->parameter-1)*4+2;
     edges[positions[*currentVertex]+1] = (*currentVertex)+1;
@@ -2383,6 +2589,11 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
         ddgraph->oneFactor[(*currentVertex)+1] = 2;
         ddgraph->oneFactor[(*currentVertex)+2] = 0;
         ddgraph->oneFactor[(*currentVertex)+3] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
+        ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
+        ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
 
         (*currentVertex)+=4;
     }
@@ -2457,6 +2668,10 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = (*currentVertex);
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
+        ddgraph->colours[4*(*currentVertex)+1] = 0;
+        ddgraph->colours[4*(*currentVertex)+2] = 2;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2465,6 +2680,10 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = (*currentVertex);
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
+        ddgraph->colours[4*(*currentVertex)+1] = 0;
+        ddgraph->colours[4*(*currentVertex)+2] = 2;
         (*currentVertex)++;
     }
 
@@ -2565,6 +2784,10 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = (*currentVertex);
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
+        ddgraph->colours[4*(*currentVertex)+1] = 0;
+        ddgraph->colours[4*(*currentVertex)+2] = 2;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2573,6 +2796,10 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         edges[positions[*currentVertex]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = (*currentVertex);
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
+        ddgraph->colours[4*(*currentVertex)+1] = 0;
+        ddgraph->colours[4*(*currentVertex)+2] = 2;
         (*currentVertex)++;
     }
 
@@ -2641,6 +2868,8 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2650,6 +2879,8 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         ddgraph->semiEdges[(*currentVertex)] = 1;
         degrees[*currentVertex] = 2;
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
         (*currentVertex)++;
     }
 
@@ -2729,6 +2960,8 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         degrees[*currentVertex] = 2;
         ddgraph->semiEdges[(*currentVertex)] = 1;
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
         (*currentVertex)++;
 
         edges[positions[*currentVertex]+0] = (*currentVertex)+1;
@@ -2738,6 +2971,8 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         degrees[*currentVertex] = 2;
         ddgraph->semiEdges[(*currentVertex)] = 1;
         ddgraph->oneFactor[*currentVertex] = 0;
+        //colours
+        ddgraph->colours[4*(*currentVertex)+0] = 1;
         (*currentVertex)++;
     }
     edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
@@ -2783,6 +3018,10 @@ void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *verte
     ddgraph->underlyingGraph->d[(*currentVertex)] = 0;
     ddgraph->semiEdges[(*currentVertex)] = 2;
     ddgraph->oneFactor[*currentVertex] = 0;
+    //colours
+    ddgraph->colours[4*(*currentVertex)+0] = 1;
+    ddgraph->colours[4*(*currentVertex)+1] = 0;
+    ddgraph->colours[4*(*currentVertex)+2] = 2;
 
     //it is not necessary to adjust ddgraph->underlyingGraph->v because it will
     //not be used when the degree is 0.
@@ -2822,6 +3061,10 @@ void constructTristar(DDGRAPH *ddgraph){
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+2] = SEMIEDGE;
     ddgraph->semiEdges[0] = 3;
     ddgraph->oneFactor[0] = 0;
+    //colours
+    ddgraph->colours[0+0] = 1;
+    ddgraph->colours[0+1] = 0;
+    ddgraph->colours[0+2] = 2;
     ddgraph->underlyingGraph->d[0] = 0;
 }
 
@@ -2851,6 +3094,10 @@ void constructDoubleLockedPearlChain(DDGRAPH *ddgraph, int parameter){
         edges[positions[2*i]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = 2*i;
         ddgraph->oneFactor[2*i] = 0;
+        //colours
+        ddgraph->colours[4*(2*i)+0] = 1;
+        ddgraph->colours[4*(2*i)+1] = 0;
+        ddgraph->colours[4*(2*i)+2] = 2;
 
         edges[positions[2*i+1]+0] = 2*i+2;
         //for the last vertex this will be overwritten when making the connections
@@ -2858,6 +3105,10 @@ void constructDoubleLockedPearlChain(DDGRAPH *ddgraph, int parameter){
         edges[positions[2*i+1]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = 2*i+1;
         ddgraph->oneFactor[2*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(2*i+1)+0] = 1;
+        ddgraph->colours[4*(2*i+1)+1] = 0;
+        ddgraph->colours[4*(2*i+1)+2] = 2;
     }
 
     edges[positions[0]+0] = SEMIEDGE;
@@ -2926,6 +3177,10 @@ void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
         edges[positions[2*i]+2] = dummyVertex;
         edges[positions[dummyVertex]+0] = 2*i;
         ddgraph->oneFactor[2*i] = 0;
+        //colours
+        ddgraph->colours[4*(2*i)+0] = 1;
+        ddgraph->colours[4*(2*i)+1] = 0;
+        ddgraph->colours[4*(2*i)+2] = 2;
 
         edges[positions[2*i+1]+0] = 2*i+2;
         //for the last vertex this will be overwritten when making the connections
@@ -2933,6 +3188,10 @@ void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
         edges[positions[2*i+1]+2] = dummyVertex;
         edges[positions[dummyVertex]+1] = 2*i+1;
         ddgraph->oneFactor[2*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(2*i+1)+0] = 1;
+        ddgraph->colours[4*(2*i+1)+1] = 0;
+        ddgraph->colours[4*(2*i+1)+2] = 2;
     }
 
     edges[positions[0]+0] = 2*parameter-1;
@@ -3012,6 +3271,8 @@ void constructDoubleLockedBarbedWire(DDGRAPH *ddgraph, int parameter){
         ddgraph->semiEdges[2*i] = 1;
         degrees[2*i] = 2;
         ddgraph->oneFactor[2*i] = 0;
+        //colours
+        ddgraph->colours[4*(2*i)+0] = 1;
 
         edges[positions[2*i+1]+0] = 2*i+2;
         //for the last vertex this will be overwritten when making the connections
@@ -3020,6 +3281,8 @@ void constructDoubleLockedBarbedWire(DDGRAPH *ddgraph, int parameter){
         ddgraph->semiEdges[2*i+1] = 1;
         degrees[2*i+1] = 2;
         ddgraph->oneFactor[2*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(2*i+1)+0] = 1;
     }
     edges[positions[0]+0] = SEMIEDGE;
     degrees[0] = 1;
@@ -3078,6 +3341,8 @@ void constructBarbedWireNecklace(DDGRAPH *ddgraph, int parameter){
         ddgraph->semiEdges[2*i] = 1;
         degrees[2*i] = 2;
         ddgraph->oneFactor[2*i] = 0;
+        //colours
+        ddgraph->colours[4*(2*i)+0] = 1;
 
         edges[positions[2*i+1]+0] = 2*i+2;
         //for the last vertex this will be overwritten when making the connections
@@ -3086,6 +3351,8 @@ void constructBarbedWireNecklace(DDGRAPH *ddgraph, int parameter){
         ddgraph->semiEdges[2*i+1] = 1;
         degrees[2*i+1] = 2;
         ddgraph->oneFactor[2*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(2*i+1)+0] = 1;
     }
     edges[positions[0]+0] = 2*parameter-1;
     edges[positions[2*parameter-1]+0] = 0;
@@ -3169,6 +3436,11 @@ void constructDoubleLockedDiagonalChain(DDGRAPH *ddgraph, int parameter){
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = parameter*4-1;
     edges[positions[0]+1] = 1;
@@ -3204,6 +3476,11 @@ void constructDoubleLockedDiagonalChain(DDGRAPH *ddgraph, int parameter){
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = SEMIEDGE;
@@ -3284,6 +3561,11 @@ void constructMobiusLadder(DDGRAPH *ddgraph, int parameter){
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = parameter*4-1;
     edges[positions[0]+1] = 1;
@@ -3316,6 +3598,11 @@ void constructMobiusLadder(DDGRAPH *ddgraph, int parameter){
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = 1;
@@ -3470,6 +3757,11 @@ void constructPrism(DDGRAPH *ddgraph, int parameter){
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = parameter*4-2;
     edges[positions[0]+1] = 1;
@@ -3502,6 +3794,11 @@ void constructPrism(DDGRAPH *ddgraph, int parameter){
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = 0;
@@ -3619,6 +3916,11 @@ void constructDoubleLockedDoubleroofLongBuilding(DDGRAPH *ddgraph, int parameter
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = parameter*4-2;
     edges[positions[0]+1] = 1;
@@ -3654,6 +3956,11 @@ void constructDoubleLockedDoubleroofLongBuilding(DDGRAPH *ddgraph, int parameter
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = 0;
@@ -3725,6 +4032,11 @@ void constructCompletelyLockedHub(DDGRAPH *ddgraph, int parameter){
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = SEMIEDGE;
     edges[positions[0]+1] = 1;
@@ -3763,6 +4075,11 @@ void constructCompletelyLockedHub(DDGRAPH *ddgraph, int parameter){
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = SEMIEDGE;
@@ -3869,6 +4186,11 @@ void constructDoubleroofDoublefloorHighBuilding(DDGRAPH *ddgraph, int parameter)
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = 4*parameter;
     edges[positions[0]+1] = 1;
@@ -3904,6 +4226,11 @@ void constructDoubleroofDoublefloorHighBuilding(DDGRAPH *ddgraph, int parameter)
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = parameter*4+1;
@@ -4000,6 +4327,11 @@ void constructDoubleLockedDoubleroofHighBuilding(DDGRAPH *ddgraph, int parameter
     ddgraph->oneFactor[1] = 0;
     ddgraph->oneFactor[parameter*4-2] = 0;
     ddgraph->oneFactor[parameter*4-1] = 0;
+    //colours
+    ddgraph->colours[4*(0)+0] = 1;
+    ddgraph->colours[4*(1)+0] = 1;
+    ddgraph->colours[4*(4*parameter-2)+0] = 1;
+    ddgraph->colours[4*(4*parameter-1)+0] = 1;
 
     edges[positions[0]+0] = SEMIEDGE;
     edges[positions[0]+1] = 1;
@@ -4038,6 +4370,11 @@ void constructDoubleLockedDoubleroofHighBuilding(DDGRAPH *ddgraph, int parameter
         ddgraph->oneFactor[4*i-1] = 2;
         ddgraph->oneFactor[4*i] = 0;
         ddgraph->oneFactor[4*i+1] = 0;
+        //colours
+        ddgraph->colours[4*(4*i-2)+2] = 1;
+        ddgraph->colours[4*(4*i-1)+2] = 1;
+        ddgraph->colours[4*(4*i)+0] = 1;
+        ddgraph->colours[4*(4*i+1)+0] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = parameter*4;
@@ -4087,18 +4424,29 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
 boolean first = TRUE;
 
-void handleDelaneyDressGraph(DDGRAPH *ddgraph){
+void assignEdgeColours(DDGRAPH *ddgraph){
     if(outputType=='c'){
-        if(markedTwoFactors){
-            writePregraphColorCode2Factor(stdout, ddgraph, first);
-        } else {
-            writePregraphCode(stdout, ddgraph, first);
-        }
-    } else if(outputType=='h'){
-        //TODO
-        //printDDGraph(ddgraph);
+        writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
+        first = FALSE;
     }
-    first = FALSE;
+}
+
+void handleDelaneyDressGraph(DDGRAPH *ddgraph){
+    if(colouredEdges){
+        assignEdgeColours(ddgraph);
+    } else {
+        if(outputType=='c'){
+            if(markedTwoFactors){
+                writePregraphColorCode2Factor(stdout, ddgraph, first);
+            } else {
+                writePregraphCode(stdout, ddgraph, first);
+            }
+        } else if(outputType=='h'){
+            //TODO
+            //printDDGraph(ddgraph);
+        }
+        first = FALSE;
+    }
 }
 
 
@@ -5505,7 +5853,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "hl:to:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:tco:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
@@ -5515,6 +5863,10 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                 break;
             case 't':
                 markedTwoFactors = TRUE;
+                break;
+            case 'c':
+                markedTwoFactors = TRUE;
+                colouredEdges = TRUE;
                 break;
             case 'o':
                 outputType = optarg[0];

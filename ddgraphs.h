@@ -95,6 +95,10 @@ struct _ddgraph {
      */
     int *oneFactor;
 
+    /* This array is used to store the colours around each vertex.
+     */
+    int *colours;
+
     int dummyVertexCount;
 };
 
@@ -147,6 +151,8 @@ unsigned int graphsCount;
 char outputType = 'n'; //defaults to no output
 
 boolean markedTwoFactors = FALSE;
+
+boolean colouredEdges = FALSE;
 
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
