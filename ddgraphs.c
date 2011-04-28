@@ -577,6 +577,53 @@ DDGRAPH *getNewDDGraph(int order){
     return ddgraph;
 }
 
+void cleanDDGraph(DDGRAPH * ddgraph){
+    int i, order;
+
+    order = ddgraph->order;
+    ddgraph->dummyVertexCount = 0;
+    for(i = 0; i < order; i++){
+        ddgraph->semiEdges[i] = 0;
+    }
+    for(i = 0; i < order; i++){
+        ddgraph->oneFactor[i] = INT_MAX;
+    }
+    for(i = 0; i < 4*order; i++){
+        ddgraph->colours[i] = INT_MAX;
+    }
+    if(order==2){
+        //order 2 is a bit special because we need to store the theta-graph
+        ddgraph->underlyingGraph->nv = 0;
+        ddgraph->underlyingGraph->nde = 0;
+        for(i = 0; i < order; i++){
+            ddgraph->underlyingGraph->d[i]=3;
+            ddgraph->underlyingGraph->v[i]=3*i;
+        }
+        for(i = order; i < 4; i++){
+            ddgraph->underlyingGraph->d[i]=2;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*(i-order);
+        }
+        ddgraph->underlyingGraph->dlen = 4;
+        ddgraph->underlyingGraph->vlen = 4;
+        ddgraph->underlyingGraph->elen = 10;
+    } else {
+        int maxVertices = order + order/2;
+        ddgraph->underlyingGraph->nv = 0;
+        ddgraph->underlyingGraph->nde = 0;
+        for(i = 0; i < order; i++){
+            ddgraph->underlyingGraph->d[i]=3;
+            ddgraph->underlyingGraph->v[i]=3*i;
+        }
+        for(i = order; i < maxVertices; i++){
+            ddgraph->underlyingGraph->d[i]=2;
+            ddgraph->underlyingGraph->v[i]=3*order + 2*(i-order);
+        }
+        ddgraph->underlyingGraph->dlen = maxVertices;
+        ddgraph->underlyingGraph->vlen = maxVertices;
+        ddgraph->underlyingGraph->elen = 3*order + 2*(order/2);
+    }
+}
+
 void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph->underlyingGraph->d);
     free(ddgraph->underlyingGraph->v);
@@ -631,6 +678,16 @@ BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter,
         block->connections = (BBLOCK **)malloc(sizeof(BBLOCK *));
         block->targetConnector = (int *)malloc(sizeof(int));
         block->connectionVertices = (int *)malloc(sizeof(int));
+    } else if(type==5){
+        block->connectorCount = 0;
+        block->connections = NULL;
+        block->targetConnector = NULL;
+        block->connectionVertices = NULL;
+    } else if(type==6){
+        block->connectorCount = 0;
+        block->connections = NULL;
+        block->targetConnector = NULL;
+        block->connectionVertices = NULL;
     } else {
         fprintf(stderr, "Illegal component type: %d (valid types from 1 to 4)\n", type);
         exit(EXIT_FAILURE);
@@ -688,8 +745,15 @@ int buildingBlockTypeToNumber(BBLOCK *block){
         return Q1TypeComponentsCount + block->component;
     } else if(block->type==3){
         return Q1TypeComponentsCount + Q2TypeComponentsCount + block->component;
-    } else {
+    } else if(block->type==4){
         return Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount;
+    } else if(block->type==5){
+        return Q1TypeComponentsCount + Q2TypeComponentsCount
+                + Q3TypeComponentsCount + 1 + block->component;
+    } else {
+        return Q1TypeComponentsCount + Q2TypeComponentsCount 
+                + Q3TypeComponentsCount + 1 + NoConnectorsFixedColouringComponentsCount
+                + block->component;
     }
 }
 
@@ -3085,7 +3149,8 @@ void storeQ4sMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *       \
  *
  */
-void constructTristar(DDGRAPH *ddgraph){
+void constructTristar(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+0] = SEMIEDGE;
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+1] = SEMIEDGE;
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[0]+2] = SEMIEDGE;
@@ -3106,7 +3171,9 @@ void constructTristar(DDGRAPH *ddgraph){
  *       \____/       \____/
  *
  */
-void constructDoubleLockedPearlChain(DDGRAPH *ddgraph, int parameter){
+void constructDoubleLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3152,7 +3219,8 @@ void constructDoubleLockedPearlChain(DDGRAPH *ddgraph, int parameter){
     positions[2*parameter-1]++;
 }
 
-void storeDoubleLockedPearlChainAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleLockedPearlChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     int i, vertexLeft, vertexRight, dummyLeft, dummyRight;
 
     //mirror symmetry
@@ -3190,7 +3258,9 @@ void storeDoubleLockedPearlChainAutomorphismGenerators(DDGRAPH *ddgraph, int par
  *       \____/       \____/
  *
  */
-void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
+void constructPearlNecklace(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3228,7 +3298,8 @@ void constructPearlNecklace(DDGRAPH *ddgraph, int parameter){
     edges[positions[2*parameter-1]+0] = 0;
 }
 
-void storePearlNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storePearlNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     int i, vertexLeft, vertexRight, dummyLeft, dummyRight;
 
     //mirror symmetry
@@ -3284,7 +3355,9 @@ void storePearlNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
  *
  *
  */
-void constructDoubleLockedBarbedWire(DDGRAPH *ddgraph, int parameter){
+void constructDoubleLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3324,7 +3397,8 @@ void constructDoubleLockedBarbedWire(DDGRAPH *ddgraph, int parameter){
     positions[2*parameter-1]++;
 }
 
-void storeDoubleLockedBarbedWireAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleLockedBarbedWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     int i, vertexLeft, vertexRight;
 
     //mirror symmetry
@@ -3354,7 +3428,9 @@ void storeDoubleLockedBarbedWireAutomorphismGenerators(DDGRAPH *ddgraph, int par
  *
  *
  */
-void constructBarbedWireNecklace(DDGRAPH *ddgraph, int parameter){
+void constructBarbedWireNecklace(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3388,7 +3464,8 @@ void constructBarbedWireNecklace(DDGRAPH *ddgraph, int parameter){
     edges[positions[2*parameter-1]+0] = 0;
 }
 
-void storeBarbedWireNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeBarbedWireNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     int i, vertexLeft, vertexRight;
 
     //mirror symmetry
@@ -3453,7 +3530,9 @@ void storeBarbedWireNecklaceAutomorphismGenerators(DDGRAPH *ddgraph, int paramet
  *          /
  *
  */
-void constructDoubleLockedDiagonalChain(DDGRAPH *ddgraph, int parameter){
+void constructDoubleLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3525,7 +3604,8 @@ void constructDoubleLockedDiagonalChain(DDGRAPH *ddgraph, int parameter){
     edges[positions[parameter*4-1]+2] = parameter*4-3;
 }
 
-void storeDoubleLockedDiagonalChainAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleLockedDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     if(parameter==1){
         //mirror symmetry along diagonal
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -3579,7 +3659,9 @@ void storeDoubleLockedDiagonalChainAutomorphismGenerators(DDGRAPH *ddgraph, int 
  *            \_____________/
  *
  */
-void constructMobiusLadder(DDGRAPH *ddgraph, int parameter){
+void constructMobiusLadder(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3644,7 +3726,8 @@ void constructMobiusLadder(DDGRAPH *ddgraph, int parameter){
     edges[positions[parameter*4-1]+2] = parameter*4-3;
 }
 
-void storeMobiusLadderAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     if(parameter==1){
         //mirror symmetry along diagonal
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -3775,7 +3858,9 @@ void storeMobiusLadderAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
  *            \___________/
  *
  */
-void constructPrism(DDGRAPH *ddgraph, int parameter){
+void constructPrism(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -3840,7 +3925,8 @@ void constructPrism(DDGRAPH *ddgraph, int parameter){
     edges[positions[parameter*4-1]+2] = parameter*4-3;
 }
 
-void storePrismAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     DEBUGASSERTMSG(parameter>1, "Use DDHB instead.")
     //rotation of 180
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -3933,7 +4019,9 @@ void storePrismAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
  *          /               \
  *
  */
-void constructDoubleLockedDoubleroofLongBuilding(DDGRAPH *ddgraph, int parameter){
+void constructDoubleLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -4005,7 +4093,8 @@ void constructDoubleLockedDoubleroofLongBuilding(DDGRAPH *ddgraph, int parameter
     ddgraph->semiEdges[parameter*4-1] = 1;
 }
 
-void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     if(parameter==1){
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4068,7 +4157,9 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(DDGRAPH *ddgr
  *          /               \
  *
  */
-void constructCompletelyLockedHub(DDGRAPH *ddgraph, int parameter){
+void constructCompletelyLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -4146,7 +4237,8 @@ void constructCompletelyLockedHub(DDGRAPH *ddgraph, int parameter){
     ddgraph->semiEdges[parameter*4-1] = 1;
 }
 
-void storeCompletelyLockedHubAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeCompletelyLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     if(parameter==1){
         //mirror symmetry along diagonal
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4223,7 +4315,9 @@ void storeCompletelyLockedHubAutomorphismGenerators(DDGRAPH *ddgraph, int parame
  *           o---o-...-o---o
  *
  */
-void constructDoubleroofDoublefloorHighBuilding(DDGRAPH *ddgraph, int parameter){
+void constructDoubleroofDoublefloorHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -4294,7 +4388,8 @@ void constructDoubleroofDoublefloorHighBuilding(DDGRAPH *ddgraph, int parameter)
     edges[positions[4*parameter+1]+1] = parameter*4-1;
 }
 
-void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     if(parameter==1){
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4363,7 +4458,9 @@ void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(DDGRAPH *ddgra
  *          /
  *
  */
-void constructDoubleLockedDoubleroofHighBuilding(DDGRAPH *ddgraph, int parameter){
+void constructDoubleLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    DEBUGASSERT((*currentVertex) == 0)
+    int parameter = block->parameter;
     int i;
 
     //store some pointers to limit the amount of typing in the next lines
@@ -4438,7 +4535,8 @@ void constructDoubleLockedDoubleroofHighBuilding(DDGRAPH *ddgraph, int parameter
     edges[positions[4*parameter]+1] = parameter*4-1;
 }
 
-void storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(DDGRAPH *ddgraph, int parameter){
+void storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
+    int parameter = block->parameter;
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
     int i;
@@ -4485,6 +4583,7 @@ void assignEdgeColours(DDGRAPH *ddgraph){
 }
 
 void handleDelaneyDressGraph(DDGRAPH *ddgraph){
+    graphsCount++;
     if(colouredEdges){
         assignEdgeColours(ddgraph);
     } else {
@@ -4910,7 +5009,6 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 
                     //
                     if(totalConnectionsLeft - 2 == 0){
-                        graphsCount++;
                         //printConnectionsMade();
                         //printGenerators(ddgraph, 6);
                         //fprintf(stderr, "Graph %2d: ", graphsCount);
@@ -5019,7 +5117,7 @@ void connectComponentList(int vertexCount){
 
     //free the memory allocated at the beginning of this method
     freeDDGraph(ddgraph);
-    free(blocks);
+    free(blocks); //TODO: block still has allocated members!!!
     DEBUGTRACE_EXIT
 }
 
@@ -5348,6 +5446,18 @@ void initComponentsStatic(){
     constructBlock[14] = &constructBarbedWire;
     constructBlock[15] = &constructLockedBarbedWire;
     constructBlock[16] = &constructQ4;
+    constructBlock[17] = &constructTristar;
+    constructBlock[18] = &constructDoubleLockedPearlChain;
+    constructBlock[19] = &constructPearlNecklace;
+    constructBlock[20] = &constructDoubleLockedBarbedWire;
+    constructBlock[21] = &constructBarbedWireNecklace;
+    constructBlock[22] = &constructDoubleLockedDiagonalChain;
+    constructBlock[23] = &constructMobiusLadder;
+    constructBlock[24] = &constructPrism;
+    constructBlock[25] = &constructDoubleLockedDoubleroofLongBuilding;
+    constructBlock[26] = &constructCompletelyLockedHub;
+    constructBlock[27] = &constructDoubleroofDoublefloorHighBuilding;
+    constructBlock[28] = &constructDoubleLockedDoubleroofHighBuilding;
 
     storeBlockAutomorphismGenerators[0] = &storeHubAutomorphismGenerators;
     storeBlockAutomorphismGenerators[1] = &storeLockedHubAutomorphismGenerators;
@@ -5366,6 +5476,18 @@ void initComponentsStatic(){
     storeBlockAutomorphismGenerators[14] = &storeBarbedWireAutomorphismGenerators;
     storeBlockAutomorphismGenerators[15] = NULL;
     storeBlockAutomorphismGenerators[16] = NULL;
+    storeBlockAutomorphismGenerators[17] = NULL;
+    storeBlockAutomorphismGenerators[18] = &storeDoubleLockedPearlChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[19] = &storePearlNecklaceAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[20] = &storeDoubleLockedBarbedWireAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[21] = &storeBarbedWireNecklaceAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[22] = &storeDoubleLockedDiagonalChainAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[23] = &storeMobiusLadderAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[24] = &storePrismAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[25] = &storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[26] = &storeCompletelyLockedHubAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[27] = &storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators;
+    storeBlockAutomorphismGenerators[28] = &storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators;
 
     storeBlocksMapping[0] = &storeHubsMapping;
     storeBlocksMapping[1] = &storeLockedHubsMapping;
@@ -5384,6 +5506,18 @@ void initComponentsStatic(){
     storeBlocksMapping[14] = &storeBarbedWiresMapping;
     storeBlocksMapping[15] = &storeLockedBarbedWiresMapping;
     storeBlocksMapping[16] = &storeQ4sMapping;
+    storeBlocksMapping[17] = NULL;
+    storeBlocksMapping[18] = NULL;
+    storeBlocksMapping[19] = NULL;
+    storeBlocksMapping[20] = NULL;
+    storeBlocksMapping[21] = NULL;
+    storeBlocksMapping[22] = NULL;
+    storeBlocksMapping[23] = NULL;
+    storeBlocksMapping[24] = NULL;
+    storeBlocksMapping[25] = NULL;
+    storeBlocksMapping[26] = NULL;
+    storeBlocksMapping[27] = NULL;
+    storeBlocksMapping[28] = NULL;
 
 #ifdef _DEBUGMETHODS
     blockName[0] = "H(%d)";
@@ -5403,6 +5537,18 @@ void initComponentsStatic(){
     blockName[14] = "BW(%d)";
     blockName[15] = "LBW(%d)";
     blockName[16] = "Q4";
+    blockName[17] = "T";
+    blockName[18] = "DLPC(%d)";
+    blockName[19] = "PN(%d)";
+    blockName[20] = "DLBW(%d)";
+    blockName[21] = "BWN(%d)";
+    blockName[22] = "DLDC(%d)";
+    blockName[23] = "ML(%d)";
+    blockName[24] = "P(%d)";
+    blockName[25] = "DLDLB(%d)";
+    blockName[26] = "CLH(%d)";
+    blockName[27] = "DDHB(%d)";
+    blockName[28] = "DLDHB(%d)";
 
 #endif
 }
@@ -5444,290 +5590,170 @@ void finishGraph(DDGRAPH *ddgraph){
     }
 }
 
-void extraUnconstructableGraphs_1(){
-    DDGRAPH * ddgraph = getNewDDGraph(1);
-    constructTristar(ddgraph);
-    finishGraph(ddgraph);
-    graphsCount++;
+void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgraph){
+    int vertexToBlock[ddgraph->underlyingGraph->vlen];
+    int vertexToConnector[ddgraph->underlyingGraph->vlen];
+    constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
+    storeInitialGenerators(bblock, 1, ddgraph);
     componentListsCount++;
     handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+    cleanDDGraph(ddgraph);
 }
 
-void extraUnconstructableGraphs_2(){
-    DDGRAPH * ddgraph = getNewDDGraph(2);
-    constructDoubleLockedPearlChain(ddgraph, 1);
-    finishGraph(ddgraph);
-    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, 1);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+void addTristar(DDGRAPH * ddgraph){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 5, 0, 0, 0);
+    handleSingleBlockComponentList(bblock, 1, ddgraph);
+    free(bblock);
+}
 
-    ddgraph = getNewDDGraph(2);
-    constructPearlNecklace(ddgraph, 1);
-    finishGraph(ddgraph);
-    storePearlNecklaceAutomorphismGenerators(ddgraph, 1);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+void addDoubleLockedPearlChain(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 5, 1, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
+    free(bblock);
+}
+
+void addPearlNecklace(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 5, 2, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
+    free(bblock);
+}
+
+void addDoubleLockedBarbedWire(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 0, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
+    free(bblock);
+}
+
+void addBarbedWireNecklace(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 1, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
+    free(bblock);
+}
+
+void addDoubleLockedDiagonalChain(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 2, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addMobiusLadder(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 3, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addPrism(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 4, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addDoubleLockedDoubleroofLongBuilding(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 5, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addCompletelyLockedHub(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 6, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addDoubleroofDoublefloorHighBuilding(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 7, parameter, 0);
+    fprintf(stderr, "Number: %d\n", buildingBlockTypeToNumber(bblock));
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void addDoubleLockedDoubleroofHighBuilding(DDGRAPH * ddgraph, int parameter){
+    BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
+    initBuildingBlock(bblock, 6, 8, parameter, 0);
+    handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
+    free(bblock);
+}
+
+void extraUnconstructableGraphs_1(DDGRAPH * ddgraph){
+    addTristar(ddgraph);
+}
+
+void extraUnconstructableGraphs_2(DDGRAPH * ddgraph){
+    addDoubleLockedPearlChain(ddgraph, 1);
+    addPearlNecklace(ddgraph, 1);
 
     if(markedTwoFactors){
-        ddgraph = getNewDDGraph(2);
-        constructDoubleLockedBarbedWire(ddgraph, 1);
-        finishGraph(ddgraph);
-        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, 1);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
+        addDoubleLockedBarbedWire(ddgraph, 1);
 
-        ddgraph = getNewDDGraph(2);
         //isomorph to DLPC(1) in unmarked case
-        constructBarbedWireNecklace(ddgraph, 1);
-        finishGraph(ddgraph);
-        storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, 1);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
+        addBarbedWireNecklace(ddgraph, 1);
     }
 }
 
-void extraUnconstructableGraphs_4(){
-    DDGRAPH *ddgraph = getNewDDGraph(4);
-    constructDoubleLockedPearlChain(ddgraph, 2);
-    finishGraph(ddgraph);
-    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, 2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(4);
-    constructPearlNecklace(ddgraph, 2);
-    finishGraph(ddgraph);
-    storePearlNecklaceAutomorphismGenerators(ddgraph, 2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(4);
-    constructBarbedWireNecklace(ddgraph, 2);
-    finishGraph(ddgraph);
-    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, 2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(4);
-    constructDoubleLockedDiagonalChain(ddgraph, 1);
-    finishGraph(ddgraph);
-    storeDoubleLockedDiagonalChainAutomorphismGenerators(ddgraph, 1);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(4);
-    constructMobiusLadder(ddgraph, 1);
-    finishGraph(ddgraph);
-    storeMobiusLadderAutomorphismGenerators(ddgraph, 1);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+void extraUnconstructableGraphs_4(DDGRAPH * ddgraph){
+    addDoubleLockedPearlChain(ddgraph, 2);
+    addPearlNecklace(ddgraph, 2);
+    addBarbedWireNecklace(ddgraph, 2);
+    addDoubleLockedDiagonalChain(ddgraph, 1);
+    addMobiusLadder(ddgraph, 1);
 
     if(markedTwoFactors){
-        ddgraph = getNewDDGraph(4);
-        constructDoubleLockedBarbedWire(ddgraph, 2);
-        finishGraph(ddgraph);
-        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, 2);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
-        ddgraph = getNewDDGraph(4);
-        constructCompletelyLockedHub(ddgraph, 1);
-        finishGraph(ddgraph);
-        storeCompletelyLockedHubAutomorphismGenerators(ddgraph, 1);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
-        ddgraph = getNewDDGraph(4);
-        constructDoubleroofDoublefloorHighBuilding(ddgraph, 1);
-        finishGraph(ddgraph);
-        storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(ddgraph, 1);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
-        ddgraph = getNewDDGraph(4);
-        constructDoubleLockedDoubleroofHighBuilding(ddgraph, 1);
-        finishGraph(ddgraph);
-        storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(ddgraph, 1);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
+        addDoubleLockedBarbedWire(ddgraph, 2);
+        addCompletelyLockedHub(ddgraph, 1);
+        addDoubleroofDoublefloorHighBuilding(ddgraph, 1);
+        addDoubleLockedDoubleroofHighBuilding(ddgraph, 1);
     }
 }
 
-void extraUnconstructableGraphs_4n(int targetSize){
-    DDGRAPH * ddgraph = getNewDDGraph(targetSize);
-    constructDoubleLockedPearlChain(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructPearlNecklace(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storePearlNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructBarbedWireNecklace(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructDoubleLockedDiagonalChain(ddgraph, targetSize/4);
-    finishGraph(ddgraph);
-    storeDoubleLockedDiagonalChainAutomorphismGenerators(ddgraph, targetSize/4);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructMobiusLadder(ddgraph, targetSize/4);
-    finishGraph(ddgraph);
-    storeMobiusLadderAutomorphismGenerators(ddgraph, targetSize/4);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructPrism(ddgraph, targetSize/4);
-    finishGraph(ddgraph);
-    storePrismAutomorphismGenerators(ddgraph, targetSize/4);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
-    finishGraph(ddgraph);
-    storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(ddgraph, targetSize/4);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+void extraUnconstructableGraphs_4n(DDGRAPH * ddgraph, int targetSize){
+    addDoubleLockedPearlChain(ddgraph, targetSize/2);
+    addPearlNecklace(ddgraph, targetSize/2);
+    addBarbedWireNecklace(ddgraph, targetSize/2);
+    addDoubleLockedDiagonalChain(ddgraph, targetSize/4);
+    addMobiusLadder(ddgraph, targetSize/4);
+    addPrism(ddgraph, targetSize/4);
+    addDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
 
     if(markedTwoFactors){
-        ddgraph = getNewDDGraph(targetSize);
-        constructCompletelyLockedHub(ddgraph, targetSize/4);
-        finishGraph(ddgraph);
-        storeCompletelyLockedHubAutomorphismGenerators(ddgraph, targetSize/4);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
-        ddgraph = getNewDDGraph(targetSize);
-        constructDoubleroofDoublefloorHighBuilding(ddgraph, targetSize/4);
-        finishGraph(ddgraph);
-        storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(ddgraph, targetSize/4);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
-        ddgraph = getNewDDGraph(targetSize);
-        constructDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
-        finishGraph(ddgraph);
-        storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(ddgraph, targetSize/4);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
-
+        addCompletelyLockedHub(ddgraph, targetSize/4);
+        addDoubleroofDoublefloorHighBuilding(ddgraph, targetSize/4);
+        addDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
     }
 }
 
-void extraUnconstructableGraphs_4n2(int targetSize){
-    DDGRAPH * ddgraph = getNewDDGraph(targetSize);
-    constructDoubleLockedPearlChain(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storeDoubleLockedPearlChainAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructPearlNecklace(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storePearlNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
-
-    ddgraph = getNewDDGraph(targetSize);
-    constructBarbedWireNecklace(ddgraph, targetSize/2);
-    finishGraph(ddgraph);
-    storeBarbedWireNecklaceAutomorphismGenerators(ddgraph, targetSize/2);
-    graphsCount++;
-    componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    freeDDGraph(ddgraph);
+void extraUnconstructableGraphs_4n2(DDGRAPH * ddgraph, int targetSize){
+    addDoubleLockedPearlChain(ddgraph, targetSize/2);
+    addPearlNecklace(ddgraph, targetSize/2);
+    addBarbedWireNecklace(ddgraph, targetSize/2);
 
     if(markedTwoFactors){
-        ddgraph = getNewDDGraph(targetSize);
-        constructDoubleLockedBarbedWire(ddgraph, targetSize/2);
-        finishGraph(ddgraph);
-        storeDoubleLockedBarbedWireAutomorphismGenerators(ddgraph, targetSize/2);
-        graphsCount++;
-        componentListsCount++;
-        handleDelaneyDressGraph(ddgraph);
-        freeDDGraph(ddgraph);
+        addDoubleLockedBarbedWire(ddgraph, targetSize/2);
     }
     
 }
 
-void extraUnconstructableGraphs(int targetSize){
+void extraUnconstructableGraphs(DDGRAPH * ddgraph, int targetSize){
     if(targetSize == 1){
-        extraUnconstructableGraphs_1();
+        extraUnconstructableGraphs_1(ddgraph);
     } else if(targetSize == 2){
-        extraUnconstructableGraphs_2();
+        extraUnconstructableGraphs_2(ddgraph);
     } else if(targetSize == 4){
-        extraUnconstructableGraphs_4();
+        extraUnconstructableGraphs_4(ddgraph);
     } else if(targetSize % 4 == 2){
-        extraUnconstructableGraphs_4n2(targetSize);
+        extraUnconstructableGraphs_4n2(ddgraph, targetSize);
     } else if(targetSize % 4 == 0){
-        extraUnconstructableGraphs_4n(targetSize);
+        extraUnconstructableGraphs_4n(ddgraph, targetSize);
     }
 }
 
@@ -5738,9 +5764,11 @@ void startGeneration(int targetSize){
     initStatistics();
     initNautyOptions(targetSize);
 
+    DDGRAPH * ddgraph = getNewDDGraph(targetSize);
+
     q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0);
 
-    extraUnconstructableGraphs(targetSize);
+    extraUnconstructableGraphs(ddgraph, targetSize);
 
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
     fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);

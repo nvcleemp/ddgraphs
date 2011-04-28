@@ -131,7 +131,11 @@ int** Q3TypeComponentsComponentCount;
 
 int Q4ComponentCount;
 
-#define ComponentsTypesCount (Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount + 1)
+#define NoConnectorsFixedColouringComponentsCount 3
+
+#define NoConnectorsVariableColouringComponentCount 9
+
+#define ComponentsTypesCount (Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount + 1 + NoConnectorsFixedColouringComponentsCount + NoConnectorsVariableColouringComponentCount)
 
 void (*constructBlock[ComponentsTypesCount])(int *, BBLOCK *, DDGRAPH *, int *, int *) = {NULL};
 
