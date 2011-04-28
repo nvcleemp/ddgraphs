@@ -5083,12 +5083,11 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     DEBUGTRACE_EXIT
 }
 
-void connectComponentList(int vertexCount){
+void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
     DEBUGTRACE_ENTER
     int blockCount = 0;
     //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
-    DDGRAPH *ddgraph = getNewDDGraph(vertexCount);
     int vertexToBlock[ddgraph->underlyingGraph->vlen];
     int vertexToConnector[ddgraph->underlyingGraph->vlen];
 
@@ -5115,8 +5114,8 @@ void connectComponentList(int vertexCount){
 
     findNextOrbitToConnect(blocks, blockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
 
+    cleanDDGraph(ddgraph);
     //free the memory allocated at the beginning of this method
-    freeDDGraph(ddgraph);
     free(blocks); //TODO: block still has allocated members!!!
     DEBUGTRACE_EXIT
 }
@@ -5225,7 +5224,7 @@ boolean passesSimpleForbiddenConnectionsTest(){
 
 }
 
-void handleComponentList(int vertexCount){
+void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
     DEBUGTRACE_ENTER
     if(!isMaybeRealizableComponentList()){
         DEBUGTRACE_EXIT
@@ -5262,17 +5261,17 @@ void handleComponentList(int vertexCount){
         }
         fprintf(stderr, "| %d\n", Q4ComponentCount);
 #endif
-        connectComponentList(vertexCount);
+        connectComponentList(vertexCount, ddgraph);
     }
     DEBUGTRACE_EXIT
 }
 
-void q4Components(int targetSize, int currentSize){
+void q4Components(int targetSize, int currentSize, DDGRAPH *ddgraph){
     Q4ComponentCount = targetSize - currentSize; //each q4 component has 1 vertex
-    handleComponentList(targetSize);
+    handleComponentList(targetSize, ddgraph);
 }
 
-void q3Components(int currentType, int currentParameter, int targetSize, int currentSize){
+void q3Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -5282,17 +5281,17 @@ void q3Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
         if(targetSize - newSize >= 2*(currentParameter+1)){
-            q3Components(currentType, currentParameter+1, targetSize, newSize);
+            q3Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
         } else if(currentType+1==Q3TypeComponentsCount){
-            q4Components(targetSize, newSize);
+            q4Components(targetSize, newSize, ddgraph);
         } else {
-            q3Components(currentType+1, Q3TypeComponentsSmallestCase[currentType+1], targetSize, newSize);
+            q3Components(currentType+1, Q3TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
         }
     }
     Q3TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
 }
 
-void q2Components(int currentType, int currentParameter, int targetSize, int currentSize){
+void q2Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -5302,17 +5301,17 @@ void q2Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
         if(targetSize - newSize >= 2*(currentParameter+1)){
-            q2Components(currentType, currentParameter+1, targetSize, newSize);
+            q2Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
         } else if(currentType+1==Q2TypeComponentsCount){
-            q3Components(0, Q3TypeComponentsSmallestCase[0], targetSize, newSize);
+            q3Components(0, Q3TypeComponentsSmallestCase[0], targetSize, newSize, ddgraph);
         } else {
-            q2Components(currentType+1, Q2TypeComponentsSmallestCase[currentType+1], targetSize, newSize);
+            q2Components(currentType+1, Q2TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
         }
     }
     Q2TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
 }
 
-void q1Components(int currentType, int currentParameter, int targetSize, int currentSize){
+void q1Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -5322,11 +5321,11 @@ void q1Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 4*currentParameter*i; //each q1 component has 4n vertices
 
         if(targetSize - newSize >= 4*(currentParameter+1)){
-            q1Components(currentType, currentParameter+1, targetSize, newSize);
+            q1Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
         } else if(currentType+1==Q1TypeComponentsCount){
-            q2Components(0, Q2TypeComponentsSmallestCase[0], targetSize, newSize);
+            q2Components(0, Q2TypeComponentsSmallestCase[0], targetSize, newSize, ddgraph);
         } else {
-            q1Components(currentType+1, Q1TypeComponentsSmallestCase[currentType+1], targetSize, newSize);
+            q1Components(currentType+1, Q1TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
         }
     }
     Q1TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
@@ -5766,9 +5765,11 @@ void startGeneration(int targetSize){
 
     DDGRAPH * ddgraph = getNewDDGraph(targetSize);
 
-    q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0);
+    q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0, ddgraph);
 
     extraUnconstructableGraphs(ddgraph, targetSize);
+
+    freeDDGraph(ddgraph);
 
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
     fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
@@ -5899,8 +5900,11 @@ void startFromListFile(char *filename){
             ERRORMSG("Error while parsing file: incorrect vertex count.")
         }
 
-        handleComponentList(vertexCount);
+        DDGRAPH * ddgraph = getNewDDGraph(vertexCount);
+
+        handleComponentList(vertexCount, ddgraph);
         freeComponents();
+        freeDDGraph(ddgraph);
     }
 
     fprintf(stderr, "Read %d component lists.\n", componentListsCount);
