@@ -5724,7 +5724,6 @@ void addCompletelyLockedHub(DDGRAPH * ddgraph, int parameter){
 void addDoubleroofDoublefloorHighBuilding(DDGRAPH * ddgraph, int parameter){
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 7, parameter, 0);
-    fprintf(stderr, "Number: %d\n", buildingBlockTypeToNumber(bblock));
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
     free(bblock);
 }
