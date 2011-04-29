@@ -183,23 +183,23 @@ void printComponentList(){
     fprintf(stderr, "| %d\n", Q4ComponentCount);
 }
 
-char (*blockName[ComponentsTypesCount]);
+#endif
 
-void printBlockName(int count, int blockNumber, int parameter, boolean first){
+void printBlockName(FILE *file, int count, int blockNumber, int parameter, boolean first){
     if(!first){
-        fprintf(stderr, ", ");
+        fprintf(file, ", ");
     }
-    fprintf(stderr, "%dx", count);
-    fprintf(stderr, blockName[blockNumber], parameter+1);
+    fprintf(file, "%dx", count);
+    fprintf(file, blockName[blockNumber], parameter);
 }
 
-void printHumanReadableComponentList(){
+void printHumanReadableComponentList(FILE *file){
     int i, j;
     boolean first = TRUE;
     for(i = 0; i < Q1TypeComponentsCount; i++){
         for(j = 0; j < maximumQ1TypeComponents; j++){
             if(Q1TypeComponentsComponentCount[i][j]){
-                printBlockName(Q1TypeComponentsComponentCount[i][j], i, j, first);
+                printBlockName(file, Q1TypeComponentsComponentCount[i][j], i, j+1, first);
                 first = FALSE;
             }
         }
@@ -207,7 +207,7 @@ void printHumanReadableComponentList(){
     for(i = 0; i < Q2TypeComponentsCount; i++){
         for(j = 0; j < maximumQ2TypeComponents; j++){
             if(Q2TypeComponentsComponentCount[i][j]){
-                printBlockName(Q2TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + i, j, first);
+                printBlockName(file, Q2TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + i, j+1, first);
                 first = FALSE;
             }
         }
@@ -215,17 +215,16 @@ void printHumanReadableComponentList(){
     for(i = 0; i < Q3TypeComponentsCount; i++){
         for(j = 0; j < maximumQ3TypeComponents; j++){
             if(Q3TypeComponentsComponentCount[i][j]){
-                printBlockName(Q3TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + Q2TypeComponentsCount + i, j, first);
+                printBlockName(file, Q3TypeComponentsComponentCount[i][j], Q1TypeComponentsCount + Q2TypeComponentsCount + i, j+1, first);
                 first = FALSE;
             }
         }
     }
     if(Q4ComponentCount){
-        printBlockName(Q4ComponentCount, Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount, 0, first);
+        printBlockName(file, Q4ComponentCount, Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount, 0, first);
     }
-    fprintf(stderr, "\n");
+    fprintf(file, "\n");
 }
-#endif
 
 char write_2byte_number(FILE *f, unsigned short n, short writeEndian) {
     if (writeEndian == BIG_ENDIAN) {
@@ -5262,7 +5261,15 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
         }
         fprintf(stderr, "| %d\n", Q4ComponentCount);
 #endif
-        connectComponentList(vertexCount, ddgraph);
+        if(onlyLists){
+            if(outputType=='c'){
+
+            } else if(outputType=='h'){
+                printHumanReadableComponentList(stdout);
+            }
+        } else {
+            connectComponentList(vertexCount, ddgraph);
+        }
     }
     DEBUGTRACE_EXIT
 }
@@ -5519,7 +5526,6 @@ void initComponentsStatic(){
     storeBlocksMapping[27] = NULL;
     storeBlocksMapping[28] = NULL;
 
-#ifdef _DEBUGMETHODS
     blockName[0] = "H(%d)";
     blockName[1] = "LH(%d)";
     blockName[2] = "DLH(%d)";
@@ -5550,7 +5556,6 @@ void initComponentsStatic(){
     blockName[27] = "DDHB(%d)";
     blockName[28] = "DLDHB(%d)";
 
-#endif
 }
 
 void initStatistics(){
@@ -5591,13 +5596,22 @@ void finishGraph(DDGRAPH *ddgraph){
 }
 
 void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgraph){
-    int vertexToBlock[ddgraph->underlyingGraph->vlen];
-    int vertexToConnector[ddgraph->underlyingGraph->vlen];
-    constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
-    storeInitialGenerators(bblock, 1, ddgraph);
     componentListsCount++;
-    handleDelaneyDressGraph(ddgraph);
-    cleanDDGraph(ddgraph);
+    if(onlyLists){
+        if(outputType=='c'){
+
+        } else if(outputType=='h'){
+            printBlockName(stdout, 1, buildingBlockTypeToNumber(bblock), bblock->parameter, TRUE);
+            fprintf(stdout, "\n");
+        }
+    } else {
+        int vertexToBlock[ddgraph->underlyingGraph->vlen];
+        int vertexToConnector[ddgraph->underlyingGraph->vlen];
+        constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
+        storeInitialGenerators(bblock, 1, ddgraph);
+        handleDelaneyDressGraph(ddgraph);
+        cleanDDGraph(ddgraph);
+    }
 }
 
 void addTristar(DDGRAPH * ddgraph){
@@ -5939,13 +5953,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "hl:tco:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:Ltco:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
                 return EXIT_SUCCESS;
             case 'l':
                 listFilename = optarg;
+                break;
+            case 'L':
+                onlyLists = TRUE;
                 break;
             case 't':
                 markedTwoFactors = TRUE;
@@ -5958,7 +5975,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                 outputType = optarg[0];
                 switch (outputType) {
                     case 'n': //no output (default)
-                    case 'c': //pregraphcode, pregraphcolorcode
+                    case 'c': //listcode, pregraphcode, pregraphcolorcode
                     case 'h': //human-readable
                         break;
                     default:

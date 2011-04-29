@@ -143,6 +143,8 @@ void (*storeBlockAutomorphismGenerators[ComponentsTypesCount])(BBLOCK *, DDGRAPH
 
 void (*storeBlocksMapping[ComponentsTypesCount])(BBLOCK *, BBLOCK *, DDGRAPH *) = {NULL};
 
+char (*blockName[ComponentsTypesCount]);
+
 /******************Global Variables**********************/
 
 int connectionsMade; //the number of connections made at this point
@@ -153,6 +155,8 @@ int connections[MAXN/2][2];
 unsigned int graphsCount;
 
 char outputType = 'n'; //defaults to no output
+
+boolean onlyLists = FALSE;
 
 boolean markedTwoFactors = FALSE;
 
