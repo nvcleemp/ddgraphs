@@ -2912,9 +2912,10 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
     permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
     vertexBlock1 = block1->connectionVertices[0];
-    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]+2];
+    dummyBlock1 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock1]+1];
     vertexBlock2 = block2->connectionVertices[0];
-    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]+2];
+    dummyBlock2 = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[vertexBlock2]+1];
+    //+1 instead of +2 because the positions have been adjusted
 
     for(i=0; i<(block1->parameter); i++){
         generator[vertexBlock1+2*i] = vertexBlock2+2*i;
@@ -4784,7 +4785,7 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
             }
         }
     }
-    
+
     if(!markedTwoFactors){
         int family1 = (blocks+block1)->component;
         int family2 = (blocks+block2)->component;
@@ -4835,10 +4836,10 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
             }
         }
     }
-
+    
     i=0;
     while(i<buildingBlockCount && visited[i]) i++;
-
+    
     return i==buildingBlockCount;
 }
 
