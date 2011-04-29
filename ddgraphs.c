@@ -221,7 +221,7 @@ void printHumanReadableComponentList(){
         }
     }
     if(Q4ComponentCount){
-        printBlockName(Q4ComponentCount, ComponentsTypesCount - 1, 0, first);
+        printBlockName(Q4ComponentCount, Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount, 0, first);
     }
     fprintf(stderr, "\n");
 }
