@@ -226,6 +226,43 @@ void printHumanReadableComponentList(FILE *file){
     fprintf(file, "\n");
 }
 
+void writeListCodeMultipleBlockList(FILE *f, int vertexCount){
+    int i, j;
+
+    fprintf(f, "%d  ", vertexCount);
+    for(i = 0; i < Q1TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ1TypeComponents; j++){
+            if(Q1TypeComponentsComponentCount[i][j]){
+                fprintf(f, "1 %d %d %d  ", i, j+1, Q1TypeComponentsComponentCount[i][j]);
+            }
+        }
+    }
+    for(i = 0; i < Q2TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ2TypeComponents; j++){
+            if(Q2TypeComponentsComponentCount[i][j]){
+                fprintf(f, "2 %d %d %d  ", i, j+1, Q2TypeComponentsComponentCount[i][j]);
+            }
+        }
+    }
+    for(i = 0; i < Q3TypeComponentsCount; i++){
+        for(j = 0; j < maximumQ3TypeComponents; j++){
+            if(Q3TypeComponentsComponentCount[i][j]){
+                fprintf(f, "3 %d %d %d  ", i, j+1, Q3TypeComponentsComponentCount[i][j]);
+            }
+        }
+    }
+    if(Q4ComponentCount){
+        fprintf(f, "4 %d  ", Q4ComponentCount);
+    }
+    fprintf(f, "0\n"); //end of list
+}
+
+void writeListCodeSingleBlockList(FILE *f, int vertexCount, BBLOCK *block){
+    fprintf(f, "%d  ", vertexCount);
+    fprintf(f, "%d %d %d  ", block->type, block->component, block->parameter);
+    fprintf(f, "0\n"); //end of list
+}
+
 char write_2byte_number(FILE *f, unsigned short n, short writeEndian) {
     if (writeEndian == BIG_ENDIAN) {
         fprintf(f, "%c%c", n / 256, n % 256);
@@ -5263,7 +5300,7 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
 #endif
         if(onlyLists){
             if(outputType=='c'){
-
+                writeListCodeMultipleBlockList(stdout, vertexCount);
             } else if(outputType=='h'){
                 printHumanReadableComponentList(stdout);
             }
@@ -5599,7 +5636,7 @@ void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgrap
     componentListsCount++;
     if(onlyLists){
         if(outputType=='c'){
-
+            writeListCodeSingleBlockList(stdout, order, bblock);
         } else if(outputType=='h'){
             printBlockName(stdout, 1, buildingBlockTypeToNumber(bblock), bblock->parameter, TRUE);
             fprintf(stdout, "\n");
@@ -5787,7 +5824,9 @@ void startGeneration(int targetSize){
     freeDDGraph(ddgraph);
 
     fprintf(stderr, "Found %d component lists.\n", componentListsCount);
-    fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
+    if(!onlyLists){
+        fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
+    }
 
 }
 
@@ -5814,6 +5853,7 @@ void startFromListFile(char *filename){
         int family = 0;
         int parameter = 0;
         int count = 0;
+        boolean singleComponentList = FALSE;
         while(fscanf(f, "%d", &type)!=-1){
             if(type==0){
                 break;
@@ -5906,6 +5946,46 @@ void startFromListFile(char *filename){
                 } else {
                     ERRORMSG("Error while parsing file.")
                 }
+            } else if(type==5){
+                if(!fscanf(f, "%d", &family)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &parameter)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(family==0){
+                    realVertexCount=1;
+                } else if(family==1 || family==2){
+                    realVertexCount=2*parameter;
+                } else {
+                    ERRORMSG("Error while parsing file: illegal family for type 5.")
+                }
+                int last = -1;
+                if(fscanf(f, "%d", &last)!=-1 && last!=0){
+                    ERRORMSG("Error while parsing file: Block of type 5 can only be in list of size 1.")
+                }
+                singleComponentList = TRUE;
+                break;
+            } else if(type==6){
+                if(!fscanf(f, "%d", &family)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(!fscanf(f, "%d", &parameter)){
+                    ERRORMSG("Error while parsing file.")
+                }
+                if(family==0 || family==1){
+                    realVertexCount=2*parameter;
+                } else if(family==2 || family==3 || family==4 || family==5 || family==6 || family==7 || family==8){
+                    realVertexCount=4*parameter;
+                } else {
+                    ERRORMSG("Error while parsing file: illegal family for type 6.")
+                }
+                int last = -1;
+                if(fscanf(f, "%d", &last)!=-1 && last!=0){
+                    ERRORMSG("Error while parsing file: Block of type 6 can only be in list of size 1.")
+                }
+                singleComponentList = TRUE;
+                break;
             } else {
                 ERRORMSG("Error while parsing file: illegal type.")
             }
@@ -5917,13 +5997,21 @@ void startFromListFile(char *filename){
 
         DDGRAPH * ddgraph = getNewDDGraph(vertexCount);
 
-        handleComponentList(vertexCount, ddgraph);
-        freeComponents();
+        if(singleComponentList){
+            BBLOCK buildingBlock;
+            initBuildingBlock(&buildingBlock, type, family, parameter, 0);
+            handleSingleBlockComponentList(&buildingBlock, realVertexCount, ddgraph);
+        } else {
+            handleComponentList(vertexCount, ddgraph);
+            freeComponents();
+        }
         freeDDGraph(ddgraph);
     }
 
     fprintf(stderr, "Read %d component lists.\n", componentListsCount);
-    fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
+    if(!onlyLists){
+        fprintf(stderr, "Found %d Delaney-Dress graphs.\n", graphsCount);
+    }
 }
 
 //====================== USAGE =======================
