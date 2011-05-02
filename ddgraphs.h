@@ -110,6 +110,8 @@ struct _ddgraph {
     int *vertex2UncolouredFactor;
 
     int *uncolouredFactor2Vertex;
+
+    int *vertex2FactorType;
 };
 
 typedef struct _ddgraph DDGRAPH;
