@@ -100,6 +100,16 @@ struct _ddgraph {
     int *colours;
 
     int dummyVertexCount;
+    
+    /* The following variables are used to store information about the q1- and
+     * q3 2-factors. This information is needed when a 3-edge-colouring of the
+     * graph is constructed.
+     */
+    int uncolouredFactorCount;
+
+    int *vertex2UncolouredFactor;
+
+    int *uncolouredFactor2Vertex;
 };
 
 typedef struct _ddgraph DDGRAPH;

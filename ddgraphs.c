@@ -610,6 +610,18 @@ DDGRAPH *getNewDDGraph(int order){
         ddgraph->underlyingGraph->elen = 3*order + 2*(order/2);
     }
 
+    ddgraph->vertex2UncolouredFactor = (int *)malloc(sizeof(int)*order);
+    for(i = 0; i < order; i++){
+        ddgraph->vertex2UncolouredFactor[i] = INT_MAX;
+    }
+
+    ddgraph->uncolouredFactorCount = 0;
+
+    ddgraph->uncolouredFactor2Vertex = (int *)malloc(sizeof(int)*(order/2));
+    for(i = 0; i < (order/2); i++){
+        ddgraph->uncolouredFactor2Vertex[i] = INT_MAX;
+    }
+
     return ddgraph;
 }
 
@@ -658,6 +670,18 @@ void cleanDDGraph(DDGRAPH * ddgraph){
         ddgraph->underlyingGraph->vlen = maxVertices;
         ddgraph->underlyingGraph->elen = 3*order + 2*(order/2);
     }
+
+    ddgraph->vertex2UncolouredFactor = (int *)malloc(sizeof(int)*order);
+    for(i = 0; i < order; i++){
+        ddgraph->vertex2UncolouredFactor[i] = INT_MAX;
+    }
+
+    ddgraph->uncolouredFactorCount = 0;
+
+    ddgraph->uncolouredFactor2Vertex = (int *)malloc(sizeof(int)*(order/2));
+    for(i = 0; i < (order/2); i++){
+        ddgraph->uncolouredFactor2Vertex[i] = INT_MAX;
+    }
 }
 
 void freeDDGraph(DDGRAPH *ddgraph){
@@ -668,6 +692,8 @@ void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph->semiEdges);
     free(ddgraph->oneFactor);
     free(ddgraph->colours);
+    free(ddgraph->uncolouredFactor2Vertex);
+    free(ddgraph->vertex2UncolouredFactor);
     free(ddgraph);
 }
 
@@ -1016,6 +1042,14 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1050,6 +1084,14 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1194,6 +1236,14 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1228,6 +1278,14 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1332,6 +1390,14 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1366,6 +1432,14 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1498,6 +1572,14 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1532,6 +1614,14 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1659,6 +1749,14 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1693,6 +1791,14 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1811,6 +1917,14 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1845,6 +1959,14 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -1958,6 +2080,14 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -1992,6 +2122,14 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -2116,6 +2254,14 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2151,6 +2297,14 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -2263,6 +2417,14 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2297,6 +2459,14 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -2399,6 +2569,14 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     positions[(*currentVertex)+1]++; //semi-edge is at position 0
     ddgraph->semiEdges[(*currentVertex)+1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2433,6 +2611,14 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -2532,6 +2718,14 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     positions[(*currentVertex)+1]++; //semi-edge is at position 0
     ddgraph->semiEdges[(*currentVertex)+1]=1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2566,6 +2760,14 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -2673,6 +2875,14 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     degrees[(*currentVertex)+1] = 2;
     positions[(*currentVertex)+1]++; //connection points are at position 0
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[(*currentVertex)+3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     (*currentVertex)+=2;
 
     for(i=0; i<block->parameter-1; i++){
@@ -2707,6 +2917,14 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
         ddgraph->colours[4*((*currentVertex)+1)+2] = 1;
         ddgraph->colours[4*((*currentVertex)+2)+0] = 1;
         ddgraph->colours[4*((*currentVertex)+3)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex)+2;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+2+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
 
         (*currentVertex)+=4;
     }
@@ -3012,6 +3230,13 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         ddgraph->oneFactor[*currentVertex] = 0;
         //colours
         ddgraph->colours[4*(*currentVertex)+0] = 1;
+
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
+
         (*currentVertex)++;
     }
 
@@ -3104,6 +3329,13 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         ddgraph->oneFactor[*currentVertex] = 0;
         //colours
         ddgraph->colours[4*(*currentVertex)+0] = 1;
+
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[(*currentVertex)+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
+
         (*currentVertex)++;
     }
     edges[positions[(*currentVertex)-1]+0] = SEMIEDGE;
@@ -3423,6 +3655,12 @@ void constructDoubleLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH 
         ddgraph->oneFactor[2*i+1] = 0;
         //colours
         ddgraph->colours[4*(2*i+1)+0] = 1;
+
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 2*i;
+        ddgraph->vertex2UncolouredFactor[2*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[2*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
     edges[positions[0]+0] = SEMIEDGE;
     degrees[0] = 1;
@@ -3496,6 +3734,12 @@ void constructBarbedWireNecklace(int *currentVertex, BBLOCK *block, DDGRAPH *ddg
         ddgraph->oneFactor[2*i+1] = 0;
         //colours
         ddgraph->colours[4*(2*i+1)+0] = 1;
+
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 2*i;
+        ddgraph->vertex2UncolouredFactor[2*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[2*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
     edges[positions[0]+0] = 2*parameter-1;
     edges[positions[2*parameter-1]+0] = 0;
@@ -3599,6 +3843,14 @@ void constructDoubleLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRA
     positions[1]++;
     ddgraph->semiEdges[1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -3627,6 +3879,14 @@ void constructDoubleLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRA
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = SEMIEDGE;
@@ -3724,6 +3984,14 @@ void constructMobiusLadder(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, 
     edges[positions[1]+1] = 0;
     edges[positions[1]+2] = 3;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -3752,6 +4020,14 @@ void constructMobiusLadder(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, 
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = 1;
@@ -3923,6 +4199,14 @@ void constructPrism(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *ve
     edges[positions[1]+1] = 0;
     edges[positions[1]+2] = 3;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -3951,6 +4235,14 @@ void constructPrism(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *ve
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = 0;
@@ -4088,6 +4380,14 @@ void constructDoubleLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *blo
     positions[1]++;
     ddgraph->semiEdges[1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -4116,6 +4416,14 @@ void constructDoubleLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *blo
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = 0;
@@ -4229,6 +4537,14 @@ void constructCompletelyLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     positions[1]++;
     ddgraph->semiEdges[1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -4257,6 +4573,14 @@ void constructCompletelyLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *dd
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = SEMIEDGE;
@@ -4383,6 +4707,14 @@ void constructDoubleroofDoublefloorHighBuilding(int *currentVertex, BBLOCK *bloc
     edges[positions[4*parameter]+0] = 0;
     edges[positions[4*parameter]+1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -4411,6 +4743,14 @@ void constructDoubleroofDoublefloorHighBuilding(int *currentVertex, BBLOCK *bloc
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = parameter*4+1;
@@ -4530,6 +4870,14 @@ void constructDoubleLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *blo
     positions[1]++;
     ddgraph->semiEdges[1] = 1;
 
+    //store q1-factor for colouring
+    ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 0;
+    ddgraph->vertex2UncolouredFactor[0] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[1] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[2] = ddgraph->uncolouredFactorCount;
+    ddgraph->vertex2UncolouredFactor[3] = ddgraph->uncolouredFactorCount;
+    ddgraph->uncolouredFactorCount++;
+
     for(i=1; i<parameter; i++){
 
         edges[positions[4*i-2]+0] = 4*i-4;
@@ -4558,6 +4906,14 @@ void constructDoubleLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *blo
         ddgraph->colours[4*(4*i-1)+2] = 1;
         ddgraph->colours[4*(4*i)+0] = 1;
         ddgraph->colours[4*(4*i+1)+0] = 1;
+
+        //store q1-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = 4*i;
+        ddgraph->vertex2UncolouredFactor[4*i+0] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+1] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
+        ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
+        ddgraph->uncolouredFactorCount++;
     }
 
     edges[positions[parameter*4-2]+0] = parameter*4;
