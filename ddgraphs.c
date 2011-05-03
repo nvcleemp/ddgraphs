@@ -3324,6 +3324,8 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         ddgraph->oneFactor[*currentVertex] = 0;
         //colours
         ddgraph->colours[4*(*currentVertex)+0] = 1;
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
         ddgraph->vertex2UncolouredFactor[(*currentVertex)] = ddgraph->uncolouredFactorCount;
         ddgraph->vertex2FactorType[(*currentVertex)] = 3;
         (*currentVertex)++;
@@ -3339,7 +3341,6 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
         ddgraph->colours[4*(*currentVertex)+0] = 1;
 
         //store q3-factor for colouring
-        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
         ddgraph->vertex2UncolouredFactor[(*currentVertex)] = ddgraph->uncolouredFactorCount;
         ddgraph->uncolouredFactorCount++;
         ddgraph->vertex2FactorType[(*currentVertex)] = 3;
@@ -3425,6 +3426,8 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         ddgraph->oneFactor[*currentVertex] = 0;
         //colours
         ddgraph->colours[4*(*currentVertex)+0] = 1;
+        //store q3-factor for colouring
+        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
         ddgraph->vertex2UncolouredFactor[(*currentVertex)] = ddgraph->uncolouredFactorCount;
         ddgraph->vertex2FactorType[(*currentVertex)] = 3;
         (*currentVertex)++;
@@ -3440,7 +3443,6 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
         ddgraph->colours[4*(*currentVertex)+0] = 1;
 
         //store q3-factor for colouring
-        ddgraph->uncolouredFactor2Vertex[ddgraph->uncolouredFactorCount] = (*currentVertex);
         ddgraph->vertex2UncolouredFactor[(*currentVertex)] = ddgraph->uncolouredFactorCount;
         ddgraph->uncolouredFactorCount++;
         ddgraph->vertex2FactorType[(*currentVertex)] = 3;
@@ -5117,6 +5119,18 @@ void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     }
 }
 
+void colourEdge(DDGRAPH *ddgraph, int v1, int v2, int colour){
+    int i;
+    for(i=0; i<3; i++){
+        if(ddgraph->underlyingGraph->e[3*v1+i]==v2){
+            ddgraph->colours[4*v1+i]=colour;
+        }
+        if(ddgraph->underlyingGraph->e[3*v2+i]==v1){
+            ddgraph->colours[4*v2+i]=colour;
+        }
+    }
+}
+
 int getImageOfColouring(int colourAssignment, permutation *automorphism, DDGRAPH *ddgraph){
     int i, image = 0;
 
@@ -5172,7 +5186,40 @@ void assignEdgeColours(DDGRAPH *ddgraph){
     for(colourAssignment=0; colourAssignment<possibleEdgeColouringsCount; colourAssignment++){
         if(colourOrbits[colourAssignment] == colourAssignment){
             //assign colours
-            
+            for(i=0; i<ddgraph->uncolouredFactorCount; i++){
+                int representingVertex = ddgraph->uncolouredFactor2Vertex[i];
+                if(ddgraph->vertex2FactorType[representingVertex]==3){
+                    if(colourAssignment & (1<<i)){
+                        //colour the semi-edges with 0
+                        ddgraph->colours[4*representingVertex+2] = 0;
+                        ddgraph->colours[4*(representingVertex+1)+2] = 0;
+                        ddgraph->colours[4*representingVertex+1] = 2;
+                        ddgraph->colours[4*(representingVertex+1)+1] = 2;
+                    } else {
+                        //colour the semi-edges with 2
+                        ddgraph->colours[4*representingVertex+2] = 2;
+                        ddgraph->colours[4*(representingVertex+1)+2] = 2;
+                        ddgraph->colours[4*representingVertex+1] = 0;
+                        ddgraph->colours[4*(representingVertex+1)+1] = 0;
+                    }
+                } else if(ddgraph->vertex2FactorType[representingVertex]==1){
+                    if(colourAssignment & (1<<i)){
+                        //colour edge(rv, rv+1) with 2
+                        colourEdge(ddgraph, representingVertex, representingVertex+1, 2);
+                        colourEdge(ddgraph, representingVertex+2, representingVertex+3, 2);
+                        colourEdge(ddgraph, representingVertex, representingVertex+2, 0);
+                        colourEdge(ddgraph, representingVertex+1, representingVertex+3, 0);
+                    } else {
+                        //colour edge(rv, rv+1) with 0
+                        colourEdge(ddgraph, representingVertex, representingVertex+1, 0);
+                        colourEdge(ddgraph, representingVertex+2, representingVertex+3, 0);
+                        colourEdge(ddgraph, representingVertex, representingVertex+2, 2);
+                        colourEdge(ddgraph, representingVertex+1, representingVertex+3, 2);
+                    }
+                } else {
+                    ERRORMSG("Incorrect factor type.")
+                }
+            }
             handleColouredDelaneyDressGraph(ddgraph);
         }
     }
