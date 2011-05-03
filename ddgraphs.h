@@ -166,6 +166,8 @@ int connections[MAXN/2][2];
 
 unsigned int graphsCount;
 
+unsigned int edgeColouredGraphsCount;
+
 char outputType = 'n'; //defaults to no output
 
 boolean onlyLists = FALSE;

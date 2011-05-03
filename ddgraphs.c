@@ -3887,20 +3887,6 @@ void storeBarbedWireNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgra
     free(generator);
 
     if(parameter>1){
-
-        //rotation symmetry
-        generator = getIdentity(ddgraph->underlyingGraph->nv);
-
-        for(i=0; i<2*parameter-1; i++){
-            generator[i] = i+1;
-        }
-
-        generator[2*parameter-1] = 0;
-
-        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
-
-        free(generator);
-
         //rotation symmetry
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4235,24 +4221,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
-        vertexTop = 0;
-        vertexBottom = 1;
-
-        for(i = 0; i < 2*parameter-1; i++){
-            generator[vertexTop] = vertexTop + 2;
-            generator[vertexBottom] = vertexBottom + 2;
-            vertexBottom+=2;
-            vertexTop+=2;
-        }
-        generator[vertexTop] = 1;
-        generator[vertexBottom] = 0;
-
-        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
-
-        free(generator);
-
-        generator = getIdentity(ddgraph->underlyingGraph->nv);
-
         for(i = 0; i < parameter-1; i++){
             generator[4*i] = 4*(i+1);
             generator[4*i+1] = 4*(i+1)+1;
@@ -4421,24 +4389,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     generator = getIdentity(ddgraph->underlyingGraph->nv);
 
-    vertexTop = 0;
-    vertexBottom = 1;
-
-    for(i = 0; i < 2*parameter-1; i++){
-        generator[vertexTop] = vertexTop + 2;
-        generator[vertexBottom] = vertexBottom + 2;
-        vertexBottom+=2;
-        vertexTop+=2;
-    }
-    generator[vertexTop] = 0;
-    generator[vertexBottom] = 1;
-
-    storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
-
-    free(generator);
-
-    generator = getIdentity(ddgraph->underlyingGraph->nv);
-
     for(i = 0; i < parameter-1; i++){
         generator[4*i] = 4*(i+1);
         generator[4*i+1] = 4*(i+1)+1;
@@ -4479,6 +4429,23 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
     free(generator);
+
+    if(parameter==2){
+        generator = getIdentity(ddgraph->underlyingGraph->nv);
+
+        generator[0] = 1;
+        generator[1] = 3;
+        generator[2] = 0;
+        generator[3] = 2;
+        generator[4] = 6;
+        generator[5] = 4;
+        generator[6] = 7;
+        generator[7] = 5;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
+
+        free(generator);
+    }
 }
 
 /*
@@ -4613,6 +4580,8 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block
         generator[3] = 0;
         generator[5] = 6;
         generator[6] = 5;
+
+        storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -5086,6 +5055,10 @@ void constructDoubleLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *blo
         ddgraph->vertex2UncolouredFactor[4*i+2] = ddgraph->uncolouredFactorCount;
         ddgraph->vertex2UncolouredFactor[4*i+3] = ddgraph->uncolouredFactorCount;
         ddgraph->uncolouredFactorCount++;
+        ddgraph->vertex2FactorType[4*i+0] = 1;
+        ddgraph->vertex2FactorType[4*i+1] = 1;
+        ddgraph->vertex2FactorType[4*i+2] = 1;
+        ddgraph->vertex2FactorType[4*i+3] = 1;
     }
 
     edges[positions[parameter*4-2]+0] = parameter*4;
@@ -5137,14 +5110,73 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 boolean first = TRUE;
 
 void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
+    edgeColouredGraphsCount++;
     if(outputType=='c'){
         writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
         first = FALSE;
     }
 }
 
+int getImageOfColouring(int colourAssignment, permutation *automorphism, DDGRAPH *ddgraph){
+    int i, image = 0;
+
+    for(i = 0; i<ddgraph->uncolouredFactorCount; i++){
+        int v = ddgraph->uncolouredFactor2Vertex[i];
+        int vImage = automorphism[v];
+        int currentState = colourAssignment & (1<<i);
+        if(ddgraph->vertex2FactorType[v]==3){
+            if(currentState){
+                image |= 1 << (ddgraph->vertex2UncolouredFactor[vImage]);
+            }
+        } else if (ddgraph->vertex2FactorType[v]==1){
+            int u = v + 1;
+            int uImage = automorphism[u];
+            if((vImage-uImage)%2 && currentState){
+                image |= 1 << (ddgraph->vertex2UncolouredFactor[vImage]);
+            } else if(!((vImage-uImage)%2) && !currentState){
+                image |= 1 << (ddgraph->vertex2UncolouredFactor[vImage]);
+            }
+        } else {
+            ERRORMSG("Illegal vertex type for colour assignment.")
+        }
+    }
+
+    return image;
+}
+
 void assignEdgeColours(DDGRAPH *ddgraph){
-    handleColouredDelaneyDressGraph(ddgraph);
+    int i, colourAssignment;
+
+    int possibleEdgeColouringsCount = (1 << (ddgraph->uncolouredFactorCount));
+    int colourOrbits[possibleEdgeColouringsCount];
+    int orbitSizes[possibleEdgeColouringsCount];
+    int edgeColouringsCount = possibleEdgeColouringsCount;
+
+    for(colourAssignment=0; colourAssignment<possibleEdgeColouringsCount; colourAssignment++){
+        colourOrbits[colourAssignment] = colourAssignment;
+        orbitSizes[colourAssignment] = 1;
+    }
+
+    for(i=0; i<numberOfGenerators[connectionsMade]; i++){
+        for(colourAssignment=0; colourAssignment<possibleEdgeColouringsCount; colourAssignment++){
+            int colourAssignmentImage = getImageOfColouring(colourAssignment, (*(automorphismGroupGenerators + connectionsMade))[i], ddgraph);
+            unionElements(colourOrbits, orbitSizes, &edgeColouringsCount, colourAssignment, colourAssignmentImage);
+        }
+    }
+
+    //make sure that each element is connected to its root
+    for(colourAssignment=0; colourAssignment<possibleEdgeColouringsCount; colourAssignment++){
+        findRootOfElement(colourOrbits, colourAssignment);
+    }
+
+    for(colourAssignment=0; colourAssignment<possibleEdgeColouringsCount; colourAssignment++){
+        if(colourOrbits[colourAssignment] == colourAssignment){
+            //assign colours
+            
+            handleColouredDelaneyDressGraph(ddgraph);
+        }
+    }
+
 }
 
 void handleDelaneyDressGraph(DDGRAPH *ddgraph){
@@ -5409,7 +5441,7 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 
 boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int orbit, int depth, int connector1, int connector2){
-    int i, j;
+    int i, j, type;
 
     int smallest = (connector1 < connector2 ? connector1 : connector2);
     int biggest = (connector1 < connector2 ? connector2 : connector1);
@@ -5442,15 +5474,17 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         nautyPtn[i] = 1;
     }
     int counter = 0;
-    for(j = 2; j>=0; j--){
-        for(i=0; i<ddgraph->order; i++){
-            if(ddgraph->semiEdges[i]==j){
-                nautyLabelling[counter] = i;
-                counter++;
+    for(type=1; type<=4; type++){
+        for(j = 2; j>=0; j--){
+            for(i=0; i<ddgraph->order; i++){
+                if(ddgraph->semiEdges[i]==j && ddgraph->vertex2FactorType[i]==type){
+                    nautyLabelling[counter] = i;
+                    counter++;
+                }
             }
-        }
-        if(counter>0){
-            nautyPtn[counter-1]=0;
+            if(counter>0){
+                nautyPtn[counter-1]=0;
+            }
         }
     }
     for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
@@ -6126,6 +6160,7 @@ void initComponentsStatic(){
 void initStatistics(){
     componentListsCount = 0;
     graphsCount = 0;
+    edgeColouredGraphsCount = 0;
 }
 
 void initNautyOptions(int order) {
@@ -6173,6 +6208,7 @@ void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgrap
         int vertexToBlock[ddgraph->underlyingGraph->vlen];
         int vertexToConnector[ddgraph->underlyingGraph->vlen];
         constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
+        numberOfGenerators[0] = 0;
         storeInitialGenerators(bblock, 1, ddgraph);
         handleDelaneyDressGraph(ddgraph);
         cleanDDGraph(ddgraph);
@@ -6356,6 +6392,11 @@ void startGeneration(int targetSize){
                 graphsCount,
                 graphsCount==1 ? (char *)"" : (char *)"s",
                 markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+        if(colouredEdges){
+            fprintf(stderr, "Found %d edge-coloured Delaney-Dress graph%s.\n",
+                edgeColouredGraphsCount,
+                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+        }
     }
 
 }
@@ -6544,6 +6585,11 @@ void startFromListFile(char *filename){
                 graphsCount,
                 graphsCount==1 ? (char *)"" : (char *)"s",
                 markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+        if(colouredEdges){
+            fprintf(stderr, "Found %d edge-coloured Delaney-Dress graph%s.\n",
+                edgeColouredGraphsCount,
+                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+        }
     }
 }
 
