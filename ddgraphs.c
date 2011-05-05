@@ -6387,6 +6387,7 @@ void extraUnconstructableGraphs_4n(DDGRAPH * ddgraph, int targetSize){
     addDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
 
     if(markedTwoFactors){
+        addDoubleLockedBarbedWire(ddgraph, targetSize/2);
         addCompletelyLockedHub(ddgraph, targetSize/4);
         addDoubleroofDoublefloorHighBuilding(ddgraph, targetSize/4);
         addDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
