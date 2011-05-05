@@ -370,9 +370,9 @@ char writePregraphColorCode2Factor(FILE *f, DDGRAPH *ddgraph, boolean firstInFil
                     }
                 }
                 if(ddgraph->oneFactor[i]==j){
-                    colours[adjacencyListSize] = 1;
-                } else {
                     colours[adjacencyListSize] = 2;
+                } else {
+                    colours[adjacencyListSize] = 1;
                 }
                 adjacencyListSize++;
             } else {
@@ -390,9 +390,9 @@ char writePregraphColorCode2Factor(FILE *f, DDGRAPH *ddgraph, boolean firstInFil
                         }
                     }
                     if(ddgraph->oneFactor[i]==j){
-                        colours[adjacencyListSize] = 1;
-                    } else {
                         colours[adjacencyListSize] = 2;
+                    } else {
+                        colours[adjacencyListSize] = 1;
                     }
                     adjacencyListSize++;
                 }
