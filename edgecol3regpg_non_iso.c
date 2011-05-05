@@ -2,14 +2,16 @@
 
 //reads a list of edge-coloured cubic pregraphs and determines whether it contains isomorphic copies
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<memory.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
 #include <limits.h>
+#include <sys/times.h>
 #include "nauty.h"
 
 #define SEMIEDGE INT_MAX
 #define MAXORDER 200
+#define time_factor sysconf(_SC_CLK_TCK)
 
 short endian = LITTLE_ENDIAN; // defines which endian should be used while exporting pregraph code
 
@@ -436,6 +438,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    struct tms TMS;
+    unsigned int oldtime = 0;
+
     while (read_pgc_code(stdin, &g) != EOF) {
         countTotal++;
         int isNew = handle_new_graph(&g, &list);
@@ -461,6 +466,10 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Read %d graphs, of which %d pairwise not isomorph.\n", countTotal, countNonIso);
 
+    times(&TMS);
+    unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
+    fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
     return (0);
 
 }

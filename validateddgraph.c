@@ -8,11 +8,13 @@
 #include <memory.h>
 #include <limits.h>
 #include <unistd.h>
+#include <sys/times.h>
 
 #define SEMIEDGE INT_MAX
 #define MAXORDER 200
 #define TRUE 1
 #define FALSE 0
+#define time_factor sysconf(_SC_CLK_TCK)
 
 short endian = LITTLE_ENDIAN; // defines which endian should be used while exporting pregraph code
 
@@ -354,8 +356,15 @@ int main(int argc, char *argv[]) {
 
     }
 
+    struct tms TMS;
+    unsigned int oldtime = 0;
+
     fprintf(stderr, "Read %d graphs, of which %d had a valid colouring.\n", countTotal, validTotal);
 
+    times(&TMS);
+    unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
+    fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
     return (0);
 
 }

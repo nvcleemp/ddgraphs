@@ -7,12 +7,14 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <unistd.h>
+#include <sys/times.h>
 
 #define SEMIEDGE INT_MAX
 #define UNSET (INT_MAX - 1)
 #define MAXORDER 200
 #define TRUE 1
 #define FALSE 0
+#define time_factor sysconf(_SC_CLK_TCK)
 
 short endian = LITTLE_ENDIAN; // defines which endian should be used while exporting pregraph code
 
@@ -532,6 +534,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    struct tms TMS;
+    unsigned int oldtime = 0;
+
     if(extend){
         while (read_pgc_code(stdin, &g) != EOF) {
             remove_colour(&g, dummyColour);
@@ -547,6 +552,10 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Read %d graphs, found %d coloured graphs.\n", countRead, countColoured);
 
+    times(&TMS);
+    unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
+    fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
     return (0);
 
 }
