@@ -1,4 +1,4 @@
-// cc -O4 -o edgecol3regpg_non_iso edgecol3regpg_non_iso.c nautil.c naugraph.c nauty.c
+// cc -O4 -Wall -o edgecol3regpg_non_iso edgecol3regpg_non_iso.c nautil.c naugraph.c nauty.c
 
 //reads a list of edge-coloured cubic pregraphs and determines whether it contains isomorphic copies
 
@@ -363,6 +363,22 @@ char write_pgc_code(FILE *f, GRAPH *g, boolean first){
     return (ferror(f) ? 2 : 1);
 }
 
+void printGraph(FILE *f, GRAPH *g){
+    int i, j;
+    for(i=0; i<g->order; i++){
+        fprintf(f, "%3d) ", i);
+        for(j = 0; j<g->degrees[i]; j++){
+            if(g->adjacency[i][j]==SEMIEDGE){
+                fprintf(f, "  S (%d)", g->colours[i][j]);
+            } else {
+                fprintf(f, "%3d (%d)", g->adjacency[i][j], g->colours[i][j]);
+            }
+        }
+        fprintf(f, "\n");
+    }
+    fprintf(f, "\n");
+}
+
 void help(char *name){
     fprintf(stderr, "The program %s reads edge-coloured cubic pregraphs from stdin\n", name);
     fprintf(stderr, "and determines the number of non-isomorphic graphs it has read.\n");
@@ -385,7 +401,7 @@ int main(int argc, char *argv[]) {
 
     GRAPH g;
     int countTotal = 0;
-    boolean writethem = FALSE, printNew = FALSE, printOld = FALSE;
+    boolean writethem = FALSE, printThem = FALSE, printNew = FALSE, printOld = FALSE;
     boolean first = TRUE;
 
     list = NULL;
@@ -393,7 +409,7 @@ int main(int argc, char *argv[]) {
     int c;
     char *name = argv[0];
 
-    while ((c = getopt(argc, argv, "hiwno")) != -1) {
+    while ((c = getopt(argc, argv, "hiwnop")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
@@ -407,6 +423,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'o':
                 printOld = TRUE;
+                break;
+            case 'p':
+                printThem = TRUE;
                 break;
             case 'w':
                 writethem = TRUE;
@@ -431,6 +450,11 @@ int main(int argc, char *argv[]) {
         } else {
             if(printOld) fprintf(stderr, "Graph %d is not new.\n", countTotal);
         }
+
+        if(isNew && printThem) {
+            printGraph(stderr, &g);
+        }
+
     }
 
     int countNonIso = listSize(list);
