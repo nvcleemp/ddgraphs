@@ -33,7 +33,7 @@ LISTENTRY *list;
 
 /**********Translate****************************************************/
 
-translate(GRAPH *g, NAUTYGRAPH nautyg, int m, int newOrder) {
+void translate(GRAPH *g, NAUTYGRAPH nautyg, int m, int newOrder) {
 
     int i, j, k, dummy;
 
@@ -66,7 +66,7 @@ translate(GRAPH *g, NAUTYGRAPH nautyg, int m, int newOrder) {
     }
 }
 
-getNewOrder(GRAPH *g) {
+int getNewOrder(GRAPH *g) {
     int newOrder, i, j;
 
     newOrder = g->order;
