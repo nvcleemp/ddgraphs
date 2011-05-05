@@ -1,7 +1,7 @@
 
 // cc -O4 -Wall -o validateddgraph validateddgraph.c
 
-//reads a list of edge-coloured cubic pregraphs and determines whether it contains isomorphic copies
+//reads a list of edge-coloured cubic pregraphs and determines whether it are valid Delaney-Dress graph
 
 #include <stdio.h>
 #include <stdlib.h>
