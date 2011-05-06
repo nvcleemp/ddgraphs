@@ -118,7 +118,7 @@ typedef struct _ddgraph DDGRAPH;
 
 //================== Component lists =====================
 
-unsigned int componentListsCount;
+unsigned long long int componentListsCount;
 
 #define Q1TypeComponentsCount 12
 
@@ -164,9 +164,9 @@ int connectionsMade; //the number of connections made at this point
 
 int connections[MAXN/2][2];
 
-unsigned int graphsCount;
+unsigned long long int graphsCount;
 
-unsigned int edgeColouredGraphsCount;
+unsigned long long int edgeColouredGraphsCount;
 
 char outputType = 'n'; //defaults to no output
 

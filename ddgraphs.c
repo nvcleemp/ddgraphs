@@ -6434,14 +6434,14 @@ void startGeneration(int targetSize){
 
     freeDDGraph(ddgraph);
 
-    fprintf(stderr, "Found %d component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+    fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
     if(!onlyLists){
-        fprintf(stderr, "Found %d Delaney-Dress graph%s%s.\n",
+        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
                 graphsCount,
                 graphsCount==1 ? (char *)"" : (char *)"s",
                 markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
         if(colouredEdges){
-            fprintf(stderr, "Found %d edge-coloured Delaney-Dress graph%s.\n",
+            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
                 edgeColouredGraphsCount,
                 edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
         }
@@ -6627,14 +6627,14 @@ void startFromListFile(char *filename){
         freeDDGraph(ddgraph);
     }
 
-    fprintf(stderr, "Read %d component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+    fprintf(stderr, "Read %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
     if(!onlyLists){
-        fprintf(stderr, "Found %d Delaney-Dress graph%s%s.\n",
+        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
                 graphsCount,
                 graphsCount==1 ? (char *)"" : (char *)"s",
                 markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
         if(colouredEdges){
-            fprintf(stderr, "Found %d edge-coloured Delaney-Dress graph%s.\n",
+            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
                 edgeColouredGraphsCount,
                 edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
         }
