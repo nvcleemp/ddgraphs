@@ -8,10 +8,10 @@ SHELL = /bin/sh
 # but limits the order of the graphs to 32.
 CC32 = gcc
 CC64 = gcc
-CFLAGS = -O4 -Wall -DWORDSIZE=32 -DMAXN=32
+CFLAGS = -Wall -DWORDSIZE=64 -DMAXN=64 -rdynamic
 COMPLETE = ddgraphs ddgraphs-64 ddgraphs-profile ddgraphs-debug
 SOURCES = ddgraphs.c ddgraphs.h util.h Makefile COPYRIGHT.txt LICENSE.txt
-DDGRAPHS_SOURCES = ddgraphs.c
+DDGRAPHS_SOURCES = ddgraphs.c nauty.c nautil.c nausparse.c
 
 all : 32bit
 
@@ -32,10 +32,10 @@ ddgraphs-64: $(DDGRAPHS_SOURCES)
 	${CC64} $(CFLAGS) $(DDGRAPHS_SOURCES) -o ddgraphs-64
 
 ddgraphs-profile: $(DDGRAPHS_SOURCES)
-	${CC32} -Wall -pg -g $(DDGRAPHS_SOURCES) -o ddgraphs-profile
+	${CC32} $(CFLAGS) -pg -g $(DDGRAPHS_SOURCES) -o ddgraphs-profile
 
 ddgraphs-debug: $(DDGRAPHS_SOURCES)
-	${CC32} -Wall -rdynamic -g $(DDGRAPHS_SOURCES) -o ddgraphs-debug
+	${CC32} $(CFLAGS) -rdynamic -g $(DDGRAPHS_SOURCES) -o ddgraphs-debug
 
 sources: ddgraphs-sources.zip ddgraphs-sources.tar.gz
 
