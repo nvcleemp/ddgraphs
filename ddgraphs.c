@@ -5155,7 +5155,6 @@ void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *c
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
     int *edges = ddgraph->underlyingGraph->e;
-    int *degrees = ddgraph->underlyingGraph->d;
     
     for(i=0; i<ddgraph->order; i++){
         if(!visited[i]){
