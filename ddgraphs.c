@@ -515,6 +515,37 @@ char writePregraphColorCodeEdgeColouring(FILE *f, DDGRAPH *ddgraph, boolean firs
     return (ferror(f) ? 2 : 1);
 }
 
+void printRealDDGraph(DDGRAPH *graph){
+    fprintf(stderr, "DDGRAPH %p\n", graph);
+    fprintf(stderr, "================\n");
+    fprintf(stderr, "order      %d\n", graph->order);
+
+    int i,j;
+
+    for(i=0; i<graph->order; i++){
+        fprintf(stderr, "%d :", i);
+        for(j=0; j < 3; j++){
+            int s = SEMIEDGE;
+            int neighbour = graph->underlyingGraph->e[3*i+j];
+            if(neighbour == s){
+                fprintf(stderr, "S ");
+            } else if(neighbour >= graph->order){
+                int dummy = neighbour;
+                neighbour = graph->underlyingGraph->e[3*dummy+0] + graph->underlyingGraph->e[3*dummy+1] - i;
+                fprintf(stderr, "%d ", neighbour);
+            } else {
+                fprintf(stderr, "%d ", neighbour);
+            }
+        }
+        fprintf(stderr, "|");
+        for(j=0; j<3; j++){
+            fprintf(stderr, "%d ", graph->colours[4*i+j]);
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+}
+
 void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -5108,14 +5139,77 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
     }
 }
 
+//========= PHASE 4: ENUMERATION OF DELANEY-DRESS SYMBOLS ===================
+void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *count, int colour1, int colour2){
+    int i, j, k, v, nextV, c, size;
+    boolean visited[MAXN];
+    for(i=0; i<MAXN; i++){
+        visited[i]=FALSE;
+    }
+    int colours[2];
+    colours[0]=colour1;
+    colours[1]=colour2;
+    
+    *count = 0;
+
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *degrees = ddgraph->underlyingGraph->d;
+    
+    for(i=0; i<ddgraph->order; i++){
+        if(!visited[i]){
+            size = 0;
+            for(k=0; k<2; k++){
+                c = k;
+                v = i;
+                visited[v]=FALSE;
+                while(v!=SEMIEDGE && !visited[v]){
+                    size++;
+                    visited[v]=TRUE; //TODO: this is a bit messy
+                    j = 0;
+                    while(ddgraph->colours[4*v+j]!=colours[c]) j++;
+                    nextV = edges[3*v+j];
+                    if(nextV >= ddgraph->order && nextV!=SEMIEDGE){
+                        //dummy edge, so we go directly to the neighbour
+                        nextV = edges[positions[nextV]+0] + edges[positions[nextV]+1] - v;
+                    }
+                    c = (c+1)%2;
+                    v = nextV;
+                }
+            }
+            components[*count] = i;
+            componentsSize[*count] = size-1; //TODO: this is a bit messy
+            (*count)++;
+        }
+    }
+}
+
+void assignComponentLabels(DDGRAPH *ddgraph){
+    int s0s1Components[MAXN];
+    int s0s1ComponentsSize[MAXN];
+    int s0s1ComponentCount = 0;
+    int s1s2Components[MAXN];
+    int s1s2ComponentsSize[MAXN];
+    int s1s2ComponentCount = 0;
+
+    findComponent(ddgraph, s0s1Components, s0s1ComponentsSize, &s0s1ComponentCount, 0, 1);
+    findComponent(ddgraph, s1s2Components, s1s2ComponentsSize, &s1s2ComponentCount, 1, 2);
+    
+}
+
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
 boolean first = TRUE;
 
 void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     edgeColouredGraphsCount++;
-    if(outputType=='c'){
-        writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
-        first = FALSE;
+    if(symbols){
+        assignComponentLabels(ddgraph);
+    } else {
+        if(outputType=='c'){
+            writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
+            first = FALSE;
+        }
     }
 }
 
@@ -6668,7 +6762,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
 
-    while ((c = getopt(argc, argv, "hl:Ltco:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:Ltcso:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
@@ -6685,6 +6779,11 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
             case 'c':
                 markedTwoFactors = TRUE;
                 colouredEdges = TRUE;
+                break;
+            case 's':
+                markedTwoFactors = TRUE;
+                colouredEdges = TRUE;
+                symbols = TRUE;
                 break;
             case 'o':
                 outputType = optarg[0];

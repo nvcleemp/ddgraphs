@@ -176,6 +176,8 @@ boolean markedTwoFactors = FALSE;
 
 boolean colouredEdges = FALSE;
 
+boolean symbols = FALSE;
+
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
  * of each generator is n.
