@@ -5972,43 +5972,46 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
         DEBUGTRACE_EXIT
         return;
     } else {
-        componentListsCount++;
+        if(!moduloEnabled || (splitPointCount%moduloMod == moduloRest)){
+            componentListsCount++;
 #ifdef _DEBUGINTERMEDIATE
-        int i, j;
-        for(i = 0; i < Q1TypeComponentsCount; i++){
-            fprintf(stderr, "(");
-            for(j = 0; j < maximumQ1TypeComponents; j++){
-                fprintf(stderr, "%d ", Q1TypeComponentsComponentCount[i][j]);
+            int i, j;
+            for(i = 0; i < Q1TypeComponentsCount; i++){
+                fprintf(stderr, "(");
+                for(j = 0; j < maximumQ1TypeComponents; j++){
+                    fprintf(stderr, "%d ", Q1TypeComponentsComponentCount[i][j]);
+                }
+                fprintf(stderr, ")");
             }
-            fprintf(stderr, ")");
-        }
-        fprintf(stderr, "| ");
-        for(i = 0; i < Q2TypeComponentsCount; i++){
-            fprintf(stderr, "(");
-            for(j = 0; j < maximumQ2TypeComponents; j++){
-                fprintf(stderr, "%d ", Q2TypeComponentsComponentCount[i][j]);
+            fprintf(stderr, "| ");
+            for(i = 0; i < Q2TypeComponentsCount; i++){
+                fprintf(stderr, "(");
+                for(j = 0; j < maximumQ2TypeComponents; j++){
+                    fprintf(stderr, "%d ", Q2TypeComponentsComponentCount[i][j]);
+                }
+                fprintf(stderr, ")");
             }
-            fprintf(stderr, ")");
-        }
-        fprintf(stderr, "| ");
-        for(i = 0; i < Q3TypeComponentsCount; i++){
-            fprintf(stderr, "(");
-            for(j = 0; j < maximumQ3TypeComponents; j++){
-                fprintf(stderr, "%d ", Q3TypeComponentsComponentCount[i][j]);
+            fprintf(stderr, "| ");
+            for(i = 0; i < Q3TypeComponentsCount; i++){
+                fprintf(stderr, "(");
+                for(j = 0; j < maximumQ3TypeComponents; j++){
+                    fprintf(stderr, "%d ", Q3TypeComponentsComponentCount[i][j]);
+                }
+                fprintf(stderr, ")");
             }
-            fprintf(stderr, ")");
-        }
-        fprintf(stderr, "| %d\n", Q4ComponentCount);
+            fprintf(stderr, "| %d\n", Q4ComponentCount);
 #endif
-        if(onlyLists){
-            if(outputType=='c'){
-                writeListCodeMultipleBlockList(stdout, vertexCount);
-            } else if(outputType=='h'){
-                printHumanReadableComponentList(stdout);
+            if(onlyLists){
+                if(outputType=='c'){
+                    writeListCodeMultipleBlockList(stdout, vertexCount);
+                } else if(outputType=='h'){
+                    printHumanReadableComponentList(stdout);
+                }
+            } else {
+                connectComponentList(vertexCount, ddgraph);
             }
-        } else {
-            connectComponentList(vertexCount, ddgraph);
         }
+        splitPointCount++;
     }
     DEBUGTRACE_EXIT
 }
@@ -6336,23 +6339,26 @@ void finishGraph(DDGRAPH *ddgraph){
 }
 
 void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgraph){
-    componentListsCount++;
-    if(onlyLists){
-        if(outputType=='c'){
-            writeListCodeSingleBlockList(stdout, order, bblock);
-        } else if(outputType=='h'){
-            printBlockName(stdout, 1, buildingBlockTypeToNumber(bblock), bblock->parameter, TRUE);
-            fprintf(stdout, "\n");
+    if(!moduloEnabled || (splitPointCount%moduloMod == moduloRest)){
+        componentListsCount++;
+        if(onlyLists){
+            if(outputType=='c'){
+                writeListCodeSingleBlockList(stdout, order, bblock);
+            } else if(outputType=='h'){
+                printBlockName(stdout, 1, buildingBlockTypeToNumber(bblock), bblock->parameter, TRUE);
+                fprintf(stdout, "\n");
+            }
+        } else {
+            int vertexToBlock[ddgraph->underlyingGraph->vlen];
+            int vertexToConnector[ddgraph->underlyingGraph->vlen];
+            constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
+            numberOfGenerators[0] = 0;
+            storeInitialGenerators(bblock, 1, ddgraph);
+            handleDelaneyDressGraph(ddgraph);
+            cleanDDGraph(ddgraph);
         }
-    } else {
-        int vertexToBlock[ddgraph->underlyingGraph->vlen];
-        int vertexToConnector[ddgraph->underlyingGraph->vlen];
-        constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
-        numberOfGenerators[0] = 0;
-        storeInitialGenerators(bblock, 1, ddgraph);
-        handleDelaneyDressGraph(ddgraph);
-        cleanDDGraph(ddgraph);
     }
+    splitPointCount++;
 }
 
 void addTristar(DDGRAPH * ddgraph){
@@ -6538,6 +6544,9 @@ void startGeneration(int targetSize){
                 edgeColouredGraphsCount,
                 edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
         }
+    }
+    if(moduloEnabled){
+        fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
     }
 
 }
@@ -6732,6 +6741,9 @@ void startFromListFile(char *filename){
                 edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
         }
     }
+    if(moduloEnabled){
+        fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
+    }
 }
 
 //====================== USAGE =======================
@@ -6760,8 +6772,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     int c;
     char *name = argv[0];
     char *listFilename = NULL;
+    char *moduloString;
 
-    while ((c = getopt(argc, argv, "hl:Ltcso:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:Ltcso:m:")) != -1) {
         switch (c) {
             case 'h':
                 help(name);
@@ -6795,6 +6808,29 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         fprintf(stderr, "Illegal output format %c.\n", c);
                         usage(name);
                         return 1;
+                }
+                break;
+            case 'm':
+                //modulo
+                moduloEnabled = TRUE;
+                moduloString = optarg;
+                moduloRest = atoi(moduloString);
+                moduloString = strchr(moduloString, ':');
+                if(moduloString==NULL){
+                    fprintf(stderr, "Illegal format for modulo.\n");
+                    usage(name);
+                    return EXIT_FAILURE;
+                }
+                moduloMod = atoi(moduloString+1);
+                if (moduloRest >= moduloMod) {
+                    fprintf(stderr, "Illegal format for modulo: rest must be smaller than mod.\n");
+                    usage(name);
+                    return EXIT_FAILURE;
+                }
+                if (moduloRest < 0) {
+                    fprintf(stderr, "Illegal format for modulo: rest must be positive.\n");
+                    usage(name);
+                    return EXIT_FAILURE;
                 }
                 break;
             default:

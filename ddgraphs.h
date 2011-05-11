@@ -178,6 +178,12 @@ boolean colouredEdges = FALSE;
 
 boolean symbols = FALSE;
 
+// allow the generation process to be split in several parts
+boolean moduloEnabled = FALSE;
+unsigned long long int moduloRest;
+unsigned long long int moduloMod;
+unsigned long long int splitPointCount;
+
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
  * of each generator is n.
