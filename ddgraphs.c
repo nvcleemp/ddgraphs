@@ -5761,8 +5761,10 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                 
                 //connect v1 to v2
                 connectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, v1, v2);
+#ifdef _DEBUGMETHODS
                 connections[connectionsMade][0] = v1;
                 connections[connectionsMade][1] = v2;
+#endif
                 connectionsMade++;
                 numberOfGenerators[connectionsMade]=0;
                 freeConnectors[v1]=FALSE;
