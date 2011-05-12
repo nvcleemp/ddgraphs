@@ -6588,7 +6588,8 @@ void startGeneration(int targetSize){
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
     }
-    
+
+    freeComponents();
     cleanNautyOptions();
     cleanComponentStatistics();
 }
