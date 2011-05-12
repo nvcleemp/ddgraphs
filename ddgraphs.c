@@ -2286,6 +2286,8 @@ void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
+    free(generator);
+
     if(block->parameter == 2){
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -2297,9 +2299,9 @@ void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
         generator[firstVertex + 6] = firstVertex + 5;
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
-    }
 
-    free(generator);
+        free(generator);
+    }
 }
 
 void storeDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
