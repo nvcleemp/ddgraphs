@@ -704,6 +704,11 @@ void cleanDDGraph(DDGRAPH * ddgraph){
         ddgraph->underlyingGraph->elen = 3*order + 2*(order/2);
     }
 
+    //free old memory before reallocating new
+    free(ddgraph->vertex2UncolouredFactor);
+    free(ddgraph->vertex2FactorType);
+    free(ddgraph->uncolouredFactor2Vertex);
+
     ddgraph->vertex2UncolouredFactor = (int *)malloc(sizeof(int)*order);
     ddgraph->vertex2FactorType = (int *)malloc(sizeof(int)*order);
     for(i = 0; i < order; i++){
@@ -808,6 +813,27 @@ BBLOCK *initBuildingBlock(BBLOCK* block, int type, int component, int parameter,
 BBLOCK *getBuildingBlock(int type, int component, int parameter, int id){
     BBLOCK *block = (BBLOCK *) malloc(sizeof(BBLOCK));
     return initBuildingBlock(block, type, component, parameter, id);
+}
+
+void freeBuildingBlock(BBLOCK *block){
+    if(block->type<5){
+        free(block->connections);
+        free(block->targetConnector);
+        free(block->connectionVertices);
+    }
+    free(block);
+}
+
+void freeBuildingBlocks(BBLOCK *block, int blockCount){
+    int i;
+    for(i=0; i<blockCount; i++){
+        if((block+i)->type<5){
+            free((block+i)->connections);
+            free((block+i)->targetConnector);
+            free((block+i)->connectionVertices);
+        }
+    }
+    free(block);
 }
 
 /**
@@ -5855,7 +5881,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
 
     cleanDDGraph(ddgraph);
     //free the memory allocated at the beginning of this method
-    free(blocks); //TODO: block still has allocated members!!!
+    freeBuildingBlocks(blocks, blockCount);
     DEBUGTRACE_EXIT
 }
 
@@ -6300,6 +6326,12 @@ void initComponentsStatic(){
 
 }
 
+void cleanComponentStatistics(){
+    free(Q1TypeComponentsComponentCount);
+    free(Q2TypeComponentsComponentCount);
+    free(Q3TypeComponentsComponentCount);
+}
+
 void initStatistics(){
     componentListsCount = 0;
     graphsCount = 0;
@@ -6325,6 +6357,12 @@ void initNautyOptions(int order) {
     canonGraph.dlen = maxVertices;
     canonGraph.vlen = maxVertices;
     canonGraph.elen = 3*order + 2*(order/2) + 2;
+}
+
+void cleanNautyOptions(){
+    free(canonGraph.d);
+    free(canonGraph.v);
+    free(canonGraph.e);
 }
 
 //====================== START =======================
@@ -6548,7 +6586,9 @@ void startGeneration(int targetSize){
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
     }
-
+    
+    cleanNautyOptions();
+    cleanComponentStatistics();
 }
 
 void startFromListFile(char *filename){
@@ -6727,6 +6767,8 @@ void startFromListFile(char *filename){
             freeComponents();
         }
         freeDDGraph(ddgraph);
+
+        cleanNautyOptions();
     }
 
     fprintf(stderr, "Read %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
@@ -6744,6 +6786,8 @@ void startFromListFile(char *filename){
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
     }
+
+    cleanComponentStatistics();
 }
 
 //====================== USAGE =======================
