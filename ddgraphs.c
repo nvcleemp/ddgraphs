@@ -5807,48 +5807,103 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 
 }
 
+void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
+        int *vertexToBlock, int *vertexToConnector, int totalConnectionsLeft, boolean *freeConnectors){
+    int i, j;
+
+    i = 0;
+    while(i<ddgraph->order-1 && !freeConnectors[i]) i++;
+    DEBUGASSERT(i<ddgraph->order-1)
+
+    for(j=i+1; j<ddgraph->order; j++){
+        if(freeConnectors[j] && vertexToBlock[i]!=vertexToBlock[j]){
+            if(isLegalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, i, j)){
+
+                //connect v1 to v2
+                connectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, i, j);
+#ifdef _DEBUGMETHODS
+                connections[connectionsMade][0] = i;
+                connections[connectionsMade][1] = j;
+#endif
+                connectionsMade++;
+                numberOfGenerators[connectionsMade]=0;
+                freeConnectors[i]=FALSE;
+                freeConnectors[j]=FALSE;
+
+                    //
+                if(totalConnectionsLeft - 2 == 0){
+                    //printConnectionsMade();
+                    //printGenerators(ddgraph, 6);
+                    //fprintf(stderr, "Graph %2d: ", graphsCount);
+                    //printCanonicalLabelling(ddgraph);
+                    //fprintf(stderr, "Found graph based on: ");
+                    //printHumanReadableComponentList();
+                    handleDelaneyDressGraph(ddgraph);
+                } else {
+                    finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph,
+                            vertexToBlock, vertexToConnector, totalConnectionsLeft-2, freeConnectors);
+                }
+
+                //disconnect i from j
+                freeConnectors[i]=TRUE;
+                freeConnectors[j]=TRUE;
+                connectionsMade--;
+                disconnectConnectors(blocks, ddgraph, vertexToBlock, vertexToConnector, i, j);
+            }
+        }
+    }
+}
+
 void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector, boolean *freeConnectors){
     DEBUGTRACE_ENTER
-    //first we need the vertex orbits
+    if(numberOfGenerators[connectionsMade]==0){
+        int i, count = 0;
+        for(i=0; i<ddgraph->order; i++){
+            if(freeConnectors[i]) count++;
+        }
+        finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, count, freeConnectors);
+    } else {
+        //first we need the vertex orbits
 
-    int orbitCount = 0;
-    int i,j;
+        int orbitCount = 0;
+        int i,j;
     
 #ifdef _DEBUGINTERMEDIATE
-    printGenerators(ddgraph, connectionsMade);
+        printGenerators(ddgraph, connectionsMade);
 #endif
-    determineVertexOrbits(
-            ddgraph->underlyingGraph->nv,
-            vertexOrbits[connectionsMade],
-            vertexOrbitsSizes[connectionsMade],
-            &orbitCount,
-            automorphismGroupGenerators + connectionsMade,
-            numberOfGenerators[connectionsMade]);
+        determineVertexOrbits(
+                ddgraph->underlyingGraph->nv,
+                vertexOrbits[connectionsMade],
+                vertexOrbitsSizes[connectionsMade],
+                &orbitCount,
+                automorphismGroupGenerators + connectionsMade,
+                numberOfGenerators[connectionsMade]);
 #ifdef _DEBUGINTERMEDIATE
-    printConnectorOrbits(blocks, buildingBlockCount, connectionsMade);
+        printConnectorOrbits(blocks, buildingBlockCount, connectionsMade);
 #endif
 
-    int minimumOrbitSize = ddgraph->order + 1;
-    int smallestOrbit = INT_MAX;
-    int connectionCount = 0;
+        int minimumOrbitSize = ddgraph->order + 1;
+        int smallestOrbit = INT_MAX;
+        int connectionCount = 0;
 
-    for(i=0; i<buildingBlockCount; i++){
-        for(j=0; j<(blocks+i)->connectorCount; j++){
-            if((blocks+i)->connections[j]==NULL){
-                connectionCount++;
-                //only look at connections that haven't been made
-                if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
-                    if(vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]] < minimumOrbitSize){
-                        minimumOrbitSize = vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]];
-                        smallestOrbit = (blocks+i)->connectionVertices[j];
+        for(i=0; i<buildingBlockCount; i++){
+            for(j=0; j<(blocks+i)->connectorCount; j++){
+                if((blocks+i)->connections[j]==NULL){
+                    connectionCount++;
+                    //only look at connections that haven't been made
+                    if((blocks+i)->connectionVertices[j] == vertexOrbits[connectionsMade][(blocks+i)->connectionVertices[j]]){
+                        if(vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]] < minimumOrbitSize){
+                            minimumOrbitSize = vertexOrbitsSizes[connectionsMade][(blocks+i)->connectionVertices[j]];
+                            smallestOrbit = (blocks+i)->connectionVertices[j];
+                        }
                     }
                 }
             }
         }
+        connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, vertexToBlock,
+                vertexToConnector, smallestOrbit, connectionsMade, minimumOrbitSize,
+                connectionCount, freeConnectors);
     }
-    connectCompleteOrbit(blocks, buildingBlockCount, ddgraph, vertexToBlock,
-            vertexToConnector, smallestOrbit, connectionsMade, minimumOrbitSize,
-            connectionCount, freeConnectors);
     DEBUGTRACE_EXIT
 }
 
