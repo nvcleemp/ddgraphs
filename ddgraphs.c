@@ -5169,7 +5169,7 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 
 //========= PHASE 4: ENUMERATION OF DELANEY-DRESS SYMBOLS ===================
 void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *count, int colour1, int colour2){
-    int i, j, k, v, nextV, c, size;
+    int i, j, v, nextV, c, size;
     boolean visited[MAXN];
     for(i=0; i<MAXN; i++){
         visited[i]=FALSE;
@@ -5187,26 +5187,48 @@ void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *c
     for(i=0; i<ddgraph->order; i++){
         if(!visited[i]){
             size = 0;
-            for(k=0; k<2; k++){
-                c = k;
-                v = i;
-                visited[v]=FALSE;
-                while(v!=SEMIEDGE && !visited[v]){
-                    size++;
-                    visited[v]=TRUE; //TODO: this is a bit messy
-                    j = 0;
-                    while(ddgraph->colours[4*v+j]!=colours[c]) j++;
-                    nextV = edges[3*v+j];
-                    if(nextV >= ddgraph->order && nextV!=SEMIEDGE){
-                        //dummy edge, so we go directly to the neighbour
-                        nextV = edges[positions[nextV]+0] + edges[positions[nextV]+1] - v;
-                    }
-                    c = (c+1)%2;
-                    v = nextV;
+            //visit the component at the side of colour1
+            c = 0;
+            v = i;
+            while(v!=SEMIEDGE && !visited[v]){
+                size++;
+                visited[v]=TRUE;
+                j = 0;
+                while(ddgraph->colours[4*v+j]!=colours[c]) j++;
+                nextV = edges[3*v+j];
+                if(nextV >= ddgraph->order && nextV!=SEMIEDGE){
+                    //dummy edge, so we go directly to the neighbour
+                    nextV = edges[positions[nextV]+0] + edges[positions[nextV]+1] - v;
                 }
+                c = (c+1)%2;
+                v = nextV;
             }
+            //visit the component at the side of colour2
+            c = 1;
+            j = 0;
+            while(ddgraph->colours[4*i+j]!=colours[c]) j++;
+            v = edges[3*i+j];
+            if(v >= ddgraph->order && v!=SEMIEDGE){
+                //dummy edge, so we go directly to the neighbour
+                v = edges[positions[v]+0] + edges[positions[v]+1] - i;
+            }
+            c = 0;
+            while(v!=SEMIEDGE && !visited[v]){
+                size++;
+                visited[v]=TRUE;
+                j = 0;
+                while(ddgraph->colours[4*v+j]!=colours[c]) j++;
+                nextV = edges[3*v+j];
+                if(nextV >= ddgraph->order && nextV!=SEMIEDGE){
+                    //dummy edge, so we go directly to the neighbour
+                    nextV = edges[positions[nextV]+0] + edges[positions[nextV]+1] - v;
+                }
+                c = (c+1)%2;
+                v = nextV;
+            }
+            //component has been completely visited
             components[*count] = i;
-            componentsSize[*count] = size-1; //TODO: this is a bit messy
+            componentsSize[*count] = size;
             (*count)++;
         }
     }
