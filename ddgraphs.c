@@ -738,13 +738,17 @@ void freeDDGraph(DDGRAPH *ddgraph){
     free(ddgraph);
 }
 
+permutation globalIdentity[MAXN];
+
 permutation *getIdentity(int order){
-    permutation i;
-    permutation *identity = (permutation *)malloc(sizeof(permutation)*order);
-    for(i = 0; i<order; i++){
-        identity[i]=i;
+    if(order>MAXN){
+        ERRORMSG("Order to large: recompile with a larger MAXN.")
     }
-    return identity;
+    permutation i;
+    for(i = 0; i<order; i++){
+        globalIdentity[i]=i;
+    }
+    return globalIdentity;
 }
 
 /**
@@ -1194,7 +1198,6 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         //mirror-symmetry along both axis
 
@@ -1211,8 +1214,6 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
         }
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
-
-        free(generator);
 
         //short axis
         generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -1231,7 +1232,6 @@ void storeHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -1250,7 +1250,6 @@ void storeHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -1394,7 +1393,6 @@ void storeLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } // else no symmetry
 }
 
@@ -1413,7 +1411,6 @@ void storeLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -1566,7 +1563,6 @@ void storeDoubleLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph)
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         //rotation of 180
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -1584,7 +1580,6 @@ void storeDoubleLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph)
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -1603,7 +1598,6 @@ void storeDoubleLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgra
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 
@@ -1754,7 +1748,6 @@ void storeDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         //rotation of 180
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -1772,7 +1765,6 @@ void storeDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -1791,7 +1783,6 @@ void storeDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -1942,7 +1933,6 @@ void storeDoubleroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void storeDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -1966,7 +1956,6 @@ void storeDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2116,7 +2105,6 @@ void storeOpenroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddg
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void storeOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -2134,7 +2122,6 @@ void storeOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2286,7 +2273,6 @@ void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     if(block->parameter == 2){
         generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -2300,7 +2286,6 @@ void storeDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -2319,7 +2304,6 @@ void storeDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2474,7 +2458,6 @@ void storeOpenroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddg
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void storeOpenroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -2492,7 +2475,6 @@ void storeOpenroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2634,7 +2616,6 @@ void storeLockedDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgr
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } // else no symmetry
 }
 
@@ -2653,7 +2634,6 @@ void storeLockedDiagonalChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2810,7 +2790,6 @@ void storeLockedDoubleroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -2954,7 +2933,6 @@ void storeLockedOpenroofHighBuildingAutomorphismGenerators(BBLOCK *block, DDGRAP
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } // else no symmetry
 }
 
@@ -2973,7 +2951,6 @@ void storeLockedOpenroofHighBuildingsMapping(BBLOCK *block1, BBLOCK *block2, DDG
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3119,7 +3096,6 @@ void storeLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block, DDGR
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -3138,7 +3114,6 @@ void storeLockedDoubleroofLongBuildingsMapping(BBLOCK *block1, BBLOCK *block2, D
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3232,7 +3207,6 @@ void storePearlChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void storePearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -3256,7 +3230,6 @@ void storePearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3346,7 +3319,6 @@ void storeLockedPearlChainsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3432,7 +3404,6 @@ void storeBarbedWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void storeBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
@@ -3450,7 +3421,6 @@ void storeBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3532,7 +3502,6 @@ void storeLockedBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3578,7 +3547,6 @@ void storeQ4sMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3689,7 +3657,6 @@ void storeDoubleLockedPearlChainAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3771,7 +3738,6 @@ void storePearlNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     if(parameter>1){
         //rotation symmetry
@@ -3789,7 +3755,6 @@ void storePearlNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -3870,7 +3835,6 @@ void storeDoubleLockedBarbedWireAutomorphismGenerators(BBLOCK *block, DDGRAPH *d
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 /*
@@ -3945,7 +3909,6 @@ void storeBarbedWireNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgra
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     if(parameter>1){
         //rotation symmetry
@@ -3961,7 +3924,6 @@ void storeBarbedWireNecklaceAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgra
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4096,7 +4058,6 @@ void storeDoubleLockedDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         //rotation of 180
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4114,7 +4075,6 @@ void storeDoubleLockedDiagonalChainAutomorphismGenerators(BBLOCK *block, DDGRAPH
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4260,7 +4220,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         //rotation of 180
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4278,7 +4237,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4295,7 +4253,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4308,7 +4265,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4321,7 +4277,6 @@ void storeMobiusLadderAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4446,7 +4401,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4463,7 +4417,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4476,7 +4429,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4489,7 +4441,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 
     if(parameter==2){
         generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4505,7 +4456,6 @@ void storePrismAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgraph){
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4632,7 +4582,6 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else if(parameter==2){
         int i;
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4655,7 +4604,6 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         int i;
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4669,7 +4617,6 @@ void storeDoubleLockedDoubleroofLongBuildingAutomorphismGenerators(BBLOCK *block
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4826,7 +4773,6 @@ void storeCompletelyLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgr
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         int i;
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
@@ -4840,7 +4786,6 @@ void storeCompletelyLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgr
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -4853,7 +4798,6 @@ void storeCompletelyLockedHubAutomorphismGenerators(BBLOCK *block, DDGRAPH *ddgr
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -4988,7 +4932,6 @@ void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(BBLOCK *block,
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     } else {
         permutation *generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -5003,7 +4946,6 @@ void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(BBLOCK *block,
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
 
         generator = getIdentity(ddgraph->underlyingGraph->nv);
 
@@ -5018,7 +4960,6 @@ void storeDoubleroofDoublefloorHighBuildingAutomorphismGenerators(BBLOCK *block,
 
         storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-        free(generator);
     }
 }
 
@@ -5149,7 +5090,6 @@ void storeDoubleLockedDoubleroofHighBuildingAutomorphismGenerators(BBLOCK *block
 
     storeGenerator(0, generator, NULL, 0, 0, ddgraph->underlyingGraph->nv);
 
-    free(generator);
 }
 
 void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
