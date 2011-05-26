@@ -5596,7 +5596,28 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         }
     }
     DEBUGASSERT(newConnection!=-1)
+            
+    //calculate colour for the connection and try to reject based on this colour
+    int colour1 = ddgraph->vertex2FactorType[connector1];
+    int colour2 = ddgraph->vertex2FactorType[connector2];
+    int smallestColour = (colour1 < colour2 ? colour1 : colour2);
 
+    for(i=0; i<madeConnectionsCount; i++){
+        int localColour1 = ddgraph->vertex2FactorType[madeConnections[i][0]];
+        int localColour2 = ddgraph->vertex2FactorType[madeConnections[i][1]];
+
+        int localSmallest = localColour1 < localColour2 ? localColour1 : localColour2;
+
+        if(localSmallest < smallestColour){
+            
+#ifdef _PROFILING
+            rejectedByColour++;
+#endif 
+
+            return FALSE;
+        }
+    }
+    
     //calculate automorphisms of the new graph
     int currentOrbits[ddgraph->underlyingGraph->nv];
 
@@ -5683,12 +5704,23 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         }
     }
 
+#ifdef _PROFILING
+
+    if(madeConnectionOrbits[smallestConnection] != madeConnectionOrbits[newConnection]){
+        rejectedByNauty++;
+    } else {
+        connectionsAccepted++;
+    }
+
+#endif 
+
     return madeConnectionOrbits[smallestConnection] == madeConnectionOrbits[newConnection];
 }
 
 void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int orbit, int depth,
         int openConnectionsLeftInOrbit, int totalConnectionsLeft, boolean *freeConnectors){
+    //depth corresponds to the depth at which the last closed graph was
     DEBUGTRACE_ENTER
     //find all pairs of possible connections with the current orbit
     int i, j;
@@ -5731,7 +5763,7 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                 numberOfGenerators[connectionsMade]=0;
                 freeConnectors[v1]=FALSE;
                 freeConnectors[v2]=FALSE;
-
+                
                 //check canonicity of operation and recurse
                 if(isCanonicalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, orbit, depth, v1, v2)){
                     int inCurrentOrbit = 0;
@@ -5756,7 +5788,7 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                                 openConnectionsLeftInOrbit - inCurrentOrbit, totalConnectionsLeft-2, freeConnectors);
                     }
                 }
-
+                
                 //disconnect v1 from v2
                 freeConnectors[v1]=TRUE;
                 freeConnectors[v2]=TRUE;
@@ -6932,6 +6964,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     times(&TMS);
     unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
+#ifdef _PROFILING
+
+    fprintf(stderr, "Extra profiling info:\n");
+    fprintf(stderr, "Connections rejected\n");
+    fprintf(stderr, "     based on colour : %7d\n", rejectedByColour);
+    fprintf(stderr, "      by nauty       : %7d\n", rejectedByNauty);
+    fprintf(stderr, "Connections accepted : %7d\n", connectionsAccepted);
+
+#endif 
 
     return EXIT_SUCCESS;
 }

@@ -206,5 +206,13 @@ sparsegraph canonGraph;
 void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, boolean *freeConnectors);
 
+#ifdef _PROFILING
+
+unsigned long long int rejectedByColour = 0;
+unsigned long long int rejectedByNauty = 0;
+unsigned long long int connectionsAccepted = 0;
+
+#endif 
+
 #endif	/* _DDGRAPHS_H */
 
