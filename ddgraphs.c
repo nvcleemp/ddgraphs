@@ -5569,14 +5569,14 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
     return i==buildingBlockCount;
 }
 
-void calculateAutomorphisms(DDGRAPH* ddgraph){
+void calculateAutomorphisms(DDGRAPH* ddgraph, int lastClosedGraphDepth){
     int i, j, type;
     //calculate automorphisms of the new graph
-    int currentOrbits[ddgraph->underlyingGraph->nv];
 
     for(i=0; i<ddgraph->underlyingGraph->nv; i++){
         nautyPtn[i] = 1;
     }
+    /*
     int counter = 0;
     for(type=1; type<=4; type++){
         for(j = 2; j>=0; j--){
@@ -5595,6 +5595,20 @@ void calculateAutomorphisms(DDGRAPH* ddgraph){
         nautyLabelling[i] = i;
     }
     nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+     */
+    int counter = 0;
+    for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
+        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+            if(ddgraph->vertexColours[lastClosedGraphDepth][j]==i){
+                nautyLabelling[counter] = j;
+                counter++;
+            }
+        }
+        if(counter>0){
+            nautyPtn[counter-1]=0;
+        }
+        if(counter==ddgraph->underlyingGraph->nv) break;
+    }
 
 #ifdef _DEBUG
     printComponentList();
@@ -5610,14 +5624,14 @@ void calculateAutomorphisms(DDGRAPH* ddgraph){
     fprintf(stderr, "\n");
 #endif
 
-    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, nautyOrbits,
             &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
             ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
 
 #ifdef _DEBUG
-    fprintf(stderr, "nauty Orbits: [%d", currentOrbits[0]);
+    fprintf(stderr, "nauty Orbits: [%d", nautyOrbits[0]);
     for(i=1; i<ddgraph->underlyingGraph->nv; i++){
-        fprintf(stderr, ", %d", currentOrbits[i]);
+        fprintf(stderr, ", %d", nautyOrbits[i]);
     }
     fprintf(stderr, "]\n");
 #endif
@@ -5657,7 +5671,7 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
 #endif 
         //guaranteed to be canonical
         if(needSymmetryGroup){
-            calculateAutomorphisms(ddgraph);
+            calculateAutomorphisms(ddgraph, depth);
         }
 #ifdef _PROFILING
         else {
@@ -5668,14 +5682,14 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     }
             
     //calculate colour for the connection and try to reject based on this colour
-    int colour1 = ddgraph->vertex2FactorType[connector1];
-    int colour2 = ddgraph->vertex2FactorType[connector2];
+    int colour1 = ddgraph->vertexColours[depth][connector1];
+    int colour2 = ddgraph->vertexColours[depth][connector2];
     int smallestColour = (colour1 < colour2 ? colour1 : colour2);
     int smallestCount = 0;
 
     for(i=0; i<madeConnectionsCount; i++){
-        int localColour1 = ddgraph->vertex2FactorType[madeConnections[i][0]];
-        int localColour2 = ddgraph->vertex2FactorType[madeConnections[i][1]];
+        int localColour1 = ddgraph->vertexColours[depth][madeConnections[i][0]];
+        int localColour2 = ddgraph->vertexColours[depth][madeConnections[i][1]];
 
         int localSmallest = localColour1 < localColour2 ? localColour1 : localColour2;
 
@@ -5697,7 +5711,7 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
 #endif 
         //guaranteed to be canonical
         if(needSymmetryGroup){
-            calculateAutomorphisms(ddgraph);
+            calculateAutomorphisms(ddgraph, depth);
         }
 #ifdef _PROFILING
         else {
@@ -5708,11 +5722,11 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     }
     
     //calculate automorphisms of the new graph
-    int currentOrbits[ddgraph->underlyingGraph->nv];
 
     for(i=0; i<ddgraph->underlyingGraph->nv; i++){
         nautyPtn[i] = 1;
     }
+    /*
     int counter = 0;
     for(type=1; type<=4; type++){
         for(j = 2; j>=0; j--){
@@ -5731,6 +5745,20 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         nautyLabelling[i] = i;
     }
     nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+     */
+    int counter = 0;
+    for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
+        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+            if(ddgraph->vertexColours[depth][j]==i){
+                nautyLabelling[counter] = j;
+                counter++;
+            }
+        }
+        if(counter>0){
+            nautyPtn[counter-1]=0;
+        }
+        if(counter==ddgraph->underlyingGraph->nv) break;
+    }
 
 #ifdef _DEBUG
     printComponentList();
@@ -5746,14 +5774,14 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     fprintf(stderr, "\n");
 #endif
 
-    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, nautyOrbits,
             &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
             ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
 
 #ifdef _DEBUG
-    fprintf(stderr, "nauty Orbits: [%d", currentOrbits[0]);
+    fprintf(stderr, "nauty Orbits: [%d", nautyOrbits[0]);
     for(i=1; i<ddgraph->underlyingGraph->nv; i++){
-        fprintf(stderr, ", %d", currentOrbits[i]);
+        fprintf(stderr, ", %d", nautyOrbits[i]);
     }
     fprintf(stderr, "]\n");
 #endif
@@ -5958,10 +5986,15 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
         }
         finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, count, freeConnectors);
     } else {
+        int i,j;
+        //store the vertex orbits as colours
+        for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+            ddgraph->vertexColours[connectionsMade][i] = nautyOrbits[i];
+        }
+        
         //first we need the vertex orbits
 
         int orbitCount = 0;
-        int i,j;
     
 #ifdef _DEBUGINTERMEDIATE
         printGenerators(ddgraph, connectionsMade);
@@ -6037,6 +6070,16 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         graphsWithNonTrivialSymmetry[connectionsMade]++;
     }
 #endif
+    
+    //store colours in nautyOrbits because findNextOrbitToConnect uses this to colour the vertices
+    for(i=0; i<vertexCount; i++){
+        nautyOrbits[i]=ddgraph->vertex2FactorType[i]*3 - ddgraph->semiEdges[i] - 1;
+        DEBUGASSERT(nautyOrbits[i]>=0 && nautyOrbits[i]<12)
+    }
+    for(i=vertexCount; i<ddgraph->underlyingGraph->vlen; i++){
+        nautyOrbits[i]=12 + ddgraph->vertex2FactorType[ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[i]]] - 1;
+        DEBUGASSERT(nautyOrbits[i]>=12 && nautyOrbits[i]<14)
+    }
     
     findNextOrbitToConnect(blocks, blockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
 

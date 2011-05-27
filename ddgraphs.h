@@ -112,6 +112,8 @@ struct _ddgraph {
     int *uncolouredFactor2Vertex;
 
     int *vertex2FactorType;
+    
+    int vertexColours[MAXN/2][MAXN];
 };
 
 typedef struct _ddgraph DDGRAPH;
@@ -196,6 +198,7 @@ int vertexOrbitsSizes[MAXN/2][MAXN];
 
 /* Variables for nauty */
 int nautyLabelling[MAXN], nautyPtn[MAXN];
+int nautyOrbits[MAXN];
 DEFAULTOPTIONS_SPARSEGRAPH(nautyOptions);
 statsblk nautyStats;
 setword nautyWorkspace[50 * MAXM];
