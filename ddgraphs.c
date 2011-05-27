@@ -5766,6 +5766,13 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                 
                 //check canonicity of operation and recurse
                 if(isCanonicalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, orbit, depth, v1, v2)){
+#ifdef _PROFILING
+                    if(numberOfGenerators[connectionsMade]==0){
+                        graphsWithTrivialSymmetry[connectionsMade]++;
+                    } else {
+                        graphsWithNonTrivialSymmetry[connectionsMade]++;
+                    }
+#endif
                     int inCurrentOrbit = 0;
                     if(vertexOrbits[depth][v1] == orbit) inCurrentOrbit++;
                     if(vertexOrbits[depth][v2] == orbit) inCurrentOrbit++;
@@ -5824,6 +5831,9 @@ void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAP
                 freeConnectors[i]=FALSE;
                 freeConnectors[j]=FALSE;
 
+#ifdef _PROFILING
+                graphsFromClosedGraphsWithTrivialSymmetry[connectionsMade]++;
+#endif
                     //
                 if(totalConnectionsLeft - 2 == 0){
                     //printConnectionsMade();
@@ -5929,7 +5939,14 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         }
     }
 
-
+#ifdef _PROFILING
+    if(numberOfGenerators[connectionsMade]==0){
+        graphsWithTrivialSymmetry[connectionsMade]++;
+    } else {
+        graphsWithNonTrivialSymmetry[connectionsMade]++;
+    }
+#endif
+    
     findNextOrbitToConnect(blocks, blockCount, ddgraph, vertexToBlock, vertexToConnector, freeConnectors);
 
     cleanDDGraph(ddgraph);
@@ -6445,6 +6462,13 @@ void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgrap
             constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
             numberOfGenerators[0] = 0;
             storeInitialGenerators(bblock, 1, ddgraph);
+#ifdef _PROFILING
+    if(numberOfGenerators[connectionsMade]==0){
+        graphsWithTrivialSymmetry[connectionsMade]++;
+    } else {
+        graphsWithNonTrivialSymmetry[connectionsMade]++;
+    }
+#endif
             handleDelaneyDressGraph(ddgraph);
             cleanDDGraph(ddgraph);
         }
@@ -6948,6 +6972,17 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     struct tms TMS;
     unsigned int oldtime = 0;
 
+#ifdef _PROFILING
+    {
+        int i;
+        for(i=0; i<MAXN/2; i++){
+            graphsWithTrivialSymmetry[i]=0;
+            graphsWithNonTrivialSymmetry[i]=0;
+            graphsFromClosedGraphsWithTrivialSymmetry[i]=0;
+        }
+    }
+#endif
+    
     if(listFilename!=NULL){
         startFromListFile(listFilename);
     } else {
@@ -6970,9 +7005,25 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     fprintf(stderr, "Extra profiling info:\n");
     fprintf(stderr, "Connections rejected\n");
     fprintf(stderr, "     based on colour : %7d\n", rejectedByColour);
-    fprintf(stderr, "      by nauty       : %7d\n", rejectedByNauty);
-    fprintf(stderr, "Connections accepted : %7d\n", connectionsAccepted);
+    fprintf(stderr, "     by nauty        : %7d\n", rejectedByNauty);
+    fprintf(stderr, "Connections accepted : %7d\n\n", connectionsAccepted);
 
+    {
+        int i = 0;
+        fprintf(stderr, "A : graphs with trivial symmetry.\n");
+        fprintf(stderr, "B : graphs with non-trivial symmetry.\n");
+        fprintf(stderr, "C : graphs derived from a closed graph with trivial symmetry.\n");
+        fprintf(stderr, "+---------------------------------------------------+\n");
+        fprintf(stderr, "|                     |    A    |    B    |    C    |\n");
+        fprintf(stderr, "|---------------------+---------+---------+---------|\n");
+        while(i<MAXN/2 && (graphsWithTrivialSymmetry[i] || graphsWithNonTrivialSymmetry[i])){
+            fprintf(stderr, "|After %2d connections | %7llu | %7llu | %7llu |\n",
+                    i, graphsWithTrivialSymmetry[i], graphsWithNonTrivialSymmetry[i],
+                    graphsFromClosedGraphsWithTrivialSymmetry[i]);
+            i++;
+        }
+        fprintf(stderr, "+---------------------------------------------------+\n\n");
+    }
 #endif 
 
     return EXIT_SUCCESS;

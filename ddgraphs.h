@@ -211,6 +211,9 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
 unsigned long long int rejectedByColour = 0;
 unsigned long long int rejectedByNauty = 0;
 unsigned long long int connectionsAccepted = 0;
+unsigned long long int graphsWithTrivialSymmetry[MAXN/2];
+unsigned long long int graphsWithNonTrivialSymmetry[MAXN/2];
+unsigned long long int graphsFromClosedGraphsWithTrivialSymmetry[MAXN/2];
 
 #endif 
 
