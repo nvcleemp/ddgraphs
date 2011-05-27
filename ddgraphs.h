@@ -208,6 +208,10 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
 
 #ifdef _PROFILING
 
+unsigned long long int acceptedBecauseOnlyOne = 0;
+unsigned long long int acceptedBecauseOnlyOneMinimalColour = 0;
+unsigned long long int skippedNautyBecauseOnlyOne = 0;
+unsigned long long int skippedNautyBecauseOnlyOneMinimalColour = 0;
 unsigned long long int rejectedByColour = 0;
 unsigned long long int rejectedByNauty = 0;
 unsigned long long int connectionsAccepted = 0;

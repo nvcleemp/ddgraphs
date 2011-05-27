@@ -5569,8 +5569,63 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
     return i==buildingBlockCount;
 }
 
+void calculateAutomorphisms(DDGRAPH* ddgraph){
+    int i, j, type;
+    //calculate automorphisms of the new graph
+    int currentOrbits[ddgraph->underlyingGraph->nv];
+
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        nautyPtn[i] = 1;
+    }
+    int counter = 0;
+    for(type=1; type<=4; type++){
+        for(j = 2; j>=0; j--){
+            for(i=0; i<ddgraph->order; i++){
+                if(ddgraph->semiEdges[i]==j && ddgraph->vertex2FactorType[i]==type){
+                    nautyLabelling[counter] = i;
+                    counter++;
+                }
+            }
+            if(counter>0){
+                nautyPtn[counter-1]=0;
+            }
+        }
+    }
+    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
+        nautyLabelling[i] = i;
+    }
+    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
+
+#ifdef _DEBUG
+    printComponentList();
+    fprintf(stderr, "nautyLab: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyLabelling[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "nautyPtn: ");
+    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, "%d ", nautyPtn[i]);
+    }
+    fprintf(stderr, "\n");
+#endif
+
+    nauty((graph*)(ddgraph->underlyingGraph), nautyLabelling, nautyPtn, NULL, currentOrbits,
+            &nautyOptions, &nautyStats, nautyWorkspace, 50 * MAXM, MAXM,
+            ddgraph->underlyingGraph->nv, (graph*)&canonGraph);
+
+#ifdef _DEBUG
+    fprintf(stderr, "nauty Orbits: [%d", currentOrbits[0]);
+    for(i=1; i<ddgraph->underlyingGraph->nv; i++){
+        fprintf(stderr, ", %d", currentOrbits[i]);
+    }
+    fprintf(stderr, "]\n");
+#endif
+}
+
 boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
-        int *vertexToBlock, int *vertexToConnector, int orbit, int depth, int connector1, int connector2){
+        int *vertexToBlock, int *vertexToConnector, int orbit, int depth, int connector1, int connector2,
+        boolean needSymmetryGroup){
     int i, j, type;
 
     int smallest = (connector1 < connector2 ? connector1 : connector2);
@@ -5596,11 +5651,27 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         }
     }
     DEBUGASSERT(newConnection!=-1)
+    if(madeConnectionsCount==1){            
+#ifdef _PROFILING
+        acceptedBecauseOnlyOne++;
+#endif 
+        //guaranteed to be canonical
+        if(needSymmetryGroup){
+            calculateAutomorphisms(ddgraph);
+        }
+#ifdef _PROFILING
+        else {
+            skippedNautyBecauseOnlyOne++;
+        }
+#endif
+        return TRUE;
+    }
             
     //calculate colour for the connection and try to reject based on this colour
     int colour1 = ddgraph->vertex2FactorType[connector1];
     int colour2 = ddgraph->vertex2FactorType[connector2];
     int smallestColour = (colour1 < colour2 ? colour1 : colour2);
+    int smallestCount = 0;
 
     for(i=0; i<madeConnectionsCount; i++){
         int localColour1 = ddgraph->vertex2FactorType[madeConnections[i][0]];
@@ -5613,9 +5684,27 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
 #ifdef _PROFILING
             rejectedByColour++;
 #endif 
-
+            
             return FALSE;
+        } else if(localSmallest == smallestColour){
+            smallestCount++;
         }
+    }
+    
+    if(smallestCount==1){            
+#ifdef _PROFILING
+        acceptedBecauseOnlyOneMinimalColour++;
+#endif 
+        //guaranteed to be canonical
+        if(needSymmetryGroup){
+            calculateAutomorphisms(ddgraph);
+        }
+#ifdef _PROFILING
+        else {
+            skippedNautyBecauseOnlyOneMinimalColour++;
+        }
+#endif
+        return TRUE;
     }
     
     //calculate automorphisms of the new graph
@@ -5765,7 +5854,9 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                 freeConnectors[v2]=FALSE;
                 
                 //check canonicity of operation and recurse
-                if(isCanonicalConnection(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, orbit, depth, v1, v2)){
+                if(isCanonicalConnection(blocks, buildingBlockCount, ddgraph,
+                        vertexToBlock, vertexToConnector, orbit, depth, v1,
+                        v2, (totalConnectionsLeft - 2 != 0) || colouredEdges)){
 #ifdef _PROFILING
                     if(numberOfGenerators[connectionsMade]==0){
                         graphsWithTrivialSymmetry[connectionsMade]++;
@@ -7004,9 +7095,12 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
 
     fprintf(stderr, "Extra profiling info:\n");
     fprintf(stderr, "Connections rejected\n");
-    fprintf(stderr, "     based on colour : %7d\n", rejectedByColour);
-    fprintf(stderr, "     by nauty        : %7d\n", rejectedByNauty);
-    fprintf(stderr, "Connections accepted : %7d\n\n", connectionsAccepted);
+    fprintf(stderr, "     based on colour  : %7d\n", rejectedByColour);
+    fprintf(stderr, "     by nauty         : %7d\n", rejectedByNauty);
+    fprintf(stderr, "Connections accepted\n");
+    fprintf(stderr, "     because only one : %7d (%d)\n", acceptedBecauseOnlyOne, skippedNautyBecauseOnlyOne);
+    fprintf(stderr, "     based on colour  : %7d (%d)\n", acceptedBecauseOnlyOneMinimalColour, skippedNautyBecauseOnlyOneMinimalColour);
+    fprintf(stderr, "     by nauty         : %7d\n\n", connectionsAccepted);
 
     {
         int i = 0;
