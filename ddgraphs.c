@@ -5570,47 +5570,11 @@ boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 }
 
 void calculateAutomorphisms(DDGRAPH* ddgraph, int lastClosedGraphDepth){
-    int i, j, type;
-    //calculate automorphisms of the new graph
-
-    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
-        nautyPtn[i] = 1;
-    }
-    /*
-    int counter = 0;
-    for(type=1; type<=4; type++){
-        for(j = 2; j>=0; j--){
-            for(i=0; i<ddgraph->order; i++){
-                if(ddgraph->semiEdges[i]==j && ddgraph->vertex2FactorType[i]==type){
-                    nautyLabelling[counter] = i;
-                    counter++;
-                }
-            }
-            if(counter>0){
-                nautyPtn[counter-1]=0;
-            }
-        }
-    }
-    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
-        nautyLabelling[i] = i;
-    }
-    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
-     */
-    int counter = 0;
-    for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
-        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
-            if(ddgraph->vertexColours[lastClosedGraphDepth][j]==i){
-                nautyLabelling[counter] = j;
-                counter++;
-            }
-        }
-        if(counter>0){
-            nautyPtn[counter-1]=0;
-        }
-        if(counter==ddgraph->underlyingGraph->nv) break;
-    }
+    memcpy(nautyPtn, ddgraph->partitioning[lastClosedGraphDepth], sizeof(int)*(ddgraph->underlyingGraph->nv));
+    memcpy(nautyLabelling, ddgraph->labelling[lastClosedGraphDepth], sizeof(int)*(ddgraph->underlyingGraph->nv));
 
 #ifdef _DEBUG
+    int i, j;
     printComponentList();
     fprintf(stderr, "nautyLab: ");
     for(i=0; i<ddgraph->underlyingGraph->nv; i++){
@@ -5640,7 +5604,7 @@ void calculateAutomorphisms(DDGRAPH* ddgraph, int lastClosedGraphDepth){
 boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int orbit, int depth, int connector1, int connector2,
         boolean needSymmetryGroup){
-    int i, j, type;
+    int i;
 
     int smallest = (connector1 < connector2 ? connector1 : connector2);
     int biggest = (connector1 < connector2 ? connector2 : connector1);
@@ -5663,12 +5627,12 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
                 madeConnectionsCount++;
             }
         }
-    }
+    }  
     DEBUGASSERT(newConnection!=-1)
-    if(madeConnectionsCount==1){            
+    if(madeConnectionsCount==1){    
 #ifdef _PROFILING
         acceptedBecauseOnlyOne++;
-#endif 
+#endif
         //guaranteed to be canonical
         if(needSymmetryGroup){
             calculateAutomorphisms(ddgraph, depth);
@@ -5723,42 +5687,8 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
     
     //calculate automorphisms of the new graph
 
-    for(i=0; i<ddgraph->underlyingGraph->nv; i++){
-        nautyPtn[i] = 1;
-    }
-    /*
-    int counter = 0;
-    for(type=1; type<=4; type++){
-        for(j = 2; j>=0; j--){
-            for(i=0; i<ddgraph->order; i++){
-                if(ddgraph->semiEdges[i]==j && ddgraph->vertex2FactorType[i]==type){
-                    nautyLabelling[counter] = i;
-                    counter++;
-                }
-            }
-            if(counter>0){
-                nautyPtn[counter-1]=0;
-            }
-        }
-    }
-    for(i=ddgraph->order; i<ddgraph->underlyingGraph->nv; i++){
-        nautyLabelling[i] = i;
-    }
-    nautyPtn[ddgraph->underlyingGraph->nv-1]=0;
-     */
-    int counter = 0;
-    for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
-        for(j=0; j<ddgraph->underlyingGraph->nv; j++){
-            if(ddgraph->vertexColours[depth][j]==i){
-                nautyLabelling[counter] = j;
-                counter++;
-            }
-        }
-        if(counter>0){
-            nautyPtn[counter-1]=0;
-        }
-        if(counter==ddgraph->underlyingGraph->nv) break;
-    }
+    memcpy(nautyPtn, ddgraph->partitioning[depth], sizeof(int)*(ddgraph->underlyingGraph->nv));
+    memcpy(nautyLabelling, ddgraph->labelling[depth], sizeof(int)*(ddgraph->underlyingGraph->nv));
 
 #ifdef _DEBUG
     printComponentList();
@@ -5991,6 +5921,21 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
         for(i=0; i<ddgraph->underlyingGraph->nv; i++){
             ddgraph->vertexColours[connectionsMade][i] = nautyOrbits[i];
         }
+        //create the partioning and labeling that will be given to nauty while connecting this orbit
+        int counter = 0;
+        for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
+            for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+                if(ddgraph->vertexColours[connectionsMade][j]==i){
+                    ddgraph->labelling[connectionsMade][counter] = j;
+                    ddgraph->partitioning[connectionsMade][counter] = 1;
+                    counter++;
+                }
+            }
+            if(counter>0){
+                ddgraph->partitioning[connectionsMade][counter-1]=0;
+            }
+            if(counter==ddgraph->underlyingGraph->nv) break;
+        }
         
         //first we need the vertex orbits
 
@@ -6076,7 +6021,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         nautyOrbits[i]=ddgraph->vertex2FactorType[i]*3 - ddgraph->semiEdges[i] - 1;
         DEBUGASSERT(nautyOrbits[i]>=0 && nautyOrbits[i]<12)
     }
-    for(i=vertexCount; i<ddgraph->underlyingGraph->vlen; i++){
+    for(i=vertexCount; i<ddgraph->underlyingGraph->nv; i++){
         nautyOrbits[i]=12 + ddgraph->vertex2FactorType[ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[i]]] - 1;
         DEBUGASSERT(nautyOrbits[i]>=12 && nautyOrbits[i]<14)
     }

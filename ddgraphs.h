@@ -114,6 +114,8 @@ struct _ddgraph {
     int *vertex2FactorType;
     
     int vertexColours[MAXN/2][MAXN];
+    int partitioning[MAXN/2][MAXN];
+    int labelling[MAXN/2][MAXN];
 };
 
 typedef struct _ddgraph DDGRAPH;
