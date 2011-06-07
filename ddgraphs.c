@@ -5937,7 +5937,7 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
     if(hasTrivialSymmetryForFreeConnections(ddgraph, freeConnectors))
         closedGraphsWithTrivialSymmetryForRemainingConnections[connectionsMade]++;
 #endif
-    if(numberOfGenerators[connectionsMade]==0){
+    if(hasTrivialSymmetryForFreeConnections(ddgraph, freeConnectors)){
         int i, count = 0;
         for(i=0; i<ddgraph->order; i++){
             if(freeConnectors[i]) count++;
