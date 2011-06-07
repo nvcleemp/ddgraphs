@@ -223,6 +223,10 @@ unsigned long long int connectionsAccepted = 0;
 unsigned long long int graphsWithTrivialSymmetry[MAXN/2];
 unsigned long long int graphsWithNonTrivialSymmetry[MAXN/2];
 unsigned long long int graphsFromClosedGraphsWithTrivialSymmetry[MAXN/2];
+unsigned long long int graphsWithTrivialSymmetryForRemainingConnections[MAXN/2];
+unsigned long long int closedGraphsWithTrivialSymmetry[MAXN/2];
+unsigned long long int closedGraphsWithNonTrivialSymmetry[MAXN/2];
+unsigned long long int closedGraphsWithTrivialSymmetryForRemainingConnections[MAXN/2];
 
 #endif 
 
