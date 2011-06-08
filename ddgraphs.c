@@ -5877,7 +5877,8 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
 }
 
 void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
-        int *vertexToBlock, int *vertexToConnector, int totalConnectionsLeft, boolean *freeConnectors){
+        int *vertexToBlock, int *vertexToConnector, int totalConnectionsLeft, boolean *freeConnectors,
+        boolean hadTrivialSymmetry, int lastClosedDepth){
     int i, j;
 
     i = 0;
@@ -5910,10 +5911,15 @@ void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAP
                     //printCanonicalLabelling(ddgraph);
                     //fprintf(stderr, "Found graph based on: ");
                     //printHumanReadableComponentList();
+                    if(!hadTrivialSymmetry){
+                        //calculate automorphism group
+                        calculateAutomorphisms(ddgraph, lastClosedDepth);
+                    }
                     handleDelaneyDressGraph(ddgraph);
                 } else {
                     finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph,
-                            vertexToBlock, vertexToConnector, totalConnectionsLeft-2, freeConnectors);
+                            vertexToBlock, vertexToConnector, totalConnectionsLeft-2,
+                            freeConnectors, hadTrivialSymmetry, lastClosedDepth);
                 }
 
                 //disconnect i from j
@@ -5942,7 +5948,31 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
         for(i=0; i<ddgraph->order; i++){
             if(freeConnectors[i]) count++;
         }
-        finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph, vertexToBlock, vertexToConnector, count, freeConnectors);
+        if(numberOfGenerators[connectionsMade]!=0){
+            int j;
+            //store the vertex orbits as colours
+            for(i=0; i<ddgraph->underlyingGraph->nv; i++){
+                ddgraph->vertexColours[connectionsMade][i] = nautyOrbits[i];
+            }
+            //create the partioning and labeling that will be given to nauty while connecting this orbit
+            int counter = 0;
+            for(i=0; i<ddgraph->underlyingGraph->nv+14; i++){
+                for(j=0; j<ddgraph->underlyingGraph->nv; j++){
+                    if(ddgraph->vertexColours[connectionsMade][j]==i){
+                        ddgraph->labelling[connectionsMade][counter] = j;
+                        ddgraph->partitioning[connectionsMade][counter] = 1;
+                        counter++;
+                    }
+                }
+                if(counter>0){
+                    ddgraph->partitioning[connectionsMade][counter-1]=0;
+                }
+                if(counter==ddgraph->underlyingGraph->nv) break;
+            }
+        }
+        finishWithoutCanonicityCheck(blocks, buildingBlockCount, ddgraph, vertexToBlock,
+                vertexToConnector, count, freeConnectors, numberOfGenerators[connectionsMade]==0,
+                connectionsMade);
     } else {
         int i,j;
         //store the vertex orbits as colours
