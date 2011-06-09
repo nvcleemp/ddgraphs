@@ -204,11 +204,6 @@ int requestedFaceSizesCount = 0;
 int requestedVertexDegrees[MAXN];
 int requestedVertexDegreesCount = 0;
 
-int allowedFaceSizes[MAXN];
-int allowedFaceSizesCount = 0;
-int allowedVertexDegrees[MAXN];
-int allowedVertexDegreesCount = 0;
-
 int forbiddenFaceSizes[MAXN];
 int forbiddenFaceSizesCount = 0;
 int forbiddenVertexDegrees[MAXN];

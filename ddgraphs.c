@@ -7091,14 +7091,10 @@ void help(char *name){
     fprintf(stderr, "\n* Specify constraints\n");
     fprintf(stderr, "    -R, --requiredface\n");
     fprintf(stderr, "       Add a face size to the list of required faces.\n");
-    fprintf(stderr, "    -A, --allowedface\n");
-    fprintf(stderr, "       Add a face size to the list of allowed faces.\n");
     fprintf(stderr, "    -F, --forbiddenface\n");
     fprintf(stderr, "       Add a face size to the list of forbidden faces.\n");
     fprintf(stderr, "    -r, --requiredvertex\n");
     fprintf(stderr, "       Add a vertex degree to the list of required vertices.\n");
-    fprintf(stderr, "    -a, --allowedvertex\n");
-    fprintf(stderr, "       Add a vertex degree to the list of allowed vertices.\n");
     fprintf(stderr, "    -f, --forbiddenvertex\n");
     fprintf(stderr, "       Add a vertex degree to the list of forbidden vertices.\n");
     fprintf(stderr, "    --maxfacecount\n");
@@ -7143,6 +7139,128 @@ boolean checkIntegerValue(const char *paramName, int value, int minimum, int max
     }
 }
 
+void adjustSymbolConstraints(){
+    minFaceOrbitCount = MAX(minFaceOrbitCount, requestedFaceSizesCount);
+    minVertexOrbitCount = MAX(minVertexOrbitCount, requestedVertexDegreesCount);
+}
+
+boolean validateSymbolConstraints(){
+    int i,j;
+    boolean validConstraints = TRUE;
+    
+    if(maxFaceOrbitCount < minFaceOrbitCount){
+        fprintf(stderr, "Maximum number of face orbits needs to be at least the minimum number of face orbits.\n");
+        validConstraints = FALSE;
+    }
+    if(maxVertexOrbitCount < minVertexOrbitCount){
+        fprintf(stderr, "Maximum number of vertex orbits needs to be at least the minimum number of vertex orbits.\n");
+        validConstraints = FALSE;
+    }
+    if(maxFaceSize < minFaceSize){
+        fprintf(stderr, "Maximum face size needs to be at least the minimum face size.\n");
+        validConstraints = FALSE;
+    }
+    if(maxVertexDegree < minVertexDegree){
+        fprintf(stderr, "Maximum vertex degree needs to be at least the minimum vertex degree.\n");
+        validConstraints = FALSE;
+    }
+    if(maxVertexCount < minVertexCount){
+        fprintf(stderr, "Maximum number of vertices needs to be at least the minimum number of vertices.\n");
+        validConstraints = FALSE;
+    }
+    if(requestedFaceSizesCount > maxFaceOrbitCount){
+        
+    }
+    for(i=0; i<requestedFaceSizesCount; i++){
+        for(j=0; j<forbiddenFaceSizesCount; j++){
+            if(requestedFaceSizes[i]==forbiddenFaceSizes[j]){
+                fprintf(stderr, "Face size %d is both required and forbidden.\n", requestedFaceSizes[i]);
+                validConstraints = FALSE;
+            }
+        }
+    }
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        for(j=0; j<forbiddenVertexDegreesCount; j++){
+            if(requestedVertexDegrees[i]==forbiddenVertexDegrees[j]){
+                fprintf(stderr, "Vertex degree %d is both required and forbidden.\n", requestedVertexDegrees[i]);
+                validConstraints = FALSE;
+            }
+        }
+    }
+    int verticesNeeded = 0;
+    for(i=0; i<requestedFaceSizesCount; i++){
+        verticesNeeded += requestedFaceSizes[i]/6;
+        if(requestedFaceSizes[i]%6) verticesNeeded++;
+    }
+    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
+        fprintf(stderr, "For this list of required face sizes the Delaney-Dress graph\nneeds at least %d vertices.\n", verticesNeeded);
+        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
+        validConstraints = FALSE;
+    }
+    verticesNeeded = 0;
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        verticesNeeded += requestedVertexDegrees[i]/6;
+        if(requestedVertexDegrees[i]%6) verticesNeeded++;
+    }
+    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
+        fprintf(stderr, "For this list of required vertex degrees the Delaney-Dress graph\nneeds at least %d vertices.\n", verticesNeeded);
+        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
+        validConstraints = FALSE;
+    }
+    verticesNeeded = minFaceSize/6;
+    if(minFaceSize%6) verticesNeeded++;
+    verticesNeeded *= minFaceOrbitCount;
+    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
+        fprintf(stderr, "For this number of face orbits the Delaney-Dress graph needs at\nleast %d vertices.\n", verticesNeeded);
+        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
+        validConstraints = FALSE;
+    }
+    verticesNeeded = minVertexDegree/6;
+    if(minVertexDegree%6) verticesNeeded++;
+    verticesNeeded *= minVertexOrbitCount;
+    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
+        fprintf(stderr, "For this number of vertex orbits the Delaney-Dress graph needs at\nleast %d vertices.\n", verticesNeeded);
+        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
+        validConstraints = FALSE;
+    }
+    
+    return validConstraints;
+}
+
+void calculateSymbolSize(){
+    int minVerticesNeeded, maxVerticesNeeded, i;
+    
+    //calculate minVertexCount
+    minVerticesNeeded = (minFaceOrbitCount-requestedFaceSizesCount)*(minFaceSize/6);
+    if(minFaceSize/6) minVerticesNeeded += (minFaceOrbitCount-requestedFaceSizesCount);
+    for(i=0; i<requestedFaceSizesCount; i++){
+        minVerticesNeeded += requestedFaceSizes[i]/6;
+        if(requestedFaceSizes[i]%6) minVerticesNeeded++;
+    }
+    minVertexCount = MAX(minVertexCount, minVerticesNeeded);
+    
+    minVerticesNeeded = (minVertexOrbitCount-requestedVertexDegreesCount)*(minVertexDegree/6);
+    if(minVertexDegree/6) minVerticesNeeded += (minVertexOrbitCount-requestedVertexDegreesCount);
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        minVerticesNeeded += requestedVertexDegrees[i]/6;
+        if(requestedVertexDegrees[i]%6) minVerticesNeeded++;
+    }
+    minVertexCount = MAX(minVertexCount, minVerticesNeeded);
+    
+    //calculate maxVertexCount
+    maxVerticesNeeded = (maxFaceOrbitCount- requestedFaceSizesCount)*maxFaceSize*2;
+    for(i=0; i<requestedFaceSizesCount; i++){
+        maxVerticesNeeded += requestedFaceSizes[i]*2;
+    }
+    maxVertexCount = MIN(maxVertexCount, maxVerticesNeeded);
+    
+    maxVerticesNeeded = (maxVertexOrbitCount - requestedVertexDegreesCount)*maxVertexDegree*2;
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        maxVerticesNeeded += requestedVertexDegrees[i]*2;
+    }
+    maxVertexCount = MIN(maxVertexCount, maxVerticesNeeded);
+}
+
 
 #ifdef DDGRAPHS_NO_MAIN
     #define DDGRAPHS_MAIN_FUNCTION ddgraphsnomain
@@ -7178,10 +7296,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"output", required_argument, NULL, 'o'},
         {"modulo", required_argument, NULL, 'm'},
         {"requiredface", required_argument, NULL, 'R'},
-        {"allowedface", required_argument, NULL, 'A'},
         {"forbiddenface", required_argument, NULL, 'F'},
         {"requiredvertex", required_argument, NULL, 'r'},
-        {"allowedvertex", required_argument, NULL, 'a'},
         {"forbiddenvertex", required_argument, NULL, 'f'},
         {"minvertices", required_argument, NULL, 'n'},
         {"maxvertices", required_argument, NULL, 'N'}
@@ -7311,12 +7427,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                     failAfterArgumentParsing = TRUE;
                 }
                 break;
-            case 'A':
-                allowedFaceSizes[allowedFaceSizesCount++] = atoi(optarg);
-                if(!checkIntegerValue("allowedface", allowedFaceSizes[allowedFaceSizesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
-                }
-                break;
             case 'F':
                 forbiddenFaceSizes[forbiddenFaceSizesCount++] = atoi(optarg);
                 if(!checkIntegerValue("forbiddenface", forbiddenFaceSizes[forbiddenFaceSizesCount-1], 3, 6*MAXN)){
@@ -7326,12 +7436,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
             case 'r':
                 requestedVertexDegrees[requestedVertexDegreesCount++] = atoi(optarg);
                 if(!checkIntegerValue("requiredvertex", requestedVertexDegrees[requestedVertexDegreesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
-                }
-                break;
-            case 'a':
-                allowedVertexDegrees[allowedVertexDegreesCount++] = atoi(optarg);
-                if(!checkIntegerValue("allowedvertex", allowedVertexDegrees[allowedVertexDegreesCount-1], 3, 6*MAXN)){
                     failAfterArgumentParsing = TRUE;
                 }
                 break;
@@ -7394,15 +7498,20 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     
     if(symbols){
         //validate restrictions for Delaney-Dress symbols and for tilings
-        
+        adjustSymbolConstraints();
+        if(!validateSymbolConstraints()){
+            return EXIT_FAILURE;
+        }
         
         //calculate size limits for Delaney-Dress graph
-        
+        calculateSymbolSize();
         
         //start generation
         fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n", minVertexCount, maxVertexCount);
 
         startMultipleGenerations(minVertexCount, maxVertexCount);
+        
+        
     } else if(listFilename!=NULL){
         if(onlyLists){
             fprintf(stderr, "Generating component lists for Delaney-Dress graphs based on component lists in %s.\n",
