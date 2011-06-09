@@ -7005,6 +7005,47 @@ void startFromListFile(char *filename){
     cleanComponentStatistics();
 }
 
+void startMultipleGenerations(int startSize, int endSize){
+    int targetSize;
+    
+    initComponentsStatic();
+    initStatistics();
+    
+    for(targetSize = startSize; targetSize<=endSize; targetSize++){
+        initComponents(targetSize);
+        initNautyOptions(targetSize);
+
+        DDGRAPH * ddgraph = getNewDDGraph(targetSize);
+
+        q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0, ddgraph);
+
+        extraUnconstructableGraphs(ddgraph, targetSize);
+
+        freeDDGraph(ddgraph);
+
+        freeComponents();
+        cleanNautyOptions();
+    }
+    
+    fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+    if(!onlyLists){
+        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+                graphsCount,
+                graphsCount==1 ? (char *)"" : (char *)"s",
+                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+        if(colouredEdges){
+            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                edgeColouredGraphsCount,
+                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+        }
+    }
+    if(moduloEnabled){
+        fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
+    }
+    
+    cleanComponentStatistics();
+}
+
 //====================== USAGE =======================
 
 void help(char *name){
@@ -7360,11 +7401,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         
         //start generation
         fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n", minVertexCount, maxVertexCount);
-        
-        int vertexCount;
-        for(vertexCount=minVertexCount; vertexCount<=maxVertexCount; vertexCount++){
-            startGeneration(vertexCount);
-        }
+
+        startMultipleGenerations(minVertexCount, maxVertexCount);
     } else if(listFilename!=NULL){
         if(onlyLists){
             fprintf(stderr, "Generating component lists for Delaney-Dress graphs based on component lists in %s.\n",
