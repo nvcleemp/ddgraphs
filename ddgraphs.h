@@ -37,7 +37,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <getopt.h>
 #include <limits.h>
 #include <ctype.h>
 
@@ -187,6 +187,35 @@ boolean moduloEnabled = FALSE;
 unsigned long long int moduloRest;
 unsigned long long int moduloMod;
 unsigned long long int splitPointCount;
+
+// Delaney-Dress symbol/tiling restrictions
+int maxFaceOrbitCount = MAXN;
+int minFaceOrbitCount = 1;
+int maxVertexOrbitCount = MAXN;
+int minVertexOrbitCount = 1;
+
+int minFaceSize = 3;
+int maxFaceSize = 6*MAXN;
+int minVertexDegree = 3;
+int maxVertexDegree = 6*MAXN;
+
+int requestedFaceSizes[MAXN];
+int requestedFaceSizesCount = 0;
+int requestedVertexDegrees[MAXN];
+int requestedVertexDegreesCount = 0;
+
+int allowedFaceSizes[MAXN];
+int allowedFaceSizesCount = 0;
+int allowedVertexDegrees[MAXN];
+int allowedVertexDegreesCount = 0;
+
+int forbiddenFaceSizes[MAXN];
+int forbiddenFaceSizesCount = 0;
+int forbiddenVertexDegrees[MAXN];
+int forbiddenVertexDegreesCount = 0;
+
+int maxVertexCount = MAXN;
+int minVertexCount = 1;
 
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length

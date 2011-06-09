@@ -7008,11 +7008,98 @@ void startFromListFile(char *filename){
 //====================== USAGE =======================
 
 void help(char *name){
-
+    fprintf(stderr, "The program %s calculates Delaney-Dress symbols or related structures.\n\n", name);
+    fprintf(stderr, "Usage\n=====\n");
+    fprintf(stderr, " %s [options] n\n", name);
+    fprintf(stderr, "       Generate Delaney-Dress graphs with n vertices.\n");
+    fprintf(stderr, " %s -l file [options] \n", name);
+    fprintf(stderr, "       Generate Delaney-Dress graphs based on the component lists in file.\n");
+    fprintf(stderr, " %s -s [options]\n", name);
+    fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
+    fprintf(stderr, "\nThis program can handle graphs up to %d vertices. Recompile if you need larger\n", MAXN);
+    fprintf(stderr, "graphs.\n\n");
+    fprintf(stderr, "Valid options\n=============\n");
+    fprintf(stderr, "* Various options\n");
+    fprintf(stderr, "    -h, --help\n");
+    fprintf(stderr, "       Print this help and return.\n");
+    fprintf(stderr, "    -l, --listfile file\n");
+    fprintf(stderr, "       Only start the generation based on the component lists in file.\n");
+    fprintf(stderr, "    -o, --output type\n");
+    fprintf(stderr, "       Specifies the export format where type is one of\n");
+    fprintf(stderr, "           c, code    code depends on the generated type\n");
+    fprintf(stderr, "           h, human   human-readable output\n");
+    fprintf(stderr, "           n, none    no output: only count (default)\n");
+    fprintf(stderr, "    -m, --modulo r:n\n");
+    fprintf(stderr, "       Split the generation in multiple parts. The generation is split\n");
+    fprintf(stderr, "       into n parts and only part r is generated. The number n needs to\n");
+    fprintf(stderr, "       be an integer larger than 0 and r should be a positive integer\n");
+    fprintf(stderr, "       smaller than n.\n");
+    fprintf(stderr, "\n* Generated types\n");
+    fprintf(stderr, "    -L, --lists\n");
+    fprintf(stderr, "       Generate component lists.\n");
+    fprintf(stderr, "    -t, --marked\n");
+    fprintf(stderr, "       Generate Delaney-Dress graphs with a marked 2-factor, i.e. graphs that\n");
+    fprintf(stderr, "       are the underlying graphs of Delaney-Dress symbols and in which the\n");
+    fprintf(stderr, "       s0s2 orbits are marked.\n");
+    fprintf(stderr, "    -c, --coloured\n");
+    fprintf(stderr, "       Generate coloured Delaney-Dress graphs, i.e. graphs that are the\n");
+    fprintf(stderr, "       underlying graphs of Delaney-Dress symbols and in which the edges\n");
+    fprintf(stderr, "       are coloured with the colours 0, 1 or 2.\n");
+    fprintf(stderr, "    -s, --symbols\n");
+    fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
+    fprintf(stderr, "\n* Specify constraints\n");
+    fprintf(stderr, "    -R, --requiredface\n");
+    fprintf(stderr, "       Add a face size to the list of required faces.\n");
+    fprintf(stderr, "    -A, --allowedface\n");
+    fprintf(stderr, "       Add a face size to the list of allowed faces.\n");
+    fprintf(stderr, "    -F, --forbiddenface\n");
+    fprintf(stderr, "       Add a face size to the list of forbidden faces.\n");
+    fprintf(stderr, "    -r, --requiredvertex\n");
+    fprintf(stderr, "       Add a vertex degree to the list of required vertices.\n");
+    fprintf(stderr, "    -a, --allowedvertex\n");
+    fprintf(stderr, "       Add a vertex degree to the list of allowed vertices.\n");
+    fprintf(stderr, "    -f, --forbiddenvertex\n");
+    fprintf(stderr, "       Add a vertex degree to the list of forbidden vertices.\n");
+    fprintf(stderr, "    --maxfacecount\n");
+    fprintf(stderr, "       Specify the maximum number of face orbits in the tiling.\n");
+    fprintf(stderr, "    --minfacecount\n");
+    fprintf(stderr, "       Specify the minimum number of face orbits in the tiling.\n");
+    fprintf(stderr, "    --maxvertexcount\n");
+    fprintf(stderr, "       Specify the maximum number of vertex orbits in the tiling.\n");
+    fprintf(stderr, "    --minvertexcount\n");
+    fprintf(stderr, "       Specify the minimum number of vertex orbits in the tiling.\n");
+    fprintf(stderr, "    --minfacesize\n");
+    fprintf(stderr, "       Specify the minimum size of a face in the tiling.\n");
+    fprintf(stderr, "    --maxfacesize\n");
+    fprintf(stderr, "       Specify the maximum size of a face in the tiling.\n");
+    fprintf(stderr, "    --minvertexdegree\n");
+    fprintf(stderr, "       Specify the minimum degree of a vertex in the tiling.\n");
+    fprintf(stderr, "    --maxvertexdegree\n");
+    fprintf(stderr, "       Specify the maximum degree of a vertex in the tiling.\n");
+    fprintf(stderr, "    -n, --minvertices\n");
+    fprintf(stderr, "       Specify the minimum number of vertices in the Delaney-Dress graph.\n");
+    fprintf(stderr, "    -N, --maxvertices\n");
+    fprintf(stderr, "       Specify the maximum number of vertices in the Delaney-Dress graph.\n");
 }
 
 void usage(char *name){
+    fprintf(stderr, "Usage: %s [options] n\n", name);
+    fprintf(stderr, "       %s [options]\n", name);
+    fprintf(stderr, "For more information type: %s -h \n\n", name);
+}
 
+boolean checkIntegerValue(const char *paramName, int value, int minimum, int maximum){
+    if(value < minimum){
+        fprintf(stderr, "Illegal value: %d. The parameter %s should be at least %d.\n",
+                value, paramName, minimum);
+        return FALSE;
+    } else if(value > maximum){
+        fprintf(stderr, "Illegal value: %d. The parameter %s should be at most %d.\n",
+                value, paramName, maximum);
+        return FALSE;
+    } else {
+        return TRUE;
+    }
 }
 
 
@@ -7032,9 +7119,94 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *name = argv[0];
     char *listFilename = NULL;
     char *moduloString;
+    static struct option long_options[] = {
+        {"maxfacecount", required_argument, NULL, 0},
+        {"minfacecount", required_argument, NULL, 0},
+        {"maxvertexcount", required_argument, NULL, 0},
+        {"minvertexcount", required_argument, NULL, 0},
+        {"minfacesize", required_argument, NULL, 0},
+        {"maxfacesize", required_argument, NULL, 0},
+        {"minvertexdegree", required_argument, NULL, 0},
+        {"maxvertexdegree", required_argument, NULL, 0},
+        {"help", no_argument, NULL, 'h'},
+        {"lists", no_argument, NULL, 'L'},
+        {"marked", no_argument, NULL, 't'},
+        {"coloured", no_argument, NULL, 'c'},
+        {"symbols", no_argument, NULL, 's'},
+        {"listfile", required_argument, NULL, 'l'},
+        {"output", required_argument, NULL, 'o'},
+        {"modulo", required_argument, NULL, 'm'},
+        {"requiredface", required_argument, NULL, 'R'},
+        {"allowedface", required_argument, NULL, 'A'},
+        {"forbiddenface", required_argument, NULL, 'F'},
+        {"requiredvertex", required_argument, NULL, 'r'},
+        {"allowedvertex", required_argument, NULL, 'a'},
+        {"forbiddenvertex", required_argument, NULL, 'f'},
+        {"minvertices", required_argument, NULL, 'n'},
+        {"maxvertices", required_argument, NULL, 'N'}
+    };
+    int option_index = 0;
 
-    while ((c = getopt(argc, argv, "hl:Ltcso:m:")) != -1) {
+    boolean failAfterArgumentParsing = FALSE;
+    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:A:F:r:a:f:n:N:", long_options, &option_index)) != -1) {
         switch (c) {
+            case 0:
+                //handle long option with no alternative
+                switch(option_index) {
+                    case 0:
+                        maxFaceOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxFaceOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 1:
+                        minFaceOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minFaceOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 2:
+                        maxVertexOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxVertexOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 3:
+                        minVertexOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minVertexOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 4:
+                        minFaceSize = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minFaceSize, 3, 6*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 5:
+                        maxFaceSize = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxFaceSize, 3, 6*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 6:
+                        minVertexDegree = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minVertexDegree, 3, 6*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 7:
+                        maxVertexDegree = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxVertexDegree, 3, 6*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    default:
+                        fprintf(stderr, "Illegal option index %d.\n", option_index);
+                        usage(name);
+                        return EXIT_FAILURE;
+                }
+                break;
             case 'h':
                 help(name);
                 return EXIT_SUCCESS;
@@ -7092,15 +7264,70 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                     return EXIT_FAILURE;
                 }
                 break;
+            case 'R':
+                requestedFaceSizes[requestedFaceSizesCount++] = atoi(optarg);
+                if(!checkIntegerValue("requiredface", requestedFaceSizes[requestedFaceSizesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'A':
+                allowedFaceSizes[allowedFaceSizesCount++] = atoi(optarg);
+                if(!checkIntegerValue("allowedface", allowedFaceSizes[allowedFaceSizesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'F':
+                forbiddenFaceSizes[forbiddenFaceSizesCount++] = atoi(optarg);
+                if(!checkIntegerValue("forbiddenface", forbiddenFaceSizes[forbiddenFaceSizesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'r':
+                requestedVertexDegrees[requestedVertexDegreesCount++] = atoi(optarg);
+                if(!checkIntegerValue("requiredvertex", requestedVertexDegrees[requestedVertexDegreesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'a':
+                allowedVertexDegrees[allowedVertexDegreesCount++] = atoi(optarg);
+                if(!checkIntegerValue("allowedvertex", allowedVertexDegrees[allowedVertexDegreesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'f':
+                forbiddenVertexDegrees[forbiddenVertexDegreesCount++] = atoi(optarg);
+                if(!checkIntegerValue("forbiddenvertex", forbiddenVertexDegrees[forbiddenVertexDegreesCount-1], 3, 6*MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'n':
+                minVertexCount = atoi(optarg);
+                if(!checkIntegerValue("minvertices", minVertexCount, 1, MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case 'N':
+                maxVertexCount = atoi(optarg);
+                if(!checkIntegerValue("maxvertices", maxVertexCount, 1, MAXN)){
+                    failAfterArgumentParsing = TRUE;
+                }
+                break;
+            case '?':
+                usage(name);
+                return EXIT_FAILURE;
             default:
                 fprintf(stderr, "Illegal option %c.\n", c);
                 usage(name);
                 return EXIT_FAILURE;
         }
     }
+    
+    if(failAfterArgumentParsing){
+        return EXIT_FAILURE;
+    }
 
     // check the non-option arguments
-    if (argc - optind != 1 && listFilename==NULL) {
+    if (argc - optind != 1 && listFilename==NULL && !symbols) {
         usage(name);
         return EXIT_FAILURE;
     }
@@ -7124,13 +7351,53 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     }
 #endif
     
-    if(listFilename!=NULL){
+    if(symbols){
+        //validate restrictions for Delaney-Dress symbols and for tilings
+        
+        
+        //calculate size limits for Delaney-Dress graph
+        
+        
+        //start generation
+        fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n", minVertexCount, maxVertexCount);
+        
+        int vertexCount;
+        for(vertexCount=minVertexCount; vertexCount<=maxVertexCount; vertexCount++){
+            startGeneration(vertexCount);
+        }
+    } else if(listFilename!=NULL){
+        if(onlyLists){
+            fprintf(stderr, "Generating component lists for Delaney-Dress graphs based on component lists in %s.\n",
+                listFilename);
+        } else if(colouredEdges){
+            fprintf(stderr, "Generating edge-coloured Delaney-Dress graphs based on component lists in %s.\n",
+                listFilename);
+        } else {
+            fprintf(stderr, "Generating Delaney-Dress graphs%s  based on component lists in %s.\n",
+                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"",
+                listFilename);
+        }
         startFromListFile(listFilename);
     } else {
 
         //parse the order
         int vertexCount = strtol(argv[optind], NULL, 10);
         DEBUGDUMP(vertexCount, "%d")
+                
+        if(onlyLists){
+            fprintf(stderr, "Generating component lists for Delaney-Dress graphs with %d %s.\n",
+                vertexCount,
+                vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
+        } else if(colouredEdges){
+            fprintf(stderr, "Generating edge-coloured Delaney-Dress graphs with %d %s.\n",
+                vertexCount,
+                vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
+        } else {
+            fprintf(stderr, "Generating Delaney-Dress graphs with%s %d %s.\n",
+                markedTwoFactors ? (char *)" marked 2-factors and" : (char *)"",
+                vertexCount,
+                vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
+        }
 
         startGeneration(vertexCount);
     }
