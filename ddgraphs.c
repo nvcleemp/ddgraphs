@@ -6040,6 +6040,65 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
 
 void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
     DEBUGTRACE_ENTER
+    
+    //check to see if we cannot discard this list based upon the constraints
+    if(symbols){
+        int i;
+        int maxPearlChainParameter = MIN(maxFaceSize-1, maxVertexDegree-1);
+        for(i=maximumQ2TypeComponents; i>maxPearlChainParameter; i++){
+            if(Q2TypeComponentsComponentCount[0][i]>0){
+                //check for pearl chains that are too long
+                DEBUGTRACE_EXIT
+                return;
+            }
+        }
+        int maxLockedPearlChainParameter = MIN((maxFaceSize-1)/2, (maxVertexDegree-1)/2);
+        for(i=maximumQ2TypeComponents; i>maxLockedPearlChainParameter; i++){
+            if(Q2TypeComponentsComponentCount[1][i]>0){
+                //check for pearl chains that are too long
+                DEBUGTRACE_EXIT
+                return;
+            }
+        }
+        
+        /* find lower bound to number of face orbits and vertex orbits any graph
+         * based on this list may yield. This lower bound is given by
+         *  _                                              _
+         * | #(semi-edges with colour 1) + #(q4-components) |
+         * | ---------------------------------------------- |
+         * |                       2                        |
+         * 
+         * We don't take q3-components (accept for the locked barb wire) into
+         * account here, because these semi-edges can close either a s0s1 or a
+         * s1s2 orbit depending on the colour they receive and this is not
+         * decided until the colouring phase. 
+         */
+        
+        int minEndingSemiEdgesCount = 0, j;
+        for(i=0; i<Q1TypeComponentsCount; i++){
+            if(Q1TypeComponentsSemiEdgeCount[i]){
+                for(j=0; j<maximumQ1TypeComponents; j++){
+                    minEndingSemiEdgesCount += Q1TypeComponentsComponentCount[i][j]*Q1TypeComponentsSemiEdgeCount[i];
+                }
+            }
+        }
+        for(i=0; i<maximumQ2TypeComponents; i++){
+            minEndingSemiEdgesCount += Q2TypeComponentsComponentCount[1][i];
+        }
+        for(i=0; i<maximumQ3TypeComponents; i++){
+            minEndingSemiEdgesCount += Q3TypeComponentsComponentCount[1][i];
+        }
+        minEndingSemiEdgesCount += Q4ComponentCount;
+        
+        minEndingSemiEdgesCount += 1;
+        //plus one because the ceil of a n is equal to the floor of the (n + 1/2)
+        
+        if(minEndingSemiEdgesCount/2 > MIN(minFaceOrbitCount, minVertexOrbitCount)){
+            DEBUGTRACE_EXIT
+            return;
+        }
+    }
+    
     int blockCount = 0;
     //create an array of blocks based upon the numbers in the global arrays
     BBLOCK *blocks = constructComponentList(&blockCount);
@@ -6389,6 +6448,19 @@ void initComponentsStatic(){
     Q1TypeComponentsSmallestCase[9] = 1;
     Q1TypeComponentsSmallestCase[10] = 1;
     Q1TypeComponentsSmallestCase[11] = 2;
+    
+    Q1TypeComponentsSemiEdgeCount[0] = 0;
+    Q1TypeComponentsSemiEdgeCount[1] = 1;
+    Q1TypeComponentsSemiEdgeCount[2] = 1;
+    Q1TypeComponentsSemiEdgeCount[3] = 0;
+    Q1TypeComponentsSemiEdgeCount[4] = 0;
+    Q1TypeComponentsSemiEdgeCount[5] = 2;
+    Q1TypeComponentsSemiEdgeCount[6] = 0;
+    Q1TypeComponentsSemiEdgeCount[7] = 2;
+    Q1TypeComponentsSemiEdgeCount[8] = 1;
+    Q1TypeComponentsSemiEdgeCount[9] = 1;
+    Q1TypeComponentsSemiEdgeCount[10] = 3;
+    Q1TypeComponentsSemiEdgeCount[11] = 3;
 
     Q1TypeComponentsComponentCount = (int**)malloc(sizeof(int*)*Q1TypeComponentsCount);
 
@@ -7224,6 +7296,17 @@ boolean validateSymbolConstraints(){
         validConstraints = FALSE;
     }
     
+    int maximumFaceSizeAllowed = 6+(maxFaceOrbitCount-1)*4;
+    /* see Two finiteness Theorems for Periodic Tilings of d-Dimensional Euclidean
+     * Space, Dolbilin, Dress, Huson; Discrete Comput GEOM 20:143-153 (1998) for
+     * this bound. The formula given in lemma 4.1 is incorrect: it should be <= 
+     * instead of <.
+     */ 
+    if(minFaceSize>maximumFaceSizeAllowed){
+        fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
+        validConstraints = FALSE;
+    }
+    
     return validConstraints;
 }
 
@@ -7305,7 +7388,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     int option_index = 0;
 
     boolean failAfterArgumentParsing = FALSE;
-    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:A:F:r:a:f:n:N:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:F:r:f:n:N:", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 //handle long option with no alternative

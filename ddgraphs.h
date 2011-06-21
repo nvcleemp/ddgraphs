@@ -129,6 +129,7 @@ unsigned long long int componentListsCount;
 int maximumQ1TypeComponents;
 int Q1TypeComponentsConnectors[Q1TypeComponentsCount];
 int Q1TypeComponentsSmallestCase[Q1TypeComponentsCount];
+int Q1TypeComponentsSemiEdgeCount[Q1TypeComponentsCount];
 int** Q1TypeComponentsComponentCount;
 
 #define Q2TypeComponentsCount 2
