@@ -113,6 +113,13 @@ struct _ddgraph {
 
     int *vertex2FactorType;
     
+    int vertexComponents[MAXN/2][MAXN];
+    /* Stores the connected components by storing for each vertex the smallest
+     * vertex in its connected component.
+     */
+    
+    int vertexPartition[MAXN/2][MAXN];
+    
     int vertexColours[MAXN/2][MAXN];
     int partitioning[MAXN/2][MAXN];
     int labelling[MAXN/2][MAXN];
@@ -162,6 +169,10 @@ void (*storeBlocksMapping[ComponentsTypesCount])(BBLOCK *, BBLOCK *, DDGRAPH *) 
 
 char (*blockName[ComponentsTypesCount]);
 
+boolean isBipartiteBlock[ComponentsTypesCount];
+
+boolean isOrientableBlock[ComponentsTypesCount];
+
 /******************Global Variables**********************/
 
 int connectionsMade; //the number of connections made at this point
@@ -182,6 +193,10 @@ boolean markedTwoFactors = FALSE;
 boolean colouredEdges = FALSE;
 
 boolean symbols = FALSE;
+
+boolean bipartite = FALSE;
+
+boolean orientable = FALSE;
 
 // allow the generation process to be split in several parts
 boolean moduloEnabled = FALSE;

@@ -885,6 +885,25 @@ int buildingBlockTypeToNumber(BBLOCK *block){
     }
 }
 
+int buildingBlockParametersToNumber(int type, int component){
+    if(type==1){
+        return component;
+    } else if(type==2){
+        return Q1TypeComponentsCount + component;
+    } else if(type==3){
+        return Q1TypeComponentsCount + Q2TypeComponentsCount + component;
+    } else if(type==4){
+        return Q1TypeComponentsCount + Q2TypeComponentsCount + Q3TypeComponentsCount;
+    } else if(type==5){
+        return Q1TypeComponentsCount + Q2TypeComponentsCount
+                + Q3TypeComponentsCount + 1 + component;
+    } else {
+        return Q1TypeComponentsCount + Q2TypeComponentsCount 
+                + Q3TypeComponentsCount + 1 + NoConnectorsFixedColouringComponentsCount
+                + component;
+    }
+}
+
 //union-find
 
 /* Searches the given forest to find the root of the given element and performs
@@ -1081,6 +1100,14 @@ void constructHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vert
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 3;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+2] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+3] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1276,6 +1303,13 @@ void constructLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 2;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+2] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+3] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1435,6 +1469,12 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+2] = 1;
 
     start = *currentVertex;
 
@@ -1624,6 +1664,10 @@ void constructDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph,
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+2] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
 
     start = *currentVertex;
 
@@ -1807,6 +1851,12 @@ void constructDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     vertexToConnector[(*currentVertex)+1] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -1980,6 +2030,12 @@ void constructOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     vertexToConnector[(*currentVertex)+1] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
 
 
     //store some pointers to limit the amount of typing in the next lines
@@ -2148,6 +2204,12 @@ void constructDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH 
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+3] = 0;
 
 
     start = *currentVertex;
@@ -2328,6 +2390,12 @@ void constructOpenroofLongBuilding(int *currentVertex, BBLOCK *block, DDGRAPH *d
     vertexToConnector[(*currentVertex)+(block->parameter-1)*4+3] = 1;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
+    ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+3] = 0;
     
 
     //store some pointers to limit the amount of typing in the next lines
@@ -2499,6 +2567,11 @@ void constructLockedDiagonalChain(int *currentVertex, BBLOCK *block, DDGRAPH *dd
     vertexToConnector[(*currentVertex)+1] = 0;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
 
     start = *currentVertex;
 
@@ -2656,6 +2729,11 @@ void constructLockedDoubleroofHighBuilding(int *currentVertex, BBLOCK *block, DD
     vertexToConnector[*currentVertex] = 0;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -2812,6 +2890,11 @@ void constructLockedOpenroofHighBuilding(int *currentVertex, BBLOCK *block, DDGR
     vertexToConnector[*currentVertex] = 0;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -2976,6 +3059,11 @@ void constructLockedDoubleroofLongBuilding(int *currentVertex, BBLOCK *block, DD
     vertexToConnector[(*currentVertex)+1] = 0;
     vertexToBlock[*currentVertex] = block->id;
     vertexToBlock[(*currentVertex)+1] = block->id;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 4*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
 
     start = *currentVertex;
 
@@ -3131,6 +3219,12 @@ void constructPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
     block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
     vertexToConnector[*currentVertex] = 0;
     vertexToConnector[(*currentVertex)+1+2*(block->parameter-1)] = 1;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 2*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
+    ddgraph->vertexPartition[0][*currentVertex + 1 + 2*(block->parameter-1)] = 1;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -3247,6 +3341,11 @@ void constructLockedPearlChain(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
     int i;
     block->connectionVertices[0] = *currentVertex;
     vertexToConnector[*currentVertex] = 0;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 2*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
     
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -3336,6 +3435,12 @@ void constructBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, in
     block->connectionVertices[1] = *currentVertex + 1 + 2*(block->parameter-1);
     vertexToConnector[*currentVertex] = 0;
     vertexToConnector[(*currentVertex)+1+2*(block->parameter-1)] = 1;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 2*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
+    ddgraph->vertexPartition[0][*currentVertex + 1 + 2*(block->parameter-1)] = 1;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -3436,6 +3541,11 @@ void constructLockedBarbedWire(int *currentVertex, BBLOCK *block, DDGRAPH *ddgra
     int i;
     block->connectionVertices[0] = *currentVertex;
     vertexToConnector[*currentVertex] = 0;
+    int smallestVertex = *currentVertex;
+    for(i=smallestVertex; i<smallestVertex + 2*(block->parameter); i++){
+        ddgraph->vertexComponents[0][i] = smallestVertex;
+    }
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -3514,6 +3624,8 @@ void storeLockedBarbedWiresMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgr
  * semi-edges).
  */
 void constructQ4(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
+    ddgraph->vertexComponents[0][*currentVertex] = *currentVertex;
+    ddgraph->vertexPartition[0][*currentVertex] = 0;
     ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex)] + 1]
             = ddgraph->underlyingGraph->e[ddgraph->underlyingGraph->v[(*currentVertex)] + 2] = SEMIEDGE;
     ddgraph->underlyingGraph->v[(*currentVertex)]++;
@@ -5468,6 +5580,14 @@ boolean areNeighbouringConnections(int family, int parameter, int connection1, i
 boolean isLegalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgraph,
         int *vertexToBlock, int *vertexToConnector, int connector1, int connector2){
     DEBUGASSERT(Q1TypeComponentsCount==12)
+    if(bipartite){
+        if(ddgraph->vertexPartition[connectionsMade][connector1]
+                == ddgraph->vertexPartition[connectionsMade][connector2] &&
+                ddgraph->vertexComponents[connectionsMade][connector1] ==
+                ddgraph->vertexComponents[connectionsMade][connector2]){
+            return FALSE;
+        }
+    }
     int i;
     int block1 = vertexToBlock[connector1];
     int block2 = vertexToBlock[connector2];
@@ -5841,6 +5961,44 @@ void connectCompleteOrbit(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddgra
                     if(hasTrivialSymmetryForFreeConnections(ddgraph, freeConnectors))
                         graphsWithTrivialSymmetryForRemainingConnections[connectionsMade]++;
 #endif
+                    //copy the component and partition information
+                    if(bipartite){
+                        int smallestComponent = MIN(ddgraph->vertexComponents[connectionsMade-1][v1],
+                                                    ddgraph->vertexComponents[connectionsMade-1][v2]);
+                        int largestComponent = MAX(ddgraph->vertexComponents[connectionsMade-1][v1],
+                                                    ddgraph->vertexComponents[connectionsMade-1][v2]);
+                        boolean switchColours = (ddgraph->vertexPartition[connectionsMade-1][v1] ==
+                                                 ddgraph->vertexPartition[connectionsMade-1][v2]);
+                        if(switchColours){
+                            for(j=0; j<ddgraph->order; j++){
+                                if(freeConnectors[j]){
+                                    if(ddgraph->vertexComponents[connectionsMade-1][j]==largestComponent){
+                                        ddgraph->vertexComponents[connectionsMade][j] = smallestComponent;
+                                        ddgraph->vertexPartition[connectionsMade][j] = 
+                                                !(ddgraph->vertexPartition[connectionsMade-1][j]);
+                                    } else {
+                                        ddgraph->vertexComponents[connectionsMade][j] = 
+                                                ddgraph->vertexComponents[connectionsMade-1][j];
+                                        ddgraph->vertexPartition[connectionsMade][j] = 
+                                                ddgraph->vertexPartition[connectionsMade-1][j];
+                                    }
+                                }
+                            }
+                        } else {
+                            for(j=0; j<ddgraph->order; j++){
+                                if(freeConnectors[j]){
+                                    if(ddgraph->vertexComponents[connectionsMade-1][j]==largestComponent){
+                                        ddgraph->vertexComponents[connectionsMade][j] = smallestComponent;
+                                    } else {
+                                        ddgraph->vertexComponents[connectionsMade][j] = 
+                                                ddgraph->vertexComponents[connectionsMade-1][j];
+                                    }
+                                    ddgraph->vertexPartition[connectionsMade][j] = ddgraph->vertexPartition[connectionsMade-1][j];
+                                }
+                            }
+                        }
+                    }
+                    
                     int inCurrentOrbit = 0;
                     if(vertexOrbits[depth][v1] == orbit) inCurrentOrbit++;
                     if(vertexOrbits[depth][v2] == orbit) inCurrentOrbit++;
@@ -5903,6 +6061,45 @@ void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAP
 #ifdef _PROFILING
                 graphsFromClosedGraphsWithTrivialSymmetry[connectionsMade]++;
 #endif
+                //copy the component and partition information
+                if(bipartite){
+                    int k;
+                    int smallestComponent = MIN(ddgraph->vertexComponents[connectionsMade-1][i],
+                                                ddgraph->vertexComponents[connectionsMade-1][j]);
+                    int largestComponent = MAX(ddgraph->vertexComponents[connectionsMade-1][i],
+                                                ddgraph->vertexComponents[connectionsMade-1][j]);
+                    boolean switchColours = (ddgraph->vertexPartition[connectionsMade-1][i] ==
+                                             ddgraph->vertexPartition[connectionsMade-1][j]);
+                    if(switchColours){
+                        for(k=0; k<ddgraph->order; k++){
+                            if(freeConnectors[k]){
+                                if(ddgraph->vertexComponents[connectionsMade-1][k]==largestComponent){
+                                    ddgraph->vertexComponents[connectionsMade][k] = smallestComponent;
+                                    ddgraph->vertexPartition[connectionsMade][k] = 
+                                            !(ddgraph->vertexPartition[connectionsMade-1][k]);
+                                } else {
+                                    ddgraph->vertexComponents[connectionsMade][k] = 
+                                            ddgraph->vertexComponents[connectionsMade-1][k];
+                                    ddgraph->vertexPartition[connectionsMade][k] = 
+                                            ddgraph->vertexPartition[connectionsMade-1][k];
+                                }
+                            }
+                        }
+                    } else {
+                        for(k=0; k<ddgraph->order; k++){
+                            if(freeConnectors[k]){
+                                if(ddgraph->vertexComponents[connectionsMade-1][k]==largestComponent){
+                                    ddgraph->vertexComponents[connectionsMade][k] = smallestComponent;
+                                } else {
+                                    ddgraph->vertexComponents[connectionsMade][k] = 
+                                            ddgraph->vertexComponents[connectionsMade-1][k];
+                                }
+                                ddgraph->vertexPartition[connectionsMade][k] = ddgraph->vertexPartition[connectionsMade-1][k];
+                            }
+                        }
+                    }
+                }
+                
                     //
                 if(totalConnectionsLeft - 2 == 0){
                     //printConnectionsMade();
@@ -6309,11 +6506,27 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
 }
 
 void q4Components(int targetSize, int currentSize, DDGRAPH *ddgraph){
-    Q4ComponentCount = targetSize - currentSize; //each q4 component has 1 vertex
-    handleComponentList(targetSize, ddgraph);
+    if(!orientable || targetSize == currentSize){
+        //Q4 component is not orientable
+        Q4ComponentCount = targetSize - currentSize; //each q4 component has 1 vertex
+        handleComponentList(targetSize, ddgraph);
+    }
 }
 
 void q3Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    boolean skip = FALSE;
+    int blockTypeNumber = buildingBlockParametersToNumber(3, currentType);
+    if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
+    if(orientable && !isOrientableBlock[blockTypeNumber]) skip = TRUE;
+    if(skip){
+        if(currentType+1==Q3TypeComponentsCount){
+            q4Components(targetSize, currentSize, ddgraph);
+        } else {
+            q3Components(currentType+1, Q3TypeComponentsSmallestCase[currentType+1], targetSize, currentSize, ddgraph);
+        }
+        return;
+    }
+    
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -6334,6 +6547,19 @@ void q3Components(int currentType, int currentParameter, int targetSize, int cur
 }
 
 void q2Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    boolean skip = FALSE;
+    int blockTypeNumber = buildingBlockParametersToNumber(2, currentType);
+    if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
+    if(orientable && !isOrientableBlock[blockTypeNumber]) skip = TRUE;
+    if(skip){
+        if(currentType+1==Q2TypeComponentsCount){
+            q3Components(0, Q3TypeComponentsSmallestCase[0], targetSize, currentSize, ddgraph);
+        } else {
+            q2Components(currentType+1, Q2TypeComponentsSmallestCase[currentType+1], targetSize, currentSize, ddgraph);
+        }
+        return;
+    }
+    
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -6354,6 +6580,19 @@ void q2Components(int currentType, int currentParameter, int targetSize, int cur
 }
 
 void q1Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    boolean skip = FALSE;
+    int blockTypeNumber = buildingBlockParametersToNumber(1, currentType);
+    if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
+    if(orientable && !isOrientableBlock[blockTypeNumber]) skip = TRUE;
+    if(skip){
+        if(currentType+1==Q1TypeComponentsCount){
+            q2Components(0, Q2TypeComponentsSmallestCase[0], targetSize, currentSize, ddgraph);
+        } else {
+            q1Components(currentType+1, Q1TypeComponentsSmallestCase[currentType+1], targetSize, currentSize, ddgraph);
+        }
+        return;
+    }
+    
     int i;
 
     int remainingVertices = targetSize - currentSize;
@@ -6602,6 +6841,66 @@ void initComponentsStatic(){
     blockName[26] = "CLH(%d)";
     blockName[27] = "DDHB(%d)";
     blockName[28] = "DLDHB(%d)";
+    
+    isBipartiteBlock[0] = TRUE;
+    isBipartiteBlock[1] = TRUE;
+    isBipartiteBlock[2] = TRUE;
+    isBipartiteBlock[3] = FALSE;
+    isBipartiteBlock[4] = TRUE;
+    isBipartiteBlock[5] = TRUE;
+    isBipartiteBlock[6] = TRUE;
+    isBipartiteBlock[7] = TRUE;
+    isBipartiteBlock[8] = FALSE;
+    isBipartiteBlock[9] = TRUE;
+    isBipartiteBlock[10] = TRUE;
+    isBipartiteBlock[11] = TRUE;
+    isBipartiteBlock[12] = TRUE;
+    isBipartiteBlock[13] = TRUE;
+    isBipartiteBlock[14] = TRUE;
+    isBipartiteBlock[15] = TRUE;
+    isBipartiteBlock[16] = TRUE;
+    isBipartiteBlock[17] = TRUE;
+    isBipartiteBlock[18] = TRUE;
+    isBipartiteBlock[19] = TRUE;
+    isBipartiteBlock[20] = TRUE;
+    isBipartiteBlock[21] = TRUE;
+    isBipartiteBlock[22] = FALSE;
+    isBipartiteBlock[23] = FALSE;
+    isBipartiteBlock[24] = TRUE;
+    isBipartiteBlock[25] = TRUE;
+    isBipartiteBlock[26] = TRUE;
+    isBipartiteBlock[27] = TRUE;
+    isBipartiteBlock[28] = TRUE;
+    
+    isOrientableBlock[0] = TRUE;
+    isOrientableBlock[1] = FALSE;
+    isOrientableBlock[2] = FALSE;
+    isOrientableBlock[3] = FALSE;
+    isOrientableBlock[4] = TRUE;
+    isOrientableBlock[5] = FALSE;
+    isOrientableBlock[6] = TRUE;
+    isOrientableBlock[7] = FALSE;
+    isOrientableBlock[8] = FALSE;
+    isOrientableBlock[9] = FALSE;
+    isOrientableBlock[10] = FALSE;
+    isOrientableBlock[11] = FALSE;
+    isOrientableBlock[12] = TRUE;
+    isOrientableBlock[13] = FALSE;
+    isOrientableBlock[14] = FALSE;
+    isOrientableBlock[15] = FALSE;
+    isOrientableBlock[16] = FALSE;
+    isOrientableBlock[17] = FALSE;
+    isOrientableBlock[18] = FALSE;
+    isOrientableBlock[19] = TRUE;
+    isOrientableBlock[20] = FALSE;
+    isOrientableBlock[21] = FALSE;
+    isOrientableBlock[22] = FALSE;
+    isOrientableBlock[23] = FALSE;
+    isOrientableBlock[24] = TRUE;
+    isOrientableBlock[25] = FALSE;
+    isOrientableBlock[26] = FALSE;
+    isOrientableBlock[27] = TRUE;
+    isOrientableBlock[28] = FALSE;
 
 }
 
@@ -6770,14 +7069,18 @@ void addDoubleLockedDoubleroofHighBuilding(DDGRAPH * ddgraph, int parameter){
 }
 
 void extraUnconstructableGraphs_1(DDGRAPH * ddgraph){
-    addTristar(ddgraph);
+    if(!orientable){
+        addTristar(ddgraph);
+    }
 }
 
 void extraUnconstructableGraphs_2(DDGRAPH * ddgraph){
-    addDoubleLockedPearlChain(ddgraph, 1);
+    if(!orientable){
+        addDoubleLockedPearlChain(ddgraph, 1);
+    }
     addPearlNecklace(ddgraph, 1);
 
-    if(markedTwoFactors){
+    if(markedTwoFactors && !orientable){
         addDoubleLockedBarbedWire(ddgraph, 1);
 
         //isomorph to DLPC(1) in unmarked case
@@ -6786,43 +7089,57 @@ void extraUnconstructableGraphs_2(DDGRAPH * ddgraph){
 }
 
 void extraUnconstructableGraphs_4(DDGRAPH * ddgraph){
-    addDoubleLockedPearlChain(ddgraph, 2);
     addPearlNecklace(ddgraph, 2);
-    addBarbedWireNecklace(ddgraph, 2);
-    addDoubleLockedDiagonalChain(ddgraph, 1);
-    addMobiusLadder(ddgraph, 1);
+    if(!orientable){
+        addDoubleLockedPearlChain(ddgraph, 2);
+        addBarbedWireNecklace(ddgraph, 2);
+        if(!bipartite){
+            addDoubleLockedDiagonalChain(ddgraph, 1);
+            addMobiusLadder(ddgraph, 1);
+        }
+    }
 
     if(markedTwoFactors){
-        addDoubleLockedBarbedWire(ddgraph, 2);
-        addCompletelyLockedHub(ddgraph, 1);
+        if(!orientable){
+            addDoubleLockedBarbedWire(ddgraph, 2);
+            addCompletelyLockedHub(ddgraph, 1);
+            addDoubleLockedDoubleroofHighBuilding(ddgraph, 1);
+        }
         addDoubleroofDoublefloorHighBuilding(ddgraph, 1);
-        addDoubleLockedDoubleroofHighBuilding(ddgraph, 1);
     }
 }
 
 void extraUnconstructableGraphs_4n(DDGRAPH * ddgraph, int targetSize){
-    addDoubleLockedPearlChain(ddgraph, targetSize/2);
     addPearlNecklace(ddgraph, targetSize/2);
-    addBarbedWireNecklace(ddgraph, targetSize/2);
-    addDoubleLockedDiagonalChain(ddgraph, targetSize/4);
-    addMobiusLadder(ddgraph, targetSize/4);
+    if(!orientable){
+        addDoubleLockedPearlChain(ddgraph, targetSize/2);
+        addBarbedWireNecklace(ddgraph, targetSize/2);
+        addDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
+        if(!bipartite){
+            addDoubleLockedDiagonalChain(ddgraph, targetSize/4);
+            addMobiusLadder(ddgraph, targetSize/4);
+        }
+    }
     addPrism(ddgraph, targetSize/4);
-    addDoubleLockedDoubleroofLongBuilding(ddgraph, targetSize/4);
 
     if(markedTwoFactors){
-        addDoubleLockedBarbedWire(ddgraph, targetSize/2);
-        addCompletelyLockedHub(ddgraph, targetSize/4);
+        if(!orientable){
+            addDoubleLockedBarbedWire(ddgraph, targetSize/2);
+            addCompletelyLockedHub(ddgraph, targetSize/4);
+            addDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
+        }
         addDoubleroofDoublefloorHighBuilding(ddgraph, targetSize/4);
-        addDoubleLockedDoubleroofHighBuilding(ddgraph, targetSize/4);
     }
 }
 
 void extraUnconstructableGraphs_4n2(DDGRAPH * ddgraph, int targetSize){
-    addDoubleLockedPearlChain(ddgraph, targetSize/2);
     addPearlNecklace(ddgraph, targetSize/2);
-    addBarbedWireNecklace(ddgraph, targetSize/2);
-
-    if(markedTwoFactors){
+    if(!orientable){
+        addDoubleLockedPearlChain(ddgraph, targetSize/2);
+        addBarbedWireNecklace(ddgraph, targetSize/2);
+    }
+        
+    if(markedTwoFactors && !orientable){
         addDoubleLockedBarbedWire(ddgraph, targetSize/2);
     }
     
@@ -6843,6 +7160,24 @@ void extraUnconstructableGraphs(DDGRAPH * ddgraph, int targetSize){
 }
 
 void startGeneration(int targetSize){
+    if(orientable && targetSize%2){
+        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        if(!onlyLists){
+            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+                    graphsCount,
+                    graphsCount==1 ? (char *)"" : (char *)"s",
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+            if(colouredEdges){
+                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                    edgeColouredGraphsCount,
+                    edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+            }
+        }
+        if(moduloEnabled){
+            fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
+        }  
+        return;
+    }
 
     initComponentsStatic();
     initComponents(targetSize);
@@ -6902,6 +7237,8 @@ void startFromListFile(char *filename){
         int parameter = 0;
         int count = 0;
         boolean singleComponentList = FALSE;
+        boolean canBeBipartite = TRUE;
+        boolean canBeOrientable = TRUE;
         while(fscanf(f, "%d", &type)!=-1){
             if(type==0){
                 break;
@@ -6929,6 +7266,9 @@ void startFromListFile(char *filename){
                 if(count <= 0){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
+                int blockNumber = buildingBlockParametersToNumber(1, family);
+                if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                 Q1TypeComponentsComponentCount[family][parameter-1] = count;
                 realVertexCount += 4*count*parameter;
             } else if(type==2){
@@ -6954,6 +7294,9 @@ void startFromListFile(char *filename){
                 if(count <= 0){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
+                int blockNumber = buildingBlockParametersToNumber(2, family);
+                if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                 Q2TypeComponentsComponentCount[family][parameter-1] = count;
                 realVertexCount += 2*count*parameter;
             } else if(type==3){
@@ -6979,6 +7322,9 @@ void startFromListFile(char *filename){
                 if(count <= 0){
                     ERRORMSG("Error while parsing file: illegal count.")
                 }
+                int blockNumber = buildingBlockParametersToNumber(3, family);
+                if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                 Q3TypeComponentsComponentCount[family][parameter-1] = count;
                 realVertexCount += 2*count*parameter;
             } else if(type==4){
@@ -6989,6 +7335,9 @@ void startFromListFile(char *filename){
                     if(count <= 0){
                         ERRORMSG("Error while parsing file: illegal count.")
                     }
+                    int blockNumber = buildingBlockParametersToNumber(4, 0);
+                    if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                    if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                     Q4ComponentCount = count;
                     realVertexCount += count;
                 } else {
@@ -7012,6 +7361,9 @@ void startFromListFile(char *filename){
                 if(fscanf(f, "%d", &last)!=-1 && last!=0){
                     ERRORMSG("Error while parsing file: Block of type 5 can only be in list of size 1.")
                 }
+                int blockNumber = buildingBlockParametersToNumber(5, family);
+                if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                 singleComponentList = TRUE;
                 break;
             } else if(type==6){
@@ -7032,6 +7384,9 @@ void startFromListFile(char *filename){
                 if(fscanf(f, "%d", &last)!=-1 && last!=0){
                     ERRORMSG("Error while parsing file: Block of type 6 can only be in list of size 1.")
                 }
+                int blockNumber = buildingBlockParametersToNumber(6, family);
+                if(!isBipartiteBlock[blockNumber]) canBeBipartite = FALSE;
+                if(!isOrientableBlock[blockNumber]) canBeOrientable = FALSE;
                 singleComponentList = TRUE;
                 break;
             } else {
@@ -7042,6 +7397,10 @@ void startFromListFile(char *filename){
         if(realVertexCount!=vertexCount){
             ERRORMSG("Error while parsing file: incorrect vertex count.")
         }
+        
+        //skip this list in case it conflicts with any constraints
+        if(orientable && !canBeOrientable) continue;
+        if(bipartite && !canBeBipartite) continue;
 
         DDGRAPH * ddgraph = getNewDDGraph(vertexCount);
 
@@ -7083,7 +7442,15 @@ void startMultipleGenerations(int startSize, int endSize){
     initComponentsStatic();
     initStatistics();
     
-    for(targetSize = startSize; targetSize<=endSize; targetSize++){
+    int step = 1;
+    if(orientable){
+        if(startSize%2){
+            startSize++;
+        }
+        step = 2;
+    }
+    
+    for(targetSize = startSize; targetSize<=endSize; targetSize+=step){
         initComponents(targetSize);
         initNautyOptions(targetSize);
 
@@ -7161,6 +7528,10 @@ void help(char *name){
     fprintf(stderr, "    -s, --symbols\n");
     fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
     fprintf(stderr, "\n* Specify constraints\n");
+    fprintf(stderr, "    -b, --bipartite\n");
+    fprintf(stderr, "       Only generate Delaney-Dress graphs that are bipartite.\n");
+    fprintf(stderr, "    -O, --orientable\n");
+    fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable tilings.\n");
     fprintf(stderr, "    -R, --requiredface\n");
     fprintf(stderr, "       Add a face size to the list of required faces.\n");
     fprintf(stderr, "    -F, --forbiddenface\n");
@@ -7383,12 +7754,14 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"requiredvertex", required_argument, NULL, 'r'},
         {"forbiddenvertex", required_argument, NULL, 'f'},
         {"minvertices", required_argument, NULL, 'n'},
-        {"maxvertices", required_argument, NULL, 'N'}
+        {"maxvertices", required_argument, NULL, 'N'},
+        {"bipartite", no_argument, NULL, 'b'},
+        {"orientable", no_argument, NULL, 'O'}
     };
     int option_index = 0;
 
     boolean failAfterArgumentParsing = FALSE;
-    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:F:r:f:n:N:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:F:r:f:n:N:bO", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 //handle long option with no alternative
@@ -7467,6 +7840,13 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                 markedTwoFactors = TRUE;
                 colouredEdges = TRUE;
                 symbols = TRUE;
+                break;
+            case 'b':
+                bipartite = TRUE;
+                break;
+            case 'O':
+                bipartite = TRUE;
+                orientable = TRUE;
                 break;
             case 'o':
                 outputType = optarg[0];
