@@ -5220,17 +5220,17 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 }
 
 //========= PHASE 4: ENUMERATION OF DELANEY-DRESS SYMBOLS ===================
-void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *count, int colour1, int colour2){
+void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
     int i, j, v, nextV, c, size;
     boolean visited[MAXN];
     for(i=0; i<MAXN; i++){
         visited[i]=FALSE;
     }
     int colours[2];
-    colours[0]=colour1;
-    colours[1]=colour2;
-    
-    *count = 0;
+    colours[0]=colourComponents->colour1;
+    colours[1]=colourComponents->colour2;
+
+    colourComponents->componentCount = 0;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
@@ -5279,24 +5279,24 @@ void findComponent(DDGRAPH *ddgraph, int *components, int*componentsSize, int *c
                 v = nextV;
             }
             //component has been completely visited
-            components[*count] = i;
-            componentsSize[*count] = size;
-            (*count)++;
+            colourComponents->components[colourComponents->componentCount] = i;
+            colourComponents->componentSizes[colourComponents->componentCount] = size;
+            colourComponents->containsSemiEdge[colourComponents->componentCount] = (v==SEMIEDGE);
+            (colourComponents->componentCount)++;
         }
     }
 }
 
 void assignComponentLabels(DDGRAPH *ddgraph){
-    int s0s1Components[MAXN];
-    int s0s1ComponentsSize[MAXN];
-    int s0s1ComponentCount = 0;
-    int s1s2Components[MAXN];
-    int s1s2ComponentsSize[MAXN];
-    int s1s2ComponentCount = 0;
+    COLOURCOMPONENTS s0s1Components;
+    s0s1Components.colour1 = 0;
+    s0s1Components.colour2 = 1;
+    COLOURCOMPONENTS s1s2Components;
+    s1s2Components.colour1 = 1;
+    s1s2Components.colour2 = 2;
 
-    findComponent(ddgraph, s0s1Components, s0s1ComponentsSize, &s0s1ComponentCount, 0, 1);
-    findComponent(ddgraph, s1s2Components, s1s2ComponentsSize, &s1s2ComponentCount, 1, 2);
-    
+    findComponents(ddgraph, &s0s1Components);
+    findComponents(ddgraph, &s1s2Components);
 }
 
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============

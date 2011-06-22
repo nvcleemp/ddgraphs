@@ -127,6 +127,33 @@ struct _ddgraph {
 
 typedef struct _ddgraph DDGRAPH;
 
+struct _colourcomponents {
+    /* This struct allows the storage of all components induced by two colours
+     * on a coloured Delaney-Dress graph.
+     */
+    
+    /* This array contains for each components a vertex from that component
+     */
+    int components[MAXN];
+    
+    /* This array contains for each component its size
+     */
+    int componentSizes[MAXN];
+    
+    /* This variable stores the number of components in this list
+     */
+    int componentCount;
+    
+    /* The following two variables store the colours that induce these components
+     */
+    int colour1;
+    int colour2;
+    
+    boolean containsSemiEdge[MAXN];
+};
+
+typedef struct _colourcomponents COLOURCOMPONENTS;
+
 //================== Component lists =====================
 
 unsigned long long int componentListsCount;
