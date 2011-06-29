@@ -5297,6 +5297,30 @@ void assignComponentLabels(DDGRAPH *ddgraph){
 
     findComponents(ddgraph, &s0s1Components);
     findComponents(ddgraph, &s1s2Components);
+    
+    if(s0s1Components.componentCount < minFaceOrbitCount || s0s1Components.componentCount > maxFaceOrbitCount){
+        return;
+    }
+    
+    if(s1s2Components.componentCount < minVertexOrbitCount || s1s2Components.componentCount > maxVertexOrbitCount){
+        return;
+    }
+    
+    int i;
+    for(i=0; i<s0s1Components.componentCount; i++){
+        if(s0s1Components.containsSemiEdge[i] && s0s1Components.componentSizes[i] > maxFaceSize){
+            return;
+        } else if(!s0s1Components.containsSemiEdge[i] && s0s1Components.componentSizes[i]/2 > maxFaceSize){
+            return;
+        }
+    }
+    for(i=0; i<s1s2Components.componentCount; i++){
+        if(s1s2Components.containsSemiEdge[i] && s1s2Components.componentSizes[i] > maxVertexDegree){
+            return;
+        } else if(!s1s2Components.containsSemiEdge[i] && s1s2Components.componentSizes[i]/2 > maxVertexDegree){
+            return;
+        }
+    }
 }
 
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
