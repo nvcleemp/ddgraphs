@@ -148,6 +148,18 @@
 
 #endif
 
+//=============== PROFILING MACRO'S ===============
+
+#ifdef _PROFILING
+
+#define PROFILINGINCREMENT(counter) counter++;
+
+#else
+
+#define PROFILINGINCREMENT(counter)
+
+#endif
+
 //================== Timing =======================
 
 #define time_factor sysconf(_SC_CLK_TCK)
