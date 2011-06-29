@@ -7841,10 +7841,12 @@ boolean validateSymbolConstraints(){
     
     if(2*minVertexDegree + 2*minFaceSize - minVertexDegree*minFaceSize<0){
         fprintf(stderr, "This minimum vertex size and minimum face size can't yield any tiling.\n");
+        validConstraints = FALSE;
     }
     
     if(2*maxVertexDegree + 2*maxFaceSize - maxVertexDegree*maxFaceSize>0){
         fprintf(stderr, "This maximum vertex size and maximum face size can't yield any tiling.\n");
+        validConstraints = FALSE;
     }
     
     int maximumFaceSizeAllowed = 2+maxFaceOrbitCount*4;
