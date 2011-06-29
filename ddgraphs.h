@@ -255,6 +255,29 @@ int forbiddenVertexDegreesCount = 0;
 int maxVertexCount = MAXN;
 int minVertexCount = 1;
 
+//at different levels some of these bounds can be improved. These are stored in
+//the following variables
+
+int listLevelMaxFaceOrbitCount;
+int listLevelMinFaceOrbitCount;
+int listLevelMaxVertexOrbitCount;
+int listLevelMinVertexOrbitCount;
+
+int listLevelMinFaceSize;
+int listLevelMaxFaceSize;
+int listLevelMinVertexDegree;
+int listLevelMaxVertexDegree;
+
+int graphLevelMaxFaceOrbitCount;
+int graphLevelMinFaceOrbitCount;
+int graphLevelMaxVertexOrbitCount;
+int graphLevelMinVertexOrbitCount;
+
+int graphLevelMinFaceSize;
+int graphLevelMaxFaceSize;
+int graphLevelMinVertexDegree;
+int graphLevelMaxVertexDegree;
+
 /* Provide space for the generators at each recursion depth (maximum depth = MAXN/2)
  * There are at most n<=MAXN generators in a graph with n vertices and the length
  * of each generator is n.
@@ -280,6 +303,7 @@ void findNextOrbitToConnect(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *ddg
 
 #ifdef _PROFILING
 
+//profiling of underlying graph generation
 unsigned long long int acceptedBecauseOnlyOne = 0;
 unsigned long long int acceptedBecauseOnlyOneMinimalColour = 0;
 unsigned long long int skippedNautyBecauseOnlyOne = 0;
@@ -295,6 +319,13 @@ unsigned long long int closedGraphsWithTrivialSymmetry[MAXN/2];
 unsigned long long int closedGraphsWithNonTrivialSymmetry[MAXN/2];
 unsigned long long int closedGraphsWithTrivialSymmetryForRemainingConnections[MAXN/2];
 
+//profiling of bounding for symbol generation
+unsigned long long int numberOfListsAcceptedForSymbols = 0;
+unsigned long long int rejectedListsBecausePearlChainTooLong = 0;
+unsigned long long int rejectedListsBecauseLockedPearlChainTooLong = 0;
+unsigned long long int rejectedListsBecauseTooManySemiEdgesForVertexOrFaceOrbitCount = 0;
+unsigned long long int rejectedListsBecauseTooManySemiEdgesForCombinedOrbitCount = 0;
+unsigned long long int rejectedListsBecauseTooFewColour1Edges = 0;
 #endif 
 
 #endif	/* _DDGRAPHS_H */

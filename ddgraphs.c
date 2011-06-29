@@ -5749,19 +5749,14 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         }
     }  
     DEBUGASSERT(newConnection!=-1)
-    if(madeConnectionsCount==1){    
-#ifdef _PROFILING
-        acceptedBecauseOnlyOne++;
-#endif
+    if(madeConnectionsCount==1){
+        PROFILINGINCREMENT(acceptedBecauseOnlyOne)
         //guaranteed to be canonical
         if(needSymmetryGroup){
             calculateAutomorphisms(ddgraph, depth);
+        } else {
+            PROFILINGINCREMENT(skippedNautyBecauseOnlyOne)
         }
-#ifdef _PROFILING
-        else {
-            skippedNautyBecauseOnlyOne++;
-        }
-#endif
         return TRUE;
     }
             
@@ -5778,30 +5773,21 @@ boolean isCanonicalConnection(BBLOCK* blocks, int buildingBlockCount, DDGRAPH *d
         int localSmallest = localColour1 < localColour2 ? localColour1 : localColour2;
 
         if(localSmallest < smallestColour){
-            
-#ifdef _PROFILING
-            rejectedByColour++;
-#endif 
-            
+            PROFILINGINCREMENT(rejectedByColour)
             return FALSE;
         } else if(localSmallest == smallestColour){
             smallestCount++;
         }
     }
     
-    if(smallestCount==1){            
-#ifdef _PROFILING
-        acceptedBecauseOnlyOneMinimalColour++;
-#endif 
+    if(smallestCount==1){   
+        PROFILINGINCREMENT(acceptedBecauseOnlyOneMinimalColour)
         //guaranteed to be canonical
         if(needSymmetryGroup){
             calculateAutomorphisms(ddgraph, depth);
+        } else {
+            PROFILINGINCREMENT(skippedNautyBecauseOnlyOneMinimalColour)
         }
-#ifdef _PROFILING
-        else {
-            skippedNautyBecauseOnlyOneMinimalColour++;
-        }
-#endif
         return TRUE;
     }
     
@@ -6058,9 +6044,8 @@ void finishWithoutCanonicityCheck(BBLOCK* blocks, int buildingBlockCount, DDGRAP
                 freeConnectors[i]=FALSE;
                 freeConnectors[j]=FALSE;
 
-#ifdef _PROFILING
-                graphsFromClosedGraphsWithTrivialSymmetry[connectionsMade]++;
-#endif
+                PROFILINGINCREMENT(graphsFromClosedGraphsWithTrivialSymmetry[connectionsMade])
+
                 //copy the component and partition information
                 if(bipartite){
                     int k;
@@ -6245,6 +6230,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         for(i=maximumQ2TypeComponents; i>maxPearlChainParameter; i++){
             if(Q2TypeComponentsComponentCount[0][i]>0){
                 //check for pearl chains that are too long
+                PROFILINGINCREMENT(rejectedListsBecausePearlChainTooLong)
                 DEBUGTRACE_EXIT
                 return;
             }
@@ -6253,6 +6239,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         for(i=maximumQ2TypeComponents; i>maxLockedPearlChainParameter; i++){
             if(Q2TypeComponentsComponentCount[1][i]>0){
                 //check for pearl chains that are too long
+                PROFILINGINCREMENT(rejectedListsBecauseLockedPearlChainTooLong)
                 DEBUGTRACE_EXIT
                 return;
             }
@@ -6285,15 +6272,48 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         for(i=0; i<maximumQ3TypeComponents; i++){
             minEndingSemiEdgesCount += Q3TypeComponentsComponentCount[1][i];
         }
+        int s1Count = minEndingSemiEdgesCount;
         minEndingSemiEdgesCount += Q4ComponentCount;
         
-        minEndingSemiEdgesCount += 1;
-        //plus one because the ceil of a n is equal to the floor of the (n + 1/2)
+        if(minEndingSemiEdgesCount%2){
+            minEndingSemiEdgesCount += 1;
+            //plus 1 because the ceil of n/2 is equal to (n + 1)/2 for n odd
+        }
         
-        if(minEndingSemiEdgesCount/2 > MIN(minFaceOrbitCount, minVertexOrbitCount)){
+        if(minEndingSemiEdgesCount/2 > MIN(maxFaceOrbitCount, maxVertexOrbitCount)){
+            PROFILINGINCREMENT(rejectedListsBecauseTooManySemiEdgesForVertexOrFaceOrbitCount)
             DEBUGTRACE_EXIT
             return;
         }
+        
+        int q3TwoFactorCount = 0;
+        for(i=0; i<maximumQ3TypeComponents; i++){
+            q3TwoFactorCount += Q3TypeComponentsComponentCount[0][i] + 
+                                Q3TypeComponentsComponentCount[1][i];
+        }
+        if(minEndingSemiEdgesCount + q3TwoFactorCount > maxFaceOrbitCount + maxVertexOrbitCount){
+            PROFILINGINCREMENT(rejectedListsBecauseTooManySemiEdgesForCombinedOrbitCount)
+            DEBUGTRACE_EXIT
+            return;
+        }
+        
+        if(vertexCount+s1Count<4*minVertexOrbitCount){
+            PROFILINGINCREMENT(rejectedListsBecauseTooFewColour1Edges)
+            DEBUGTRACE_EXIT
+            return;
+        }
+        
+        //store improved bounds for this list of components
+        listLevelMinFaceOrbitCount = MAX(minFaceOrbitCount, minEndingSemiEdgesCount);
+        listLevelMinVertexOrbitCount = MAX(minVertexOrbitCount, minEndingSemiEdgesCount);
+        listLevelMaxFaceOrbitCount = maxFaceOrbitCount;
+        listLevelMaxVertexOrbitCount = MIN(maxVertexOrbitCount, (vertexCount+s1Count)/4);
+        listLevelMaxFaceSize = maxFaceSize;
+        listLevelMaxVertexDegree = maxVertexDegree;
+        listLevelMinFaceSize = minFaceSize;
+        listLevelMinVertexDegree = minVertexDegree;
+
+        PROFILINGINCREMENT(numberOfListsAcceptedForSymbols)
     }
     
     int blockCount = 0;
@@ -7591,6 +7611,7 @@ boolean validateSymbolConstraints(){
     int i,j;
     boolean validConstraints = TRUE;
     
+    //check that the minima are smaller than the respective maxima
     if(maxFaceOrbitCount < minFaceOrbitCount){
         fprintf(stderr, "Maximum number of face orbits needs to be at least the minimum number of face orbits.\n");
         validConstraints = FALSE;
@@ -7611,9 +7632,8 @@ boolean validateSymbolConstraints(){
         fprintf(stderr, "Maximum number of vertices needs to be at least the minimum number of vertices.\n");
         validConstraints = FALSE;
     }
-    if(requestedFaceSizesCount > maxFaceOrbitCount){
-        
-    }
+    
+    //check that no face/vertex is both required and forbidden
     for(i=0; i<requestedFaceSizesCount; i++){
         for(j=0; j<forbiddenFaceSizesCount; j++){
             if(requestedFaceSizes[i]==forbiddenFaceSizes[j]){
@@ -7630,44 +7650,180 @@ boolean validateSymbolConstraints(){
             }
         }
     }
+    
+    //calculate the minimum size based upon the required faces and vertices
+    int orientableFactor = 1;
+    if(orientable) orientableFactor = 2;
     int verticesNeeded = 0;
     for(i=0; i<requestedFaceSizesCount; i++){
-        verticesNeeded += requestedFaceSizes[i]/6;
-        if(requestedFaceSizes[i]%6) verticesNeeded++;
+        if(requestedFaceSizes[i]%6==0){
+            verticesNeeded += requestedFaceSizes[i]/6*orientableFactor;
+            continue;
+        }
+        if(requestedFaceSizes[i]%4==0){
+            verticesNeeded += requestedFaceSizes[i]/4*orientableFactor;
+            continue;
+        }
+        if(requestedFaceSizes[i]%3==0){
+            verticesNeeded += requestedFaceSizes[i]/3*orientableFactor;
+            continue;
+        }
+        if(requestedFaceSizes[i]%2==0){
+            verticesNeeded += requestedFaceSizes[i]/2*orientableFactor;
+            continue;
+        }
+        verticesNeeded += requestedFaceSizes[i]*orientableFactor;
     }
+    int minimumVerticesNeededPerFaceForRemainder = maxFaceSize;
+    for(i=minFaceSize; i<=maxFaceSize; i++){
+        if(i%6==0){
+            if(minimumVerticesNeededPerFaceForRemainder > i/6*orientableFactor){
+                minimumVerticesNeededPerFaceForRemainder = i/6*orientableFactor;
+            }
+            continue;
+        }
+        if(i%4==0){
+            if(minimumVerticesNeededPerFaceForRemainder > i/4*orientableFactor){
+                minimumVerticesNeededPerFaceForRemainder = i/4*orientableFactor;
+            }
+            continue;
+        }
+        if(i%3==0){
+            if(minimumVerticesNeededPerFaceForRemainder > i/3*orientableFactor){
+                minimumVerticesNeededPerFaceForRemainder = i/3*orientableFactor;
+            }
+            continue;
+        }
+        if(i%2==0){
+            if(minimumVerticesNeededPerFaceForRemainder > i/2*orientableFactor){
+                minimumVerticesNeededPerFaceForRemainder = i/2*orientableFactor;
+            }
+            continue;
+        }
+        if(minimumVerticesNeededPerFaceForRemainder > i*orientableFactor){
+            minimumVerticesNeededPerFaceForRemainder = i*orientableFactor;
+        }
+    }
+    verticesNeeded += minimumVerticesNeededPerFaceForRemainder*(minFaceOrbitCount-requestedFaceSizesCount);
     if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
         fprintf(stderr, "For this list of required face sizes the Delaney-Dress graph\nneeds at least %d vertices.\n", verticesNeeded);
         fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
         validConstraints = FALSE;
+    } else if (verticesNeeded > minVertexCount){
+        minVertexCount = verticesNeeded;
     }
+    
     verticesNeeded = 0;
     for(i=0; i<requestedVertexDegreesCount; i++){
-        verticesNeeded += requestedVertexDegrees[i]/6;
-        if(requestedVertexDegrees[i]%6) verticesNeeded++;
+        if(requestedVertexDegrees[i]%6==0){
+            verticesNeeded += requestedVertexDegrees[i]/6*orientableFactor;
+            continue;
+        }
+        if(requestedVertexDegrees[i]%4==0){
+            verticesNeeded += requestedVertexDegrees[i]/4*orientableFactor;
+            continue;
+        }
+        if(requestedVertexDegrees[i]%3==0){
+            verticesNeeded += requestedVertexDegrees[i]/3*orientableFactor;
+            continue;
+        }
+        if(requestedVertexDegrees[i]%2==0){
+            verticesNeeded += requestedVertexDegrees[i]/2*orientableFactor;
+            continue;
+        }
+        verticesNeeded += requestedVertexDegrees[i]*orientableFactor;
     }
+    int minimumVerticesNeededPerVertexForRemainder = maxVertexDegree;
+    for(i=minVertexDegree; i<=maxVertexDegree; i++){
+        if(i%6==0){
+            if(minimumVerticesNeededPerVertexForRemainder > i/6*orientableFactor){
+                minimumVerticesNeededPerVertexForRemainder = i/6*orientableFactor;
+            }
+            continue;
+        }
+        if(i%4==0){
+            if(minimumVerticesNeededPerVertexForRemainder > i/4*orientableFactor){
+                minimumVerticesNeededPerVertexForRemainder = i/4*orientableFactor;
+            }
+            continue;
+        }
+        if(i%3==0){
+            if(minimumVerticesNeededPerVertexForRemainder > i/3*orientableFactor){
+                minimumVerticesNeededPerVertexForRemainder = i/3*orientableFactor;
+            }
+            continue;
+        }
+        if(i%2==0){
+            if(minimumVerticesNeededPerVertexForRemainder > i/2*orientableFactor){
+                minimumVerticesNeededPerVertexForRemainder = i/2*orientableFactor;
+            }
+            continue;
+        }
+        if(minimumVerticesNeededPerVertexForRemainder > i*orientableFactor){
+            minimumVerticesNeededPerVertexForRemainder = i*orientableFactor;
+        }
+    }
+    verticesNeeded += minimumVerticesNeededPerVertexForRemainder*(minVertexOrbitCount-requestedVertexDegreesCount);
     if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
         fprintf(stderr, "For this list of required vertex degrees the Delaney-Dress graph\nneeds at least %d vertices.\n", verticesNeeded);
         fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
         validConstraints = FALSE;
-    }
-    verticesNeeded = minFaceSize/6;
-    if(minFaceSize%6) verticesNeeded++;
-    verticesNeeded *= minFaceOrbitCount;
-    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
-        fprintf(stderr, "For this number of face orbits the Delaney-Dress graph needs at\nleast %d vertices.\n", verticesNeeded);
-        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
-        validConstraints = FALSE;
-    }
-    verticesNeeded = minVertexDegree/6;
-    if(minVertexDegree%6) verticesNeeded++;
-    verticesNeeded *= minVertexOrbitCount;
-    if(verticesNeeded > MAXN || verticesNeeded > maxVertexCount){
-        fprintf(stderr, "For this number of vertex orbits the Delaney-Dress graph needs at\nleast %d vertices.\n", verticesNeeded);
-        fprintf(stderr, "This version can only handle %d vertices. Recompile the program\nto be able to handle larger graphs.\n", MAXN);
-        validConstraints = FALSE;
+    } else if (verticesNeeded > minVertexCount){
+        minVertexCount = verticesNeeded;
     }
     
-    int maximumFaceSizeAllowed = 6+(maxFaceOrbitCount-1)*4;
+    //calculate the maximum size based upon the vertex degree, face size and orbit counts
+    int verticesAllowed = 4*minVertexDegree*maxFaceOrbitCount/(minVertexDegree-2);
+    if(verticesAllowed < minVertexCount){
+        fprintf(stderr, "For this minimum vertex degree and maximum number of face orbits the Delaney-Dress graph\ncan have at most %d vertices.\n", verticesAllowed);
+        validConstraints = FALSE;
+    } else if (verticesAllowed < maxVertexCount){
+        maxVertexCount = verticesAllowed;
+    }
+    verticesAllowed = 4*minFaceSize*maxVertexOrbitCount/(minFaceSize-2);
+    if(verticesAllowed < minVertexCount){
+        fprintf(stderr, "For this minimum face size and maximum number of vertex orbits the Delaney-Dress graph\ncan have at most %d vertices.\n", verticesAllowed);
+        validConstraints = FALSE;
+    } else if (verticesAllowed < maxVertexCount){
+        maxVertexCount = verticesAllowed;
+    }
+    verticesAllowed = 4*(maxVertexOrbitCount + maxFaceOrbitCount);
+    if(verticesAllowed < minVertexCount){
+        fprintf(stderr, "For these maxima for the number of vertex orbits and number of face orbits the Delaney-Dress graph\ncan have at most %d vertices.\n", verticesAllowed);
+        validConstraints = FALSE;
+    } else if (verticesAllowed < maxVertexCount){
+        maxVertexCount = verticesAllowed;
+    }
+    verticesAllowed = 2*(minFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
+    for(i=0; i<requestedFaceSizesCount; i++){
+        verticesAllowed += 2*requestedFaceSizes[i];
+    }
+    if(verticesAllowed < minVertexCount){
+        fprintf(stderr, "For these face sizes the Delaney-Dress graph can have at most %d vertices.\n", verticesAllowed);
+        validConstraints = FALSE;
+    } else if (verticesAllowed < maxVertexCount){
+        maxVertexCount = verticesAllowed;
+    }
+    verticesAllowed = 2*(minVertexOrbitCount - requestedVertexDegreesCount)*maxVertexDegree;
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        verticesAllowed += 2*requestedVertexDegrees[i];
+    }
+    if(verticesAllowed < minVertexCount){
+        fprintf(stderr, "For these vertex degrees the Delaney-Dress graph can have at most %d vertices.\n", verticesAllowed);
+        validConstraints = FALSE;
+    } else if (verticesAllowed < maxVertexCount){
+        maxVertexCount = verticesAllowed;
+    }
+    
+    if(2*minVertexDegree + 2*minFaceSize - minVertexDegree*minFaceSize<0){
+        fprintf(stderr, "This minimum vertex size and minimum face size can't yield any tiling.\n");
+    }
+    
+    if(2*maxVertexDegree + 2*maxFaceSize - maxVertexDegree*maxFaceSize>0){
+        fprintf(stderr, "This maximum vertex size and maximum face size can't yield any tiling.\n");
+    }
+    
+    int maximumFaceSizeAllowed = 2+maxFaceOrbitCount*4;
     /* see Two finiteness Theorems for Periodic Tilings of d-Dimensional Euclidean
      * Space, Dolbilin, Dress, Huson; Discrete Comput GEOM 20:143-153 (1998) for
      * this bound. The formula given in lemma 4.1 is incorrect: it should be <= 
@@ -7676,6 +7832,8 @@ boolean validateSymbolConstraints(){
     if(minFaceSize>maximumFaceSizeAllowed){
         fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
         validConstraints = FALSE;
+    } else if (maxFaceSize > maximumFaceSizeAllowed){
+        maxFaceSize = maximumFaceSizeAllowed;
     }
     
     return validConstraints;
@@ -8019,49 +8177,61 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
     
 #ifdef _PROFILING
+    
+    if(!onlyLists){
+        fprintf(stderr, "Extra profiling info:\n");
+        fprintf(stderr, "Connections rejected\n");
+        fprintf(stderr, "     based on colour  : %7llu\n", rejectedByColour);
+        fprintf(stderr, "     by nauty         : %7llu\n", rejectedByNauty);
+        fprintf(stderr, "Connections accepted\n");
+        fprintf(stderr, "     because only one : %7llu (%llu)\n", acceptedBecauseOnlyOne, skippedNautyBecauseOnlyOne);
+        fprintf(stderr, "     based on colour  : %7llu (%llu)\n", acceptedBecauseOnlyOneMinimalColour, skippedNautyBecauseOnlyOneMinimalColour);
+        fprintf(stderr, "     by nauty         : %7llu\n\n", connectionsAccepted);
 
-    fprintf(stderr, "Extra profiling info:\n");
-    fprintf(stderr, "Connections rejected\n");
-    fprintf(stderr, "     based on colour  : %7llu\n", rejectedByColour);
-    fprintf(stderr, "     by nauty         : %7llu\n", rejectedByNauty);
-    fprintf(stderr, "Connections accepted\n");
-    fprintf(stderr, "     because only one : %7llu (%llu)\n", acceptedBecauseOnlyOne, skippedNautyBecauseOnlyOne);
-    fprintf(stderr, "     based on colour  : %7llu (%llu)\n", acceptedBecauseOnlyOneMinimalColour, skippedNautyBecauseOnlyOneMinimalColour);
-    fprintf(stderr, "     by nauty         : %7llu\n\n", connectionsAccepted);
-
-    {
-        int i = 0;
-        fprintf(stderr, "A : graphs with trivial symmetry.\n");
-        fprintf(stderr, "B : graphs with non-trivial symmetry.\n");
-        fprintf(stderr, "C : graphs derived from a closed graph with trivial symmetry.\n");
-        fprintf(stderr, "C : graphs symmetry group that acts trivial on the remaining connections.\n");
-        fprintf(stderr, "+-------------------------------------------------------------+\n");
-        fprintf(stderr, "|                     |    A    |    B    |    C    |    D    |\n");
-        fprintf(stderr, "|---------------------+---------+---------+---------+---------|\n");
-        while(i<MAXN/2 && (graphsWithTrivialSymmetry[i] || graphsWithNonTrivialSymmetry[i])){
-            fprintf(stderr, "|After %2d connections | %7llu | %7llu | %7llu | %7llu |\n",
-                    i, graphsWithTrivialSymmetry[i], graphsWithNonTrivialSymmetry[i],
-                    graphsFromClosedGraphsWithTrivialSymmetry[i], graphsWithTrivialSymmetryForRemainingConnections[i]);
-            i++;
+        {
+            int i = 0;
+            fprintf(stderr, "A : graphs with trivial symmetry.\n");
+            fprintf(stderr, "B : graphs with non-trivial symmetry.\n");
+            fprintf(stderr, "C : graphs derived from a closed graph with trivial symmetry.\n");
+            fprintf(stderr, "C : graphs symmetry group that acts trivial on the remaining connections.\n");
+            fprintf(stderr, "+-------------------------------------------------------------+\n");
+            fprintf(stderr, "|                     |    A    |    B    |    C    |    D    |\n");
+            fprintf(stderr, "|---------------------+---------+---------+---------+---------|\n");
+            while(i<MAXN/2 && (graphsWithTrivialSymmetry[i] || graphsWithNonTrivialSymmetry[i])){
+                fprintf(stderr, "|After %2d connections | %7llu | %7llu | %7llu | %7llu |\n",
+                        i, graphsWithTrivialSymmetry[i], graphsWithNonTrivialSymmetry[i],
+                        graphsFromClosedGraphsWithTrivialSymmetry[i], graphsWithTrivialSymmetryForRemainingConnections[i]);
+                i++;
+            }
+            fprintf(stderr, "+-------------------------------------------------------------+\n\n");
         }
-        fprintf(stderr, "+-------------------------------------------------------------+\n\n");
+        {
+            int i = 0;
+            fprintf(stderr, "A : closed graphs with trivial symmetry.\n");
+            fprintf(stderr, "B : closed graphs with non-trivial symmetry.\n");
+            fprintf(stderr, "C : closed graphs symmetry group that acts trivial on the remaining connections.\n");
+            fprintf(stderr, "+-------------------------------------------------------------+\n");
+            fprintf(stderr, "|                     |    A    |    B    |    C    |   C-A   |\n");
+            fprintf(stderr, "|---------------------+---------+---------+---------+---------|\n");
+            while(i<MAXN/2 && (closedGraphsWithTrivialSymmetry[i] || closedGraphsWithNonTrivialSymmetry[i])){
+                fprintf(stderr, "|After %2d connections | %7llu | %7llu | %7llu | %7llu |\n",
+                        i, closedGraphsWithTrivialSymmetry[i], closedGraphsWithNonTrivialSymmetry[i],
+                        closedGraphsWithTrivialSymmetryForRemainingConnections[i],
+                        closedGraphsWithTrivialSymmetryForRemainingConnections[i] - closedGraphsWithTrivialSymmetry[i]);
+                i++;
+            }
+            fprintf(stderr, "+-------------------------------------------------------------+\n");
+        }
     }
-    {
-        int i = 0;
-        fprintf(stderr, "A : closed graphs with trivial symmetry.\n");
-        fprintf(stderr, "B : closed graphs with non-trivial symmetry.\n");
-        fprintf(stderr, "C : closed graphs symmetry group that acts trivial on the remaining connections.\n");
-        fprintf(stderr, "+-------------------------------------------------------------+\n");
-        fprintf(stderr, "|                     |    A    |    B    |    C    |   C-A   |\n");
-        fprintf(stderr, "|---------------------+---------+---------+---------+---------|\n");
-        while(i<MAXN/2 && (closedGraphsWithTrivialSymmetry[i] || closedGraphsWithNonTrivialSymmetry[i])){
-            fprintf(stderr, "|After %2d connections | %7llu | %7llu | %7llu | %7llu |\n",
-                    i, closedGraphsWithTrivialSymmetry[i], closedGraphsWithNonTrivialSymmetry[i],
-                    closedGraphsWithTrivialSymmetryForRemainingConnections[i],
-                    closedGraphsWithTrivialSymmetryForRemainingConnections[i] - closedGraphsWithTrivialSymmetry[i]);
-            i++;
-        }
-        fprintf(stderr, "+-------------------------------------------------------------+\n");
+    
+    if(symbols){
+        fprintf(stderr, "Number of accepted lists: %llu.\n", numberOfListsAcceptedForSymbols);
+        fprintf(stderr, "Number of rejected lists\n");
+        fprintf(stderr, "    because pearl chain too long            : %llu\n", rejectedListsBecausePearlChainTooLong);
+        fprintf(stderr, "    because locked pearl chain too long     : %llu\n", rejectedListsBecauseLockedPearlChainTooLong);
+        fprintf(stderr, "    because too many closing semi-edges (1) : %llu\n", rejectedListsBecauseTooManySemiEdgesForVertexOrFaceOrbitCount);
+        fprintf(stderr, "    because too many closing semi-edges (2) : %llu\n", rejectedListsBecauseTooManySemiEdgesForCombinedOrbitCount);
+        fprintf(stderr, "    because too few edges with colour 1     : %llu\n", rejectedListsBecauseTooFewColour1Edges);
     }
 #endif 
 
