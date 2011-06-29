@@ -7794,7 +7794,7 @@ boolean validateSymbolConstraints(){
     } else if (verticesAllowed < maxVertexCount){
         maxVertexCount = verticesAllowed;
     }
-    verticesAllowed = 2*(minFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
+    verticesAllowed = 2*(maxFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
     for(i=0; i<requestedFaceSizesCount; i++){
         verticesAllowed += 2*requestedFaceSizes[i];
     }
@@ -7804,7 +7804,7 @@ boolean validateSymbolConstraints(){
     } else if (verticesAllowed < maxVertexCount){
         maxVertexCount = verticesAllowed;
     }
-    verticesAllowed = 2*(minVertexOrbitCount - requestedVertexDegreesCount)*maxVertexDegree;
+    verticesAllowed = 2*(maxVertexOrbitCount - requestedVertexDegreesCount)*maxVertexDegree;
     for(i=0; i<requestedVertexDegreesCount; i++){
         verticesAllowed += 2*requestedVertexDegrees[i];
     }
@@ -8175,6 +8175,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     times(&TMS);
     unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
+    fprintf(stderr, "Possible symbols: %llu\n", possibleSymbol);
     
 #ifdef _PROFILING
     
