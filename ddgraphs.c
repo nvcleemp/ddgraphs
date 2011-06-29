@@ -8200,8 +8200,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
     
-    fprintf(stderr, "Possible symbols: %llu\n", possibleSymbol);
-    
 #ifdef _PROFILING
     
     if(!onlyLists){
