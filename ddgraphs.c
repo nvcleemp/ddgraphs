@@ -8154,7 +8154,13 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         calculateSymbolSize();
         
         //start generation
-        fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n", minVertexCount, maxVertexCount);
+        fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n\n", minVertexCount, maxVertexCount);
+        fprintf(stderr, "Improved parameter bounds\n-------------------------\n");
+        fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCount, maxFaceOrbitCount);
+        fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCount, maxVertexOrbitCount);
+        fprintf(stderr, "Face sizes lie in [%d,%d].\n", minFaceSize, maxFaceSize);
+        fprintf(stderr, "Vertex degrees lie in [%d,%d].\n", minVertexDegree, maxVertexDegree);
+        fprintf(stderr, "\n");
 
         startMultipleGenerations(minVertexCount, maxVertexCount);
         
