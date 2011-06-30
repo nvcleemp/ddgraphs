@@ -7648,6 +7648,84 @@ boolean checkIntegerValue(const char *paramName, int value, int minimum, int max
     }
 }
 
+boolean constraintsChanged(){
+    //returns true if the constraints have changed since the last time this function was called
+    //this function deals with the global constraints and not with the constraints that
+    //are being updated during the generation
+    
+    static int oldMaxFaceOrbitCount = 0;
+    static int oldMinFaceOrbitCount = 0;
+    static int oldMaxVertexOrbitCount = 0;
+    static int oldMinVertexOrbitCount = 0;
+
+    static int oldMinFaceSize = 0;
+    static int oldMaxFaceSize = 0;
+    static int oldMinVertexDegree = 0;
+    static int oldMaxVertexDegree = 0;
+
+    static int oldRequestedFaceSizesCount = 0;
+    static int oldRequestedVertexDegreesCount = 0;
+
+    static int oldForbiddenFaceSizesCount = 0;
+    static int oldForbiddenVertexDegreesCount = 0;
+    
+    boolean constraintsChanged = FALSE;
+    
+    if(oldMaxFaceOrbitCount!=maxFaceOrbitCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldMinFaceOrbitCount!=minFaceOrbitCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldMaxVertexOrbitCount!=maxVertexOrbitCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldMinVertexOrbitCount!=minVertexOrbitCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldMaxFaceSize!=maxFaceSize){
+        constraintsChanged = TRUE;
+    }
+    if(oldMinFaceSize!=minFaceSize){
+        constraintsChanged = TRUE;
+    }
+    if(oldMaxVertexDegree!=maxVertexDegree){
+        constraintsChanged = TRUE;
+    }
+    if(oldMinVertexDegree!=minVertexDegree){
+        constraintsChanged = TRUE;
+    }
+    if(oldRequestedFaceSizesCount!=requestedFaceSizesCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldRequestedVertexDegreesCount!=requestedVertexDegreesCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldForbiddenFaceSizesCount!=forbiddenFaceSizesCount){
+        constraintsChanged = TRUE;
+    }
+    if(oldForbiddenVertexDegreesCount!=forbiddenVertexDegreesCount){
+        constraintsChanged = TRUE;
+    }
+    
+    if(constraintsChanged){
+        oldMaxFaceOrbitCount = maxFaceOrbitCount;
+        oldMinFaceOrbitCount = minFaceOrbitCount;
+        oldMaxVertexOrbitCount = maxVertexOrbitCount;
+        oldMinVertexOrbitCount = minVertexOrbitCount;
+        oldMinFaceSize = minFaceSize;
+        oldMaxFaceSize = maxFaceSize;
+        oldMinVertexDegree = minVertexDegree;
+        oldMaxVertexDegree = maxVertexDegree;
+        oldRequestedFaceSizesCount = requestedFaceSizesCount;
+        oldRequestedVertexDegreesCount = requestedVertexDegreesCount;
+        oldForbiddenFaceSizesCount = forbiddenFaceSizesCount;
+        oldForbiddenVertexDegreesCount = forbiddenVertexDegreesCount;
+    }
+    
+    return constraintsChanged;
+}
+
 void adjustSymbolConstraints(){
     minFaceOrbitCount = MAX(minFaceOrbitCount, requestedFaceSizesCount);
     minVertexOrbitCount = MAX(minVertexOrbitCount, requestedVertexDegreesCount);
@@ -7882,6 +7960,104 @@ boolean validateSymbolConstraints(){
         validConstraints = FALSE;
     } else if (maxFaceSize > maximumFaceSizeAllowed){
         maxFaceSize = maximumFaceSizeAllowed;
+    }
+    for(i=0; i<requestedFaceSizesCount; i++){
+        if(requestedFaceSizes[i]>maximumFaceSizeAllowed){
+            fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
+            validConstraints = FALSE;
+        }
+    }
+    
+    int maximumVertexOrbitsAllowed = (maxFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
+    for(i=0; i<requestedFaceSizesCount; i++){
+        maximumVertexOrbitsAllowed += requestedFaceSizes[i];
+    }
+    maximumVertexOrbitsAllowed /= minVertexDegree;
+    if(minVertexOrbitCount>maximumVertexOrbitsAllowed){
+        fprintf(stderr, "For these faces and minimum vertex degree there can be at most %d vertex orbits.\n", maximumVertexOrbitsAllowed);
+        validConstraints = FALSE;
+    } else if (maxVertexOrbitCount>maximumVertexOrbitsAllowed){
+        maxVertexOrbitCount = maximumVertexOrbitsAllowed;
+    }
+    
+    int maximumFaceOrbitsAllowed = (maxVertexOrbitCount - requestedVertexDegreesCount)*maxVertexDegree;
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        maximumFaceOrbitsAllowed += requestedVertexDegrees[i];
+    }
+    maximumFaceOrbitsAllowed /= minFaceSize;
+    if(minFaceOrbitCount>maximumFaceOrbitsAllowed){
+        fprintf(stderr, "For these vertices and minimum face size there can be at most %d face orbits.\n", maximumFaceOrbitsAllowed);
+        validConstraints = FALSE;
+    } else if (maxFaceOrbitCount>maximumFaceOrbitsAllowed){
+        maxFaceOrbitCount = maximumFaceOrbitsAllowed;
+    }
+    
+    int muV = (maxFaceOrbitCount-requestedFaceSizesCount)*maxFaceSize;
+    int muF = (maxVertexOrbitCount-requestedVertexDegreesCount)*maxVertexDegree;
+    int maximumVertexDegreeAllowed = 0;
+    maximumFaceSizeAllowed = 0;
+    for(i=0; i<requestedFaceSizesCount; i++){
+        muV += requestedFaceSizes[i];
+        muF -= requestedFaceSizes[i];
+        if(requestedFaceSizes[i]>maximumFaceSizeAllowed){
+            maximumFaceSizeAllowed = requestedFaceSizes[i];
+        }
+    }
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        muV -= requestedVertexDegrees[i];
+        muF += requestedVertexDegrees[i];
+        if(requestedVertexDegrees[i]>maximumVertexDegreeAllowed){
+            maximumVertexDegreeAllowed = requestedVertexDegrees[i];
+        }
+    }
+    if(requestedVertexDegreesCount<minVertexOrbitCount){
+        muV -= (minVertexOrbitCount-requestedVertexDegreesCount-1)*minVertexDegree;
+    }
+    if(requestedFaceSizesCount<minFaceOrbitCount){
+        muF -= (minFaceOrbitCount-requestedFaceSizesCount-1)*minFaceSize;
+    }
+    maximumVertexDegreeAllowed = MAX(maximumVertexDegreeAllowed, muV);
+    maximumFaceSizeAllowed = MAX(maximumFaceSizeAllowed, muF);
+    if(minVertexDegree>maximumVertexDegreeAllowed){
+        fprintf(stderr, "For these parameters the vertex degree can be at most %d.\n", maximumVertexDegreeAllowed);
+        validConstraints = FALSE;
+    } else if(maxVertexDegree>maximumVertexDegreeAllowed){
+        maxVertexDegree = maximumVertexDegreeAllowed;
+    }
+    if(minFaceSize>maximumFaceSizeAllowed){
+        fprintf(stderr, "For these parameters the face size can be at most %d.\n", maximumFaceSizeAllowed);
+        validConstraints = FALSE;
+    } else if(maxFaceSize>maximumFaceSizeAllowed){
+        maxFaceSize = maximumFaceSizeAllowed;
+    }
+    
+    boolean madeChanges = TRUE;
+    while(madeChanges){
+        madeChanges = FALSE;
+        for(i=0; i<forbiddenFaceSizesCount; i++){
+            if(minFaceSize==forbiddenFaceSizes[i]){
+                minFaceSize++;
+                madeChanges = TRUE;
+            }
+            if(maxFaceSize==forbiddenFaceSizes[i]){
+                maxFaceSize--;
+                madeChanges = TRUE;
+            }
+        }
+    }
+    madeChanges = TRUE;
+    while(madeChanges){
+        madeChanges = FALSE;
+        for(i=0; i<forbiddenVertexDegreesCount; i++){
+            if(minVertexDegree==forbiddenVertexDegrees[i]){
+                minVertexDegree++;
+                madeChanges = TRUE;
+            }
+            if(maxVertexDegree==forbiddenVertexDegrees[i]){
+                maxVertexDegree--;
+                madeChanges = TRUE;
+            }
+        }
     }
     
     return validConstraints;
@@ -8174,8 +8350,10 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         
         //validate restrictions for Delaney-Dress symbols and for tilings
         adjustSymbolConstraints();
-        if(!validateSymbolConstraints()){
-            return EXIT_FAILURE;
+        while(constraintsChanged()){
+            if(!validateSymbolConstraints()){
+                return EXIT_FAILURE;
+            }
         }
         
         //calculate size limits for Delaney-Dress graph
