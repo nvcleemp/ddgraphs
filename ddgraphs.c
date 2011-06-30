@@ -6958,6 +6958,7 @@ void initStatistics(){
     componentListsCount = 0;
     graphsCount = 0;
     edgeColouredGraphsCount = 0;
+    symbolsCount = 0;
 }
 
 void initNautyOptions(int order) {
@@ -7236,17 +7237,24 @@ void startGeneration(int targetSize){
 
     freeDDGraph(ddgraph);
 
-    fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
-    if(!onlyLists){
-        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
-                graphsCount,
-                graphsCount==1 ? (char *)"" : (char *)"s",
-                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
-        if(colouredEdges){
-            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
-                edgeColouredGraphsCount,
-                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+    if(!symbols || verbose){
+        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        if(!onlyLists){
+            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+                    graphsCount,
+                    graphsCount==1 ? (char *)"" : (char *)"s",
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+            if(colouredEdges){
+                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                    edgeColouredGraphsCount,
+                    edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+            }
         }
+    }
+    if(symbols){
+        fprintf(stderr, "Found %llu Delaney-Dress symbol%s.\n",
+                    symbolsCount,
+                    symbolsCount==1 ? (char *)"" : (char *)"s");
     }
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
@@ -7462,16 +7470,23 @@ void startFromListFile(char *filename){
     }
 
     fprintf(stderr, "Read %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
-    if(!onlyLists){
-        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
-                graphsCount,
-                graphsCount==1 ? (char *)"" : (char *)"s",
-                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
-        if(colouredEdges){
-            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
-                edgeColouredGraphsCount,
-                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+    if(!symbols || verbose){
+        if(!onlyLists){
+            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+                    graphsCount,
+                    graphsCount==1 ? (char *)"" : (char *)"s",
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+            if(colouredEdges){
+                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                    edgeColouredGraphsCount,
+                    edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+            }
         }
+    }
+    if(symbols){
+        fprintf(stderr, "Found %llu Delaney-Dress symbol%s.\n",
+                    symbolsCount,
+                    symbolsCount==1 ? (char *)"" : (char *)"s");
     }
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
@@ -7510,17 +7525,24 @@ void startMultipleGenerations(int startSize, int endSize){
         cleanNautyOptions();
     }
     
-    fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
-    if(!onlyLists){
-        fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
-                graphsCount,
-                graphsCount==1 ? (char *)"" : (char *)"s",
-                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
-        if(colouredEdges){
-            fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
-                edgeColouredGraphsCount,
-                edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+    if(!symbols || verbose){
+        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        if(!onlyLists){
+            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+                    graphsCount,
+                    graphsCount==1 ? (char *)"" : (char *)"s",
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+            if(colouredEdges){
+                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                    edgeColouredGraphsCount,
+                    edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
+            }
         }
+    }
+    if(symbols){
+        fprintf(stderr, "Found %llu Delaney-Dress symbol%s.\n",
+                    symbolsCount,
+                    symbolsCount==1 ? (char *)"" : (char *)"s");
     }
     if(moduloEnabled){
         fprintf(stderr, "Generated only part %llu of %llu.\n", moduloRest+1, moduloMod);
@@ -7925,6 +7947,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"maxfacesize", required_argument, NULL, 0},
         {"minvertexdegree", required_argument, NULL, 0},
         {"maxvertexdegree", required_argument, NULL, 0},
+        {"verbose", no_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
@@ -7997,6 +8020,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         if(!checkIntegerValue(long_options[option_index].name, maxVertexDegree, 3, 6*MAXN)){
                             failAfterArgumentParsing = TRUE;
                         }
+                        break;
+                    case 8:
+                        verbose = TRUE;
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -8144,6 +8170,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
 #endif
     
     if(symbols){
+        int i;
+        
         //validate restrictions for Delaney-Dress symbols and for tilings
         adjustSymbolConstraints();
         if(!validateSymbolConstraints()){
@@ -8160,6 +8188,38 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCount, maxVertexOrbitCount);
         fprintf(stderr, "Face sizes lie in [%d,%d].\n", minFaceSize, maxFaceSize);
         fprintf(stderr, "Vertex degrees lie in [%d,%d].\n", minVertexDegree, maxVertexDegree);
+        fprintf(stderr, "Required face sizes are [");
+        for(i=0; i<requestedFaceSizesCount-1; i++){
+            fprintf(stderr, "%d,", requestedFaceSizes[i]);
+        }
+        if(requestedFaceSizesCount>0){
+            fprintf(stderr, "%d", requestedFaceSizes[requestedFaceSizesCount-1]);
+        }
+        fprintf(stderr, "].\n");
+        fprintf(stderr, "Forbidden face sizes are [");
+        for(i=0; i<forbiddenFaceSizesCount-1; i++){
+            fprintf(stderr, "%d,", forbiddenFaceSizes[i]);
+        }
+        if(forbiddenFaceSizesCount>0){
+            fprintf(stderr, "%d", forbiddenFaceSizes[forbiddenFaceSizesCount-1]);
+        }
+        fprintf(stderr, "].\n");
+        fprintf(stderr, "Required vertex degrees are [");
+        for(i=0; i<requestedVertexDegreesCount-1; i++){
+            fprintf(stderr, "%d,", requestedVertexDegrees[i]);
+        }
+        if(requestedVertexDegreesCount>0){
+            fprintf(stderr, "%d", requestedVertexDegrees[requestedVertexDegreesCount-1]);
+        }
+        fprintf(stderr, "].\n");
+        fprintf(stderr, "Forbidden vertex degrees are [");
+        for(i=0; i<forbiddenVertexDegreesCount-1; i++){
+            fprintf(stderr, "%d,", forbiddenVertexDegrees[i]);
+        }
+        if(forbiddenVertexDegreesCount>0){
+            fprintf(stderr, "%d", forbiddenVertexDegrees[forbiddenVertexDegreesCount-1]);
+        }
+        fprintf(stderr, "].\n");
         fprintf(stderr, "\n");
 
         startMultipleGenerations(minVertexCount, maxVertexCount);

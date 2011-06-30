@@ -211,6 +211,8 @@ unsigned long long int graphsCount;
 
 unsigned long long int edgeColouredGraphsCount;
 
+unsigned long long int symbolsCount;
+
 char outputType = 'n'; //defaults to no output
 
 boolean onlyLists = FALSE;
@@ -224,6 +226,8 @@ boolean symbols = FALSE;
 boolean bipartite = FALSE;
 
 boolean orientable = FALSE;
+
+boolean verbose = FALSE;
 
 // allow the generation process to be split in several parts
 boolean moduloEnabled = FALSE;
