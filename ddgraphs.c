@@ -34,6 +34,20 @@
 
 #include <sys/times.h>
 
+//======================== Mathematical methods =============================
+
+int gcd(int a, int b){
+    if(b==0){
+       return a;
+    } else {
+       return gcd(b, a%b);
+    }
+}
+
+int lcm(int a, int b){
+    return a/gcd(a,b)*b;
+}
+
 //========================== Utility methods ================================
 
 #ifdef _DEBUG
@@ -5220,6 +5234,11 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 }
 
 //========= PHASE 4: ENUMERATION OF DELANEY-DRESS SYMBOLS ===================
+
+void handleDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components){
+        symbolsCount++;
+}
+
 void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
     int i, j, v, nextV, c, size;
     boolean visited[MAXN];
@@ -5287,6 +5306,68 @@ void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
     }
 }
 
+void validateDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components){
+    int i;
+    
+    PROFILINGINCREMENT(possibleAssignments)
+    int denominator = s0s1Components->componentLabels[0];
+    
+    for(i=1; i<s0s1Components->componentCount; i++){
+        denominator = lcm(denominator, s0s1Components->componentLabels[i]);
+    }
+    
+    for(i=0; i<s1s2Components->componentCount; i++){
+        denominator = lcm(denominator, s1s2Components->componentLabels[i]);
+    }
+    
+    int numerator = 0;
+    for(i=0; i<s0s1Components->componentCount; i++){
+        numerator += 2*denominator/s0s1Components->componentLabels[i]*s0s1Components->componentSizes[i];
+    }
+    for(i=0; i<s1s2Components->componentCount; i++){
+        numerator += 2*denominator/s1s2Components->componentLabels[i]*s1s2Components->componentSizes[i];
+    }
+    
+    if(numerator==(ddgraph->order)*denominator){
+        PROFILINGINCREMENT(validAssignments)
+        handleDelaneyDressSymbol(ddgraph, s0s1Components, s1s2Components);
+    }
+}
+
+void bruteForces1s2LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
+    int i;
+    for(i=minVertexDegree; i<=maxVertexDegree; i++){
+        int r = s1s2Components->containsSemiEdge[current] ? 
+                        s1s2Components->componentSizes[current] : 
+                        s1s2Components->componentSizes[current]/2;
+        if(i%r==0){
+            s1s2Components->componentLabels[current]=i;
+            if(current+1==s1s2Components->componentCount){
+                validateDelaneyDressSymbol(ddgraph, s0s1Components, s1s2Components);
+            } else {
+                bruteForces1s2LabelAssignment(ddgraph, s0s1Components, s1s2Components, current+1);
+            }
+        }
+    }
+}
+
+void bruteForces0s1LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
+    int i;
+    for(i=minFaceSize; i<=maxFaceSize; i++){
+        int r = s0s1Components->containsSemiEdge[current] ? 
+                        s0s1Components->componentSizes[current] : 
+                        s0s1Components->componentSizes[current]/2;
+        if(i%r==0){
+            s0s1Components->componentLabels[current]=i;
+            if(current+1==s0s1Components->componentCount){
+                bruteForces1s2LabelAssignment(ddgraph, s0s1Components, s1s2Components, 0);
+            } else {
+                bruteForces0s1LabelAssignment(ddgraph, s0s1Components, s1s2Components, current+1);
+            }
+        }
+    }
+}
+
 void assignComponentLabels(DDGRAPH *ddgraph){
     COLOURCOMPONENTS s0s1Components;
     s0s1Components.colour1 = 0;
@@ -5329,6 +5410,8 @@ void assignComponentLabels(DDGRAPH *ddgraph){
     }
     
     PROFILINGINCREMENT(acceptedColouredGraphs)
+    
+    bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
 }
 
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
@@ -7975,12 +8058,26 @@ boolean validateSymbolConstraints(){
             validConstraints = FALSE;
         }
     }
+    int maximumVertexDegreeAllowed = 2+maxVertexOrbitCount*4;
+    /* the dual of the bond mentioned above
+     */ 
+    if(minVertexDegree>maximumVertexDegreeAllowed){
+        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
+        validConstraints = FALSE;
+    } else if (maxVertexDegree > maximumVertexDegreeAllowed){
+        maxVertexDegree = maximumVertexDegreeAllowed;
+    }
+    for(i=0; i<requestedVertexDegreesCount; i++){
+        if(requestedVertexDegrees[i]>maximumVertexDegreeAllowed){
+        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
+            validConstraints = FALSE;
+        }
+    }
     
     int maximumVertexOrbitsAllowed = (maxFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
     for(i=0; i<requestedFaceSizesCount; i++){
         maximumVertexOrbitsAllowed += requestedFaceSizes[i];
     }
-    maximumVertexOrbitsAllowed /= minVertexDegree;
     if(minVertexOrbitCount>maximumVertexOrbitsAllowed){
         fprintf(stderr, "For these faces and minimum vertex degree there can be at most %d vertex orbits.\n", maximumVertexOrbitsAllowed);
         validConstraints = FALSE;
@@ -7992,14 +8089,14 @@ boolean validateSymbolConstraints(){
     for(i=0; i<requestedVertexDegreesCount; i++){
         maximumFaceOrbitsAllowed += requestedVertexDegrees[i];
     }
-    maximumFaceOrbitsAllowed /= minFaceSize;
     if(minFaceOrbitCount>maximumFaceOrbitsAllowed){
         fprintf(stderr, "For these vertices and minimum face size there can be at most %d face orbits.\n", maximumFaceOrbitsAllowed);
         validConstraints = FALSE;
     } else if (maxFaceOrbitCount>maximumFaceOrbitsAllowed){
         maxFaceOrbitCount = maximumFaceOrbitsAllowed;
     }
-    
+    /*
+     * TODO: these bounds are incorrect: can they be fixed?
     int muV = (maxFaceOrbitCount-requestedFaceSizesCount)*maxFaceSize;
     int muF = (maxVertexOrbitCount-requestedVertexDegreesCount)*maxVertexDegree;
     int maximumVertexDegreeAllowed = 0;
@@ -8038,7 +8135,7 @@ boolean validateSymbolConstraints(){
     } else if(maxFaceSize>maximumFaceSizeAllowed){
         maxFaceSize = maximumFaceSizeAllowed;
     }
-    
+    */
     boolean madeChanges = TRUE;
     while(madeChanges){
         madeChanges = FALSE;
@@ -8518,6 +8615,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "    because wrong number vertex orbits      : %llu\n", rejectedColouredGraphBecauseWrongNumberVertexOrbits);
         fprintf(stderr, "    because too big face orbit              : %llu\n", rejectedColouredGraphBecauseFaceOrbitTooBig);
         fprintf(stderr, "    because too big vertex orbit            : %llu\n", rejectedColouredGraphBecauseVertexOrbitTooBig);
+        fprintf(stderr, "Number of possible symbols: %llu\n", possibleAssignments);
+        fprintf(stderr, "Number of valid symbols: %llu\n", validAssignments);
     }
 #endif 
 

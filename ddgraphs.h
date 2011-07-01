@@ -140,6 +140,10 @@ struct _colourcomponents {
      */
     int componentSizes[MAXN];
     
+    /* This array contains for each component its label
+     */
+    int componentLabels[MAXN];
+    
     /* This variable stores the number of components in this list
      */
     int componentCount;
@@ -336,6 +340,9 @@ unsigned long long int rejectedColouredGraphBecauseWrongNumberVertexOrbits = 0;
 unsigned long long int rejectedColouredGraphBecauseWrongNumberFaceOrbits = 0;
 unsigned long long int rejectedColouredGraphBecauseVertexOrbitTooBig = 0;
 unsigned long long int rejectedColouredGraphBecauseFaceOrbitTooBig = 0;
+
+unsigned long long int possibleAssignments = 0;
+unsigned long long int validAssignments = 0;
 #endif 
 
 #endif	/* _DDGRAPHS_H */
