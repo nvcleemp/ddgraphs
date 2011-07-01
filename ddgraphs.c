@@ -6420,7 +6420,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
     if(symbols){
         int i;
         int maxPearlChainParameter = MIN(maxFaceSize-1, maxVertexDegree-1);
-        for(i=maximumQ2TypeComponents; i>maxPearlChainParameter; i++){
+        for(i=maximumQ2TypeComponents; i>maxPearlChainParameter; i--){
             if(Q2TypeComponentsComponentCount[0][i]>0){
                 //check for pearl chains that are too long
                 PROFILINGINCREMENT(rejectedListsBecausePearlChainTooLong)
@@ -6429,7 +6429,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
             }
         }
         int maxLockedPearlChainParameter = MIN((maxFaceSize-1)/2, (maxVertexDegree-1)/2);
-        for(i=maximumQ2TypeComponents; i>maxLockedPearlChainParameter; i++){
+        for(i=maximumQ2TypeComponents; i>maxLockedPearlChainParameter; i--){
             if(Q2TypeComponentsComponentCount[1][i]>0){
                 //check for pearl chains that are too long
                 PROFILINGINCREMENT(rejectedListsBecauseLockedPearlChainTooLong)
