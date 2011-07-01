@@ -529,6 +529,81 @@ char writePregraphColorCodeEdgeColouring(FILE *f, DDGRAPH *ddgraph, boolean firs
     return (ferror(f) ? 2 : 1);
 }
 
+void writeDDSymbol(FILE *f, DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, unsigned long long int n1, unsigned long long int n2){
+    int i, j, v;
+    int *edges = ddgraph->underlyingGraph->e;
+    int *positions = ddgraph->underlyingGraph->v;
+    
+    fprintf(f, "<%llu.%llu:%d 2:", n1, n2, ddgraph->order);
+    
+    //s_i actions
+    for(i=0; i<2; i++){
+        j = 0;
+        while(ddgraph->colours[j]!=i) j++;
+        if(edges[j]==SEMIEDGE){
+            fprintf(f, "%d", 1);
+        } else if(edges[j]>=ddgraph->order) {
+            fprintf(f, "%d", edges[positions[edges[j]]+0] + edges[positions[edges[j]]+1]+1);
+        } else {
+            fprintf(f, "%d", edges[j]+1);
+        }
+        for(v=1; v<ddgraph->order; v++){
+            j = 0;
+            while(ddgraph->colours[4*v+j]!=i) j++;
+            if(edges[3*v+j]==SEMIEDGE){
+                fprintf(f, " %d", v+1);
+            } else {
+                int n = edges[3*v+j];
+                if(n>=ddgraph->order) {
+                    n = edges[positions[edges[3*v+j]]+0] + edges[positions[edges[3*v+j]]+1]-v;
+                }
+                if(v<=n){
+                    fprintf(f, " %d", n+1);
+                }
+            }
+        }
+        fprintf(f, ",");
+    }
+    j = 0;
+    while(ddgraph->colours[j]!=2) j++;
+    if(edges[j]==SEMIEDGE){
+        fprintf(f, "%d", 1);
+    } else if(edges[j]>=ddgraph->order) {
+        fprintf(f, "%d", edges[positions[edges[j]]+0] + edges[positions[edges[j]]+1]+1);
+    } else {
+        fprintf(f, "%d", edges[j]+1);
+    }
+    for(v=1; v<ddgraph->order; v++){
+        j = 0;
+        while(ddgraph->colours[4*v+j]!=2) j++;
+        if(edges[3*v+j]==SEMIEDGE){
+            fprintf(f, " %d", v+1);
+        } else {
+            int n = edges[3*v+j];
+            if(n>=ddgraph->order) {
+                n = edges[positions[edges[3*v+j]]+0] + edges[positions[edges[3*v+j]]+1]-v;
+            }
+            if(v<=n){
+                fprintf(f, " %d", n+1);
+            }
+        }
+    }
+    fprintf(f, ":");
+    
+    //m_i,i+1 values
+    fprintf(f, "%d", s0s1Components->componentLabels[0]);
+    for(i=1; i<s0s1Components->componentCount; i++){
+        fprintf(f, " %d", s0s1Components->componentLabels[i]);
+    }
+    fprintf(f, ",");
+    fprintf(f, "%d", s1s2Components->componentLabels[0]);
+    for(i=1; i<s1s2Components->componentCount; i++){
+        fprintf(f, " %d", s1s2Components->componentLabels[i]);
+    }
+    
+    fprintf(f, ">\n");
+}
+
 void printRealDDGraph(DDGRAPH *graph){
     fprintf(stderr, "DDGRAPH %p\n", graph);
     fprintf(stderr, "================\n");
@@ -5237,6 +5312,9 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 
 void handleDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components){
         symbolsCount++;
+        if(outputType=='c'){
+            writeDDSymbol(stdout, ddgraph, s0s1Components, s1s2Components, 1, symbolsCount);
+        }
 }
 
 void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
