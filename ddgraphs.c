@@ -5299,28 +5299,36 @@ void assignComponentLabels(DDGRAPH *ddgraph){
     findComponents(ddgraph, &s1s2Components);
     
     if(s0s1Components.componentCount < minFaceOrbitCount || s0s1Components.componentCount > maxFaceOrbitCount){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseWrongNumberFaceOrbits)
         return;
     }
     
     if(s1s2Components.componentCount < minVertexOrbitCount || s1s2Components.componentCount > maxVertexOrbitCount){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseWrongNumberVertexOrbits)
         return;
     }
     
     int i;
     for(i=0; i<s0s1Components.componentCount; i++){
         if(s0s1Components.containsSemiEdge[i] && s0s1Components.componentSizes[i] > maxFaceSize){
+            PROFILINGINCREMENT(rejectedColouredGraphBecauseFaceOrbitTooBig)
             return;
         } else if(!s0s1Components.containsSemiEdge[i] && s0s1Components.componentSizes[i]/2 > maxFaceSize){
+            PROFILINGINCREMENT(rejectedColouredGraphBecauseFaceOrbitTooBig)
             return;
         }
     }
     for(i=0; i<s1s2Components.componentCount; i++){
         if(s1s2Components.containsSemiEdge[i] && s1s2Components.componentSizes[i] > maxVertexDegree){
+            PROFILINGINCREMENT(rejectedColouredGraphBecauseVertexOrbitTooBig)
             return;
         } else if(!s1s2Components.containsSemiEdge[i] && s1s2Components.componentSizes[i]/2 > maxVertexDegree){
+            PROFILINGINCREMENT(rejectedColouredGraphBecauseVertexOrbitTooBig)
             return;
         }
     }
+    
+    PROFILINGINCREMENT(acceptedColouredGraphs)
 }
 
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
@@ -8495,13 +8503,21 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     }
     
     if(symbols){
-        fprintf(stderr, "Number of accepted lists: %llu.\n", numberOfListsAcceptedForSymbols);
+        fprintf(stderr, "Number of accepted lists: %llu\n", numberOfListsAcceptedForSymbols);
         fprintf(stderr, "Number of rejected lists\n");
         fprintf(stderr, "    because pearl chain too long            : %llu\n", rejectedListsBecausePearlChainTooLong);
         fprintf(stderr, "    because locked pearl chain too long     : %llu\n", rejectedListsBecauseLockedPearlChainTooLong);
         fprintf(stderr, "    because too many closing semi-edges (1) : %llu\n", rejectedListsBecauseTooManySemiEdgesForVertexOrFaceOrbitCount);
         fprintf(stderr, "    because too many closing semi-edges (2) : %llu\n", rejectedListsBecauseTooManySemiEdgesForCombinedOrbitCount);
         fprintf(stderr, "    because too few edges with colour 1     : %llu\n", rejectedListsBecauseTooFewColour1Edges);
+        fprintf(stderr, "Number of marked graphs: %llu\n", graphsCount);
+        fprintf(stderr, "Number of edge-coloured graphs: %llu\n", edgeColouredGraphsCount);
+        fprintf(stderr, "Number of accepted edge-coloured graphs: %llu\n", acceptedColouredGraphs);
+        fprintf(stderr, "Number of rejected edge-coloured graphs\n");
+        fprintf(stderr, "    because wrong number face orbits        : %llu\n", rejectedColouredGraphBecauseWrongNumberFaceOrbits);
+        fprintf(stderr, "    because wrong number vertex orbits      : %llu\n", rejectedColouredGraphBecauseWrongNumberVertexOrbits);
+        fprintf(stderr, "    because too big face orbit              : %llu\n", rejectedColouredGraphBecauseFaceOrbitTooBig);
+        fprintf(stderr, "    because too big vertex orbit            : %llu\n", rejectedColouredGraphBecauseVertexOrbitTooBig);
     }
 #endif 
 

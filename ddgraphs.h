@@ -330,6 +330,12 @@ unsigned long long int rejectedListsBecauseLockedPearlChainTooLong = 0;
 unsigned long long int rejectedListsBecauseTooManySemiEdgesForVertexOrFaceOrbitCount = 0;
 unsigned long long int rejectedListsBecauseTooManySemiEdgesForCombinedOrbitCount = 0;
 unsigned long long int rejectedListsBecauseTooFewColour1Edges = 0;
+
+unsigned long long int acceptedColouredGraphs = 0;
+unsigned long long int rejectedColouredGraphBecauseWrongNumberVertexOrbits = 0;
+unsigned long long int rejectedColouredGraphBecauseWrongNumberFaceOrbits = 0;
+unsigned long long int rejectedColouredGraphBecauseVertexOrbitTooBig = 0;
+unsigned long long int rejectedColouredGraphBecauseFaceOrbitTooBig = 0;
 #endif 
 
 #endif	/* _DDGRAPHS_H */
