@@ -6421,7 +6421,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         int i;
         int maxPearlChainParameter = MIN(maxFaceSize-1, maxVertexDegree-1);
         for(i=maximumQ2TypeComponents; i>maxPearlChainParameter; i--){
-            if(Q2TypeComponentsComponentCount[0][i]>0){
+            if(Q2TypeComponentsComponentCount[0][i-1]>0){
                 //check for pearl chains that are too long
                 PROFILINGINCREMENT(rejectedListsBecausePearlChainTooLong)
                 DEBUGTRACE_EXIT
@@ -6430,7 +6430,7 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         }
         int maxLockedPearlChainParameter = MIN((maxFaceSize-1)/2, (maxVertexDegree-1)/2);
         for(i=maximumQ2TypeComponents; i>maxLockedPearlChainParameter; i--){
-            if(Q2TypeComponentsComponentCount[1][i]>0){
+            if(Q2TypeComponentsComponentCount[1][i-1]>0){
                 //check for pearl chains that are too long
                 PROFILINGINCREMENT(rejectedListsBecauseLockedPearlChainTooLong)
                 DEBUGTRACE_EXIT
@@ -6491,9 +6491,11 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
         }
         
         if(vertexCount+s1Count<4*minVertexOrbitCount){
-            PROFILINGINCREMENT(rejectedListsBecauseTooFewColour1Edges)
-            DEBUGTRACE_EXIT
-            return;
+            //fprintf(stderr, "%d + %d < 4*%d\n", vertexCount, s1Count, minVertexOrbitCount);
+            //printHumanReadableComponentList(stderr);
+            //PROFILINGINCREMENT(rejectedListsBecauseTooFewColour1Edges)
+            //DEBUGTRACE_EXIT
+            //return;
         }
         
         //store improved bounds for this list of components
@@ -7685,7 +7687,7 @@ void startMultipleGenerations(int startSize, int endSize){
         DDGRAPH * ddgraph = getNewDDGraph(targetSize);
 
         q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0, ddgraph);
-
+        
         extraUnconstructableGraphs(ddgraph, targetSize);
 
         freeDDGraph(ddgraph);
@@ -8697,6 +8699,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "Number of valid symbols: %llu\n", validAssignments);
     }
 #endif 
-
+    
     return EXIT_SUCCESS;
 }
