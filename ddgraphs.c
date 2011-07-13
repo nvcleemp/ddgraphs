@@ -6490,14 +6490,6 @@ void connectComponentList(int vertexCount, DDGRAPH *ddgraph){
             return;
         }
         
-        if(vertexCount+s1Count<4*minVertexOrbitCount){
-            //fprintf(stderr, "%d + %d < 4*%d\n", vertexCount, s1Count, minVertexOrbitCount);
-            //printHumanReadableComponentList(stderr);
-            //PROFILINGINCREMENT(rejectedListsBecauseTooFewColour1Edges)
-            //DEBUGTRACE_EXIT
-            //return;
-        }
-        
         //store improved bounds for this list of components
         listLevelMinFaceOrbitCount = MAX(minFaceOrbitCount, minEndingSemiEdgesCount);
         listLevelMinVertexOrbitCount = MAX(minVertexOrbitCount, minEndingSemiEdgesCount);
