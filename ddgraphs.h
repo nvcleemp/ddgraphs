@@ -233,6 +233,8 @@ boolean orientable = FALSE;
 
 boolean verbose = FALSE;
 
+boolean restrictionsOnly = FALSE;
+
 // allow the generation process to be split in several parts
 boolean moduloEnabled = FALSE;
 unsigned long long int moduloRest;

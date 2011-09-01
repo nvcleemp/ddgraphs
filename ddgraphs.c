@@ -8301,6 +8301,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"minvertexdegree", required_argument, NULL, 0},
         {"maxvertexdegree", required_argument, NULL, 0},
         {"verbose", no_argument, NULL, 0},
+        {"restrictionsonly", no_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
@@ -8376,6 +8377,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         break;
                     case 8:
                         verbose = TRUE;
+                        break;
+                    case 9:
+                        restrictionsOnly = TRUE;
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -8576,8 +8580,10 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         }
         fprintf(stderr, "].\n");
         fprintf(stderr, "\n");
-
-        startMultipleGenerations(minVertexCount, maxVertexCount);
+        
+        if(!restrictionsOnly){
+            startMultipleGenerations(minVertexCount, maxVertexCount);
+        }
         
         
     } else if(listFilename!=NULL){
