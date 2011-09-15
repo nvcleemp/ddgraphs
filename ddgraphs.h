@@ -82,7 +82,7 @@ struct _ddgraph {
     sparsegraph *underlyingGraph;
 
     /* This array is used to count the number of semi-edges incident with each
-     * vertex. This is doen, because semi-edges can't be used in nauty, but we
+     * vertex. This is done, because semi-edges can't be used in nauty, but we
      * do use the number of semi-edges as a color for the vertices to make sure
      * that they are taken into account for the automorphism group.
      */
@@ -157,6 +157,44 @@ struct _colourcomponents {
 };
 
 typedef struct _colourcomponents COLOURCOMPONENTS;
+
+struct _colouredddgraph {
+    /* This struct stores a fully coloured Delaney-Dress graph.
+     */
+    
+    /* Stores the neighbour at colour i for each vertex.
+     * (4 is for efficiency reasons: 3 would have been sufficient)
+     */
+    int adjacency[MAXN][4];
+    
+    int order;
+};
+
+typedef struct _colouredddgraph CDDGRAPH;
+
+/* This is used to store the partitioning of the s0s1-components (resp. s1s2-
+ * components) at a given depth. A zero represents the start of a new partition.
+ * The partitions refer to the order given by the respective labelling arrays
+ * below.
+ */
+int s0s1componentsPartitioning[MAXN][MAXN];
+int s1s2componentsPartitioning[MAXN][MAXN];
+
+int s0s1componentsPartitionSize[MAXN][MAXN];
+int s1s2componentsPartitionSize[MAXN][MAXN];
+
+int s0s1labelling[MAXN][MAXN];
+int s1s2labelling[MAXN][MAXN];
+
+int minimumPartitionFaceSize[MAXN][MAXN];
+int minimumPartitionVertexDegree[MAXN][MAXN];
+
+int partialCurvatureDenominator[MAXN];
+int partialCurvatureNumerator[MAXN];
+int partialCurvatureDenominatorLasts0s1;
+int partialCurvatureNumeratorLasts0s1;
+int partialCurvatureDenominator2[MAXN];
+int partialCurvatureNumerator2[MAXN];
 
 //================== Component lists =====================
 
@@ -257,6 +295,8 @@ int requestedFaceSizesCount = 0;
 int requestedVertexDegrees[MAXN];
 int requestedVertexDegreesCount = 0;
 
+//TODO: the list of forbidden face sizes might be longer than MAXN
+//-->should be 6*MAXN and faces that are already too large should not be added to the list
 int forbiddenFaceSizes[MAXN];
 int forbiddenFaceSizesCount = 0;
 int forbiddenVertexDegrees[MAXN];
@@ -264,6 +304,9 @@ int forbiddenVertexDegreesCount = 0;
 
 int maxVertexCount = MAXN;
 int minVertexCount = 1;
+
+boolean forbiddenFaceSizesTable[6*MAXN];
+boolean forbiddenVertexDegreesTable[6*MAXN];
 
 //at different levels some of these bounds can be improved. These are stored in
 //the following variables

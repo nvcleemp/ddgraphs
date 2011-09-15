@@ -5310,6 +5310,199 @@ void constructBuildingBlockListAsGraph(BBLOCK* blocks, int buildingBlockCount, D
 
 //========= PHASE 4: ENUMERATION OF DELANEY-DRESS SYMBOLS ===================
 
+/* Translates a DDGRAPH (which has its adjacency lists ordered in construction
+ * order) to a CDDGRAPH (which has its adjacency lists ordered according to
+ * colour of the corresponding edges).
+ */
+void translateDdgraphToCddgraph(DDGRAPH *ddgraph, CDDGRAPH *cddgraph){
+    int i, j;
+    cddgraph->order = ddgraph->order;
+    
+    //store some pointers to limit the amount of typing in the next lines
+    int *positions = ddgraph->underlyingGraph->v;
+    int *edges = ddgraph->underlyingGraph->e;
+
+    for (i = 0; i < ddgraph->order; i++) {
+        for (j = 0; j < 3; j++) {
+            int neighbour = edges[3*i+j]; //don't use the current positions, but the initial ones!!
+            if(neighbour >= ddgraph->order && neighbour != SEMIEDGE){
+                //neighbour is a dummy vertex
+                neighbour = edges[positions[neighbour]+0] + edges[positions[neighbour]+1]-i;
+            }
+            cddgraph->adjacency[i][ddgraph->colours[4*i+j]] = neighbour;
+        }
+    }
+}
+
+
+
+/* Calculates a certificate and a canonical labelling for a given coloured 
+ * Delaney-Dress graph and a given vertex that needs to receive label 1.
+ */
+void getCertificateFromVertex(CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components,
+        COLOURCOMPONENTS *s1s2Components, int *vertex2s0s1components, int *vertex2s1s2components,
+        int *certificate, int *old2new, int *new2old, int vertex){
+    int i,j;
+    int enqueued[MAXN];
+    for(i=0;i<MAXN;i++) enqueued[i]=FALSE;
+            
+    int queue[MAXN];
+    int head = 0, tail = 0;
+    int currentLabel = 0;
+    
+    queue[tail++] = vertex;
+    enqueued[vertex]=TRUE;
+
+    while(head<tail){
+        int v = queue[head++];
+        new2old[currentLabel]=v;
+        old2new[v]=currentLabel++;
+        for(i=0; i<3; i++){
+            if(cddgraph->adjacency[v][i]!=SEMIEDGE && !enqueued[cddgraph->adjacency[v][i]]){
+                queue[tail++] = cddgraph->adjacency[v][i];
+                enqueued[cddgraph->adjacency[v][i]] = TRUE;
+            }
+        }
+    }
+
+    for(i=0; i<cddgraph->order; i++){
+        int old = new2old[i];
+        for(j=0; j<3; j++){
+            int neighbour = cddgraph->adjacency[old][j];
+            if(neighbour == SEMIEDGE){
+                certificate[i*3 + j] = SEMIEDGE;
+            } else {
+                certificate[i*3 + j] = old2new[neighbour];
+            }
+        }
+        certificate[(cddgraph->order)*3 + i*2 + 0] =
+                s0s1Components->componentLabels[vertex2s0s1components[old]];
+        certificate[(cddgraph->order)*3 + i*2 + 1] =
+                s1s2Components->componentLabels[vertex2s1s2components[old]];
+    }
+
+}
+
+/* Returns a certificate and a canonical labelling for a given coloured 
+ * Delaney-Dress graph and a given vertex that needs to receive label 1.
+ */
+void getSmallestCertificateForComponent(CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components,
+        COLOURCOMPONENTS *s1s2Components, int *vertex2s0s1components, int *vertex2s1s2components,
+        int *certificate, int currentComponent, int *v2c){
+    int old2new[MAXN];
+    int new2old[MAXN];
+    int tempold2new[MAXN];
+    int tempnew2old[MAXN];
+    int tempCertificate[MAXN*5];
+    int currentVertex = 0;
+
+    //first we calculate the certificate if we label vertex 0 with 0 and look
+    //for the canonical labeling
+    
+    while(currentVertex < cddgraph->order && v2c[currentVertex]!=currentComponent){
+        currentVertex++;
+    }
+    
+    if(currentVertex == cddgraph->order){
+        ERRORMSG("Error while calculating canonical form of coloured graph.")
+    }
+    
+    getCertificateFromVertex(cddgraph, s0s1Components, s1s2Components,
+            vertex2s0s1components, vertex2s1s2components, certificate, 
+            old2new, new2old, currentVertex);
+    
+    for(currentVertex++ ; currentVertex<cddgraph->order; currentVertex++){
+        if(v2c[currentVertex] == currentComponent){
+            getCertificateFromVertex(cddgraph, s0s1Components, s1s2Components,
+                        vertex2s0s1components, vertex2s1s2components, tempCertificate, 
+                        tempold2new, tempnew2old, currentVertex);
+            
+            int i=0, j;
+            while(i<5*cddgraph->order && certificate[i]==tempCertificate[i]) i++;
+            if(i<5*(cddgraph->order)){
+                if(certificate[i]>tempCertificate[i]){
+                    //copy tempCertificate to certificate
+                    //TODO: use memcpy
+                    for(j=i; j<5*cddgraph->order; j++){
+                        certificate[j] = tempCertificate[j];
+                    }
+                    for(j=0; j<cddgraph->order; j++){
+                        old2new[j] = tempold2new[j];
+                        new2old[j] = tempnew2old[j];
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+ * This method is used by the quickSortComponentsList method to partition the
+ * given list between left and right in elements larger than the pivot and
+ * elements smaller than the pivot. A colour component a is larger then a colour
+ * component b if a contains more vertices than b, or, in case they have equal 
+ * number of vertices, a has semi-edges and b doesn't.
+ */
+int partitionComponentsList(int *indices, COLOURCOMPONENTS *componentsList, int left, int right, int pivot){
+    int temp, i, newPivotPosition;
+    
+    int pivotValue = componentsList->componentSizes[indices[pivot]];
+    boolean pivotHasSemiEdges = componentsList->containsSemiEdge[indices[pivot]];
+    
+    //switch the right element and the pivot
+    temp = indices[pivot];
+    indices[pivot] = indices[right];
+    indices[right] = temp;
+   
+    newPivotPosition = left;
+    if(pivotHasSemiEdges){
+        for(i = left; i<right; i++){
+            if(componentsList->componentSizes[indices[i]]>pivotValue){
+                temp = indices[newPivotPosition];
+                indices[newPivotPosition] = indices[i];
+                indices[i] = temp;
+                newPivotPosition++;
+            }
+        }
+    } else {
+        for(i = left; i<right; i++){
+            if(componentsList->componentSizes[indices[i]]>pivotValue || 
+                    (componentsList->componentSizes[indices[i]] == pivotValue &&
+                     componentsList->containsSemiEdge[indices[i]])){
+                temp = indices[newPivotPosition];
+                indices[newPivotPosition] = indices[i];
+                indices[i] = temp;
+                newPivotPosition++;
+            }
+        }
+    }
+    
+    //put pivot in its right place
+    temp = indices[newPivotPosition];
+    indices[newPivotPosition] = indices[right];
+    indices[right] = temp;
+    
+    return newPivotPosition;
+}
+
+/*
+ * Sorts the given list of indices such that the components they refer to are
+ * sorted from large to small.
+ */
+void quickSortComponentsList(int *indices, COLOURCOMPONENTS *componentsList, int left, int right){
+    if(left<right){
+        //take the center element as pivot
+        int pivot = (left + right)/2;
+        
+        //partition the list
+        int newPivotPosition = partitionComponentsList(indices, componentsList, left, right, pivot);
+        
+        //recursively sort the two parts
+        quickSortComponentsList(indices, componentsList, left, newPivotPosition-1);
+        quickSortComponentsList(indices, componentsList, newPivotPosition+1, right);
+    }
+}
+
 void handleDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components){
         symbolsCount++;
         if(outputType=='c'){
@@ -5317,7 +5510,7 @@ void handleDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components
         }
 }
 
-void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
+void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents, int *vertex2component){
     int i, j, v, nextV, c, size;
     boolean visited[MAXN];
     for(i=0; i<MAXN; i++){
@@ -5341,7 +5534,8 @@ void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
             v = i;
             while(v!=SEMIEDGE && !visited[v]){
                 size++;
-                visited[v]=TRUE;
+                visited[v] = TRUE;
+                vertex2component[v] = colourComponents->componentCount;
                 j = 0;
                 while(ddgraph->colours[4*v+j]!=colours[c]) j++;
                 nextV = edges[3*v+j];
@@ -5365,6 +5559,7 @@ void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
             while(v!=SEMIEDGE && !visited[v]){
                 size++;
                 visited[v]=TRUE;
+                vertex2component[v] = colourComponents->componentCount;
                 j = 0;
                 while(ddgraph->colours[4*v+j]!=colours[c]) j++;
                 nextV = edges[3*v+j];
@@ -5378,7 +5573,11 @@ void findComponents(DDGRAPH *ddgraph, COLOURCOMPONENTS *colourComponents){
             //component has been completely visited
             colourComponents->components[colourComponents->componentCount] = i;
             colourComponents->componentSizes[colourComponents->componentCount] = size;
-            colourComponents->containsSemiEdge[colourComponents->componentCount] = (v==SEMIEDGE);
+            if(v==SEMIEDGE){
+                colourComponents->containsSemiEdge[colourComponents->componentCount] = TRUE;
+            } else {
+                colourComponents->containsSemiEdge[colourComponents->componentCount] = FALSE;
+            }
             (colourComponents->componentCount)++;
         }
     }
@@ -5412,6 +5611,11 @@ void validateDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Componen
     }
 }
 
+/*
+ * Old method used to assign the labels to the s1s2 components.
+ * This method just tries all the combinations and let the user
+ * filter out the isomorphic once himself
+ */
 void bruteForces1s2LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
     int i;
     for(i=minVertexDegree; i<=maxVertexDegree; i++){
@@ -5429,6 +5633,11 @@ void bruteForces1s2LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Compo
     }
 }
 
+/*
+ * Old method used to assign the labels to the s0s1 components.
+ * This method just tries all the combinations and let the user
+ * filter out the isomorphic once himself
+ */
 void bruteForces0s1LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
     int i;
     for(i=minFaceSize; i<=maxFaceSize; i++){
@@ -5446,16 +5655,439 @@ void bruteForces0s1LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Compo
     }
 }
 
+//this array is used to store the different certificates to compare
+int refineCCPWorkspace[MAXN][MAXN*5];
+int refineCCPComparisons[MAXN][MAXN];
+
+void refineColourComponentPartition(CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components,
+                                       int *vertex2s0s1components, int *vertex2s1s2components, int depth, int currentPartitionStart,
+                                       int partitioning[][MAXN], int partitioningSize[][MAXN], int labelling[][MAXN],
+                                       COLOURCOMPONENTS *components, int *v2c){
+    int i, j, k;
+    int newOrder[partitioningSize[depth][currentPartitionStart]];
+    int newLabelling[partitioningSize[depth][currentPartitionStart]]; //only stores the part that needs to be modified
+    for(i = 0; i<partitioningSize[depth][currentPartitionStart]; i++){ //for each component in this part
+        getSmallestCertificateForComponent(cddgraph, s0s1Components, s1s2Components, vertex2s0s1components, vertex2s1s2components,
+                                        refineCCPWorkspace[i], labelling[depth][currentPartitionStart + i], v2c);
+        newOrder[i] = i;
+    }
+    
+    int certificateLength = (cddgraph->order)*5;
+    for(i = 0; i<partitioningSize[depth][currentPartitionStart]-1; i++){
+        for(j = i+1; j<partitioningSize[depth][currentPartitionStart]; j++){ //for pair of components in this part
+            //compare certificate of i with certificate of j
+            k = 0;
+            while(k < certificateLength && refineCCPWorkspace[i][k] == refineCCPWorkspace[j][k]){
+                k++;
+            }
+            if(k == certificateLength){
+                refineCCPComparisons[i][j] = 0;
+                refineCCPComparisons[j][i] = 0;
+            } else if(refineCCPWorkspace[i][k] < refineCCPWorkspace[j][k]){
+                refineCCPComparisons[i][j] = -1;
+                refineCCPComparisons[j][i] = 1;
+            } else {
+                refineCCPComparisons[i][j] = 1;
+                refineCCPComparisons[j][i] = -1;
+            }
+        }
+    }
+    
+    //rearrange newOrder to reflect the new order of the current partition
+    //we use insertion sort because this will usually be very small lists
+    for(i = 1; i < partitioningSize[depth][currentPartitionStart]; i++){
+        j = i-1;
+        while(j >= 0 && refineCCPComparisons[i][newOrder[j]] < 0){
+            newOrder[j+1] = newOrder[j];
+            j--;
+        }
+        newOrder[j+1] = i;
+    }
+    
+    //store the modified part of the new labelling
+    for(i = 0; i < partitioningSize[depth][currentPartitionStart]; i++){
+        newLabelling[i] = labelling[depth][currentPartitionStart + newOrder[i]];
+    }
+    
+    //modify the labelling and the partitioning
+    labelling[depth][currentPartitionStart] = newLabelling[0];
+    int currentPartitionSize = 1;
+    int lastPartitionStart = currentPartitionStart;
+    int originalPartitionSize = partitioningSize[depth][currentPartitionStart];
+    for(i = 1; i < originalPartitionSize; i++){
+        labelling[depth][currentPartitionStart + i] = newLabelling[i];
+        if(refineCCPComparisons[newOrder[i]][newOrder[i-1]] != 0){
+            //start new partition
+            partitioning[depth][currentPartitionStart + i] = 0;
+            for(j = lastPartitionStart; j < currentPartitionStart + i; j++){
+                partitioningSize[depth][j] = currentPartitionSize;
+            }
+            currentPartitionSize = 1;
+            lastPartitionStart = currentPartitionStart + i;
+        } else {
+            currentPartitionSize++;
+        }
+    }
+    for(j = lastPartitionStart; j < currentPartitionStart + originalPartitionSize; j++){
+        partitioningSize[depth][j] = currentPartitionSize;
+    }
+}
+
+void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components,
+                                       int *vertex2s0s1components, int *vertex2s1s2components, int currentComponent,
+                                       int depth){
+    
+    //first determine maximum and minimum for the label
+    int localMaximumVertexDegree, localMinimumVertexDegree;
+    if(s1s2Components->containsSemiEdge[s1s2labelling[depth][currentComponent]]){
+        localMaximumVertexDegree = 6*s1s2Components->componentSizes[s1s2labelling[depth][currentComponent]];
+        localMinimumVertexDegree = s1s2Components->componentSizes[s1s2labelling[depth][currentComponent]];
+    } else {
+        DEBUGASSERTMSG(s1s2Components->componentSizes[s1s2labelling[depth][currentComponent]]%2==0,
+                "A component without semi-edges should have an even size.")
+        localMaximumVertexDegree = 3*s1s2Components->componentSizes[s1s2labelling[depth][currentComponent]];
+        localMinimumVertexDegree = s1s2Components->componentSizes[s1s2labelling[depth][currentComponent]]/2;
+    }
+    if(localMaximumVertexDegree > maxVertexDegree){
+        localMaximumVertexDegree = maxVertexDegree;
+    }
+    if(localMinimumVertexDegree < minVertexDegree){
+        localMinimumVertexDegree = minVertexDegree;
+    }
+    
+    if(localMinimumVertexDegree < minimumPartitionVertexDegree[depth][currentComponent]){
+        localMinimumVertexDegree = minimumPartitionVertexDegree[depth][currentComponent];
+    }
+    
+    int i, j;
+    int current = s1s2labelling[depth][currentComponent];
+    for(i=localMinimumVertexDegree; i<=localMaximumVertexDegree; i++){
+        if(!forbiddenFaceSizesTable[i]){
+            int r = s1s2Components->containsSemiEdge[current] ? 
+                        s1s2Components->componentSizes[current] : 
+                        s1s2Components->componentSizes[current]/2;
+            if(i%r==0){
+                s1s2Components->componentLabels[current]=i;
+                
+                //update denominator and numerator
+                if(depth > 0){
+                    partialCurvatureDenominator2[depth] = lcm(partialCurvatureDenominator2[depth-1], i);
+                    partialCurvatureNumerator2[depth] = 
+                            partialCurvatureNumerator2[depth-1]*partialCurvatureDenominator2[depth]/partialCurvatureDenominator2[depth-1];
+                } else {
+                    partialCurvatureDenominator2[depth] = partialCurvatureDenominatorLasts0s1;
+                    partialCurvatureNumerator2[depth] = partialCurvatureNumeratorLasts0s1;
+                }
+                partialCurvatureNumerator2[depth] += 2*partialCurvatureDenominator2[depth]/i*s1s2Components->componentSizes[current];
+                
+                if(partialCurvatureNumerator2[depth] <= partialCurvatureDenominator2[depth] * ddgraph->order) {
+                    //proceed to the next component
+                    if(currentComponent==s1s2Components->componentCount-1){
+                        validateDelaneyDressSymbol(ddgraph, s0s1Components, s1s2Components);
+                    } else {
+                        //copy necessary array values to the next level
+                        for(j = currentComponent+1; j < s1s2Components->componentCount; j++){
+                            minimumPartitionVertexDegree[depth+1][j] = minimumPartitionVertexDegree[depth][j];
+                            s1s2labelling[depth+1][j] = s1s2labelling[depth][j];
+                        }
+                        
+                        
+                        //copy partitioning information to next level
+                        //in case the current component belongs to a partition with size > 1 we split this partition
+                        int partitioningPosition = currentComponent + 1;
+                        if(s1s2componentsPartitionSize[depth][currentComponent]>1){
+                            /* The component we just labelled no longer belongs to this partition
+                             * because it is labelled and the remaining components in this partition
+                             * aren't. So the second component now marks the start of the partition
+                             * and the size of the partition is one smaller.
+                             * We however do have to set the minimum label for all the components
+                             * in this partition to i to prevent isomorphic copies from being generated.
+                             */
+                            s1s2componentsPartitioning[depth+1][currentComponent+1] = 0;
+                            s1s2componentsPartitionSize[depth+1][currentComponent+1] = 
+                                    s1s2componentsPartitionSize[depth][currentComponent] - 1;
+                            minimumPartitionVertexDegree[depth+1][currentComponent+1] = i;
+                            
+                            for(j = 1; j < s1s2componentsPartitionSize[depth][currentComponent] - 1; j++){
+                                s1s2componentsPartitioning[depth+1][currentComponent+1+j] = 
+                                        s1s2componentsPartitioning[depth][currentComponent+1+j];
+                                s1s2componentsPartitionSize[depth+1][currentComponent+1+j] = 
+                                        s1s2componentsPartitionSize[depth][currentComponent] - 1;
+                                
+                                //in case this partition has size > 1: set minima for remaining components in this partition
+                                minimumPartitionVertexDegree[depth+1][currentComponent+1+j] = i;
+                            }
+                            
+                            partitioningPosition = currentComponent + s1s2componentsPartitionSize[depth][currentComponent];
+                        }
+                        
+                        
+                        for(j = partitioningPosition; j < s1s2Components->componentCount; j++){
+                            s1s2componentsPartitioning[depth+1][j] = 
+                                    s1s2componentsPartitioning[depth+1][j];
+                            s1s2componentsPartitionSize[depth+1][j] = 
+                                    s1s2componentsPartitionSize[depth][j];
+                        }
+                        
+                        //if the partition still has a size > 1 we try to refine this partition
+                        if(s1s2componentsPartitionSize[depth][currentComponent]>2){
+                            //refine
+                            refineColourComponentPartition(cddgraph, s0s1Components, s1s2Components,
+                                    vertex2s0s1components, vertex2s1s2components, depth + 1,
+                                    currentComponent + 1, s1s2componentsPartitioning, s1s2componentsPartitionSize,
+                                    s1s2labelling, s1s2Components, vertex2s1s2components);
+                            /* If the partition still has size > 1, then the components
+                             * in this partition really are isomorphic so we don't need to check
+                             * if this is the case: this will be handled by the next recursion.
+                             */
+                        }
+                        
+                        assignLabelsToNexts1s2Component(ddgraph, cddgraph, s0s1Components,
+                                s1s2Components, vertex2s0s1components, 
+                                vertex2s1s2components, currentComponent+1, depth + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void startAssignings1s2ComponentLabels(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components,
+                        COLOURCOMPONENTS *s1s2Components, int *vertex2s0s1components, 
+                        int *vertex2s1s2components, int s0s1depth){
+    
+    int i, j;
+    
+    //initialize some arrays
+    for(i=0; i<MAXN; i++){
+        s1s2labelling[0][i] = i;
+        minimumPartitionVertexDegree[0][i] = 0;
+    }
+    
+    //sort the components from large to small
+    quickSortComponentsList(s1s2labelling[0], s1s2Components, 0, s1s2Components->componentCount-1);
+    
+    //determine the partitioning: currently only for s1s2-components
+    s0s1componentsPartitioning[0][0]=0;
+    int lastStart = 0;
+    int currentSize = 1;
+    for(i = 1; i < s1s2Components->componentCount; i++){
+        int prevLabel = s1s2labelling[0][i-1];
+        int currLabel = s1s2labelling[0][i];
+        if((s1s2Components->containsSemiEdge[prevLabel] != s1s2Components->containsSemiEdge[currLabel]) ||
+                (s1s2Components->componentSizes[prevLabel] != s1s2Components->componentSizes[currLabel])){
+            s1s2componentsPartitioning[0][i] = 0;
+            for(j = lastStart; j < i; j++){
+                s1s2componentsPartitionSize[0][j] = currentSize;
+            }
+            currentSize = 1;
+            lastStart = i;
+        } else {
+            s1s2componentsPartitioning[0][i] = i;
+            currentSize++;
+        }
+    }
+    for(j = lastStart; j < s1s2Components->componentCount; j++){
+        s1s2componentsPartitionSize[0][j] = currentSize;
+    }
+    if(s1s2componentsPartitionSize[0][0]>1){
+        //try to refine partition
+        refineColourComponentPartition(cddgraph, s0s1Components, s1s2Components, vertex2s0s1components, vertex2s1s2components,
+                                        0, 0, s1s2componentsPartitioning, s1s2componentsPartitionSize,  s1s2labelling,
+                                        s1s2Components, vertex2s1s2components);
+    }
+    
+    partialCurvatureDenominatorLasts0s1 = partialCurvatureDenominator[s0s1depth];
+    partialCurvatureNumeratorLasts0s1 = partialCurvatureNumerator[s0s1depth];
+    
+    assignLabelsToNexts1s2Component(ddgraph, cddgraph, s0s1Components, s1s2Components, vertex2s0s1components, vertex2s1s2components, 0, 0);
+}
+
+void assignLabelsToNexts0s1Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components,
+                                       int *vertex2s0s1components, int *vertex2s1s2components, int currentComponent,
+                                       int depth){
+    
+    //first determine maximum and minimum for the label
+    int localMaximumFaceSize, localMinimumFaceSize;
+    if(s0s1Components->containsSemiEdge[s0s1labelling[depth][currentComponent]]){
+        localMaximumFaceSize = 6*s0s1Components->componentSizes[s0s1labelling[depth][currentComponent]];
+        localMinimumFaceSize = s0s1Components->componentSizes[s0s1labelling[depth][currentComponent]];
+    } else {
+        DEBUGASSERTMSG(s0s1Components->componentSizes[s0s1labelling[depth][currentComponent]]%2==0,
+                "A component without semi-edges should have an even size.")
+        localMaximumFaceSize = 3*s0s1Components->componentSizes[s0s1labelling[depth][currentComponent]];
+        localMinimumFaceSize = s0s1Components->componentSizes[s0s1labelling[depth][currentComponent]]/2;
+    }
+    if(localMaximumFaceSize > maxFaceSize){
+        localMaximumFaceSize = maxFaceSize;
+    }
+    if(localMinimumFaceSize < minFaceSize){
+        localMinimumFaceSize = minFaceSize;
+    }
+    
+    if(localMinimumFaceSize < minimumPartitionFaceSize[depth][currentComponent]){
+        localMinimumFaceSize = minimumPartitionFaceSize[depth][currentComponent];
+    }
+    
+    int i, j;
+    int current = s0s1labelling[depth][currentComponent];
+    for(i=localMinimumFaceSize; i<=localMaximumFaceSize; i++){
+        if(!forbiddenFaceSizesTable[i]){
+            int r = s0s1Components->containsSemiEdge[current] ? 
+                        s0s1Components->componentSizes[current] : 
+                        s0s1Components->componentSizes[current]/2;
+            if(i%r==0){
+                s0s1Components->componentLabels[current]=i;
+                
+                //update denominator and numerator
+                if(depth > 0){
+                    partialCurvatureDenominator[depth] = lcm(partialCurvatureDenominator[depth-1], i);
+                    partialCurvatureNumerator[depth] = 
+                            partialCurvatureNumerator[depth-1]*partialCurvatureDenominator[depth]/partialCurvatureDenominator[depth-1];
+                } else {
+                    partialCurvatureDenominator[depth] = i;
+                    partialCurvatureNumerator[depth] = 0;
+                }
+                partialCurvatureNumerator[depth] += 2*partialCurvatureDenominator[depth]/i*s0s1Components->componentSizes[current];
+                
+                if(partialCurvatureNumerator[depth] < partialCurvatureDenominator[depth] * ddgraph->order) {
+                    //proceed to the next component
+                    if(currentComponent==s0s1Components->componentCount-1){
+                        startAssignings1s2ComponentLabels(ddgraph, cddgraph, s0s1Components,
+                                s1s2Components, vertex2s0s1components, vertex2s1s2components,
+                                depth);
+                    } else {
+                        //copy necessary array values to the next level
+                        for(j = currentComponent+1; j < s0s1Components->componentCount; j++){
+                            minimumPartitionFaceSize[depth+1][j] = minimumPartitionFaceSize[depth][j];
+                            s0s1labelling[depth+1][j] = s0s1labelling[depth][j];
+                        }
+                        
+                        
+                        //copy partitioning information to next level
+                        //in case the current component belongs to a partition with size > 1 we split this partition
+                        int partitioningPosition = currentComponent + 1;
+                        if(s0s1componentsPartitionSize[depth][currentComponent]>1){
+                            /* The component we just labelled no longer belongs to this partition
+                             * because it is labelled and the remaining components in this partition
+                             * aren't. So the second component now marks the start of the partition
+                             * and the size of the partition is one smaller.
+                             * We however do have to set the minimum label for all the components
+                             * in this partition to i to prevent isomorphic copies from being generated.
+                             */
+                            s0s1componentsPartitioning[depth+1][currentComponent+1] = 0;
+                            s0s1componentsPartitionSize[depth+1][currentComponent+1] = 
+                                    s0s1componentsPartitionSize[depth][currentComponent] - 1;
+                            minimumPartitionFaceSize[depth+1][currentComponent+1] = i;
+                            
+                            for(j = 1; j < s0s1componentsPartitionSize[depth][currentComponent] - 1; j++){
+                                s0s1componentsPartitioning[depth+1][currentComponent+1+j] = 
+                                        s0s1componentsPartitioning[depth+1][currentComponent+1+j];
+                                s0s1componentsPartitionSize[depth+1][currentComponent+1+j] = 
+                                        s0s1componentsPartitionSize[depth][currentComponent] - 1;
+                                
+                                //in case this partition has size > 1: set minima for remaining components in this partition
+                                minimumPartitionFaceSize[depth+1][currentComponent+1+j] = i;
+                            }
+                            
+                            partitioningPosition = currentComponent + s0s1componentsPartitionSize[depth][currentComponent];
+                        }
+                        
+                        
+                        for(j = partitioningPosition; j < s0s1Components->componentCount; j++){
+                            s0s1componentsPartitioning[depth+1][j] = 
+                                    s0s1componentsPartitioning[depth+1][j];
+                            s0s1componentsPartitionSize[depth+1][j] = 
+                                    s0s1componentsPartitionSize[depth][j];
+                        }
+                        
+                        //if the partition still has a size > 1 we try to refine this partition
+                        if(s0s1componentsPartitionSize[depth][currentComponent]>2){
+                            //refine
+                            refineColourComponentPartition(cddgraph, s0s1Components, s1s2Components,
+                                    vertex2s0s1components, vertex2s1s2components, depth + 1,
+                                    currentComponent + 1, s0s1componentsPartitioning, s0s1componentsPartitionSize,
+                                    s0s1labelling, s0s1Components, vertex2s0s1components);
+                            /* If the partition still has size > 1, then the components
+                             * in this partition really are isomorphic so we don't need to check
+                             * if this is the case: this will be handled by the next recursion.
+                             */
+                        }
+                        
+                        assignLabelsToNexts0s1Component(ddgraph, cddgraph, s0s1Components,
+                                s1s2Components, vertex2s0s1components, 
+                                vertex2s1s2components, currentComponent+1, depth + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void startAssignings0s1ComponentLabels(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components,
+                        COLOURCOMPONENTS *s1s2Components, int *vertex2s0s1components, 
+                        int *vertex2s1s2components){
+    CDDGRAPH cddgraph;
+    
+    //we first translate the DDGRAPH to a CDDGRAPH
+    translateDdgraphToCddgraph(ddgraph, &cddgraph);
+    
+    int i, j;
+    
+    //initialize some arrays
+    for(i=0; i<MAXN; i++){
+        s0s1labelling[0][i] = i;
+        minimumPartitionFaceSize[0][i] = 0;
+    }
+    
+    //sort the components from large to small
+    quickSortComponentsList(s0s1labelling[0], s0s1Components, 0, s0s1Components->componentCount-1);
+    
+    //determine the partitioning: currently only for s0s1-components
+    s0s1componentsPartitioning[0][0]=0;
+    int lastStart = 0;
+    int currentSize = 1;
+    for(i = 1; i < s0s1Components->componentCount; i++){
+        int prevLabel = s0s1labelling[0][i-1];
+        int currLabel = s0s1labelling[0][i];
+        if((s0s1Components->containsSemiEdge[prevLabel] != s0s1Components->containsSemiEdge[currLabel]) ||
+                (s0s1Components->componentSizes[prevLabel] != s0s1Components->componentSizes[currLabel])){
+            s0s1componentsPartitioning[0][i] = 0;
+            for(j = lastStart; j < i; j++){
+                s0s1componentsPartitionSize[0][j] = currentSize;
+            }
+            currentSize = 1;
+            lastStart = i;
+        } else {
+            s0s1componentsPartitioning[0][i] = i;
+            currentSize++;
+        }
+    }
+    for(j = lastStart; j < s0s1Components->componentCount; j++){
+        s0s1componentsPartitionSize[0][j] = currentSize;
+    }
+    if(s0s1componentsPartitionSize[0][0]>1){
+        //try to refine partition
+        refineColourComponentPartition(&cddgraph, s0s1Components, s1s2Components, vertex2s0s1components, vertex2s1s2components,
+                                        0, 0, s0s1componentsPartitioning, s0s1componentsPartitionSize,  s0s1labelling,
+                                        s0s1Components, vertex2s0s1components);
+    }
+    
+    assignLabelsToNexts0s1Component(ddgraph, &cddgraph, s0s1Components, s1s2Components, vertex2s0s1components, vertex2s1s2components, 0, 0);
+}
+
 void assignComponentLabels(DDGRAPH *ddgraph){
     COLOURCOMPONENTS s0s1Components;
     s0s1Components.colour1 = 0;
     s0s1Components.colour2 = 1;
+    int vertex2s0s1Component[MAXN]; //maps vertices to components
     COLOURCOMPONENTS s1s2Components;
     s1s2Components.colour1 = 1;
     s1s2Components.colour2 = 2;
+    int vertex2s1s2Component[MAXN]; //maps vertices to components
 
-    findComponents(ddgraph, &s0s1Components);
-    findComponents(ddgraph, &s1s2Components);
+    findComponents(ddgraph, &s0s1Components, vertex2s0s1Component);
+    findComponents(ddgraph, &s1s2Components, vertex2s1s2Component);
     
     if(s0s1Components.componentCount < minFaceOrbitCount || s0s1Components.componentCount > maxFaceOrbitCount){
         PROFILINGINCREMENT(rejectedColouredGraphBecauseWrongNumberFaceOrbits)
@@ -5476,6 +6108,8 @@ void assignComponentLabels(DDGRAPH *ddgraph){
             PROFILINGINCREMENT(rejectedColouredGraphBecauseFaceOrbitTooBig)
             return;
         }
+        //clear component labels
+        s0s1Components.componentLabels[i]=0;
     }
     for(i=0; i<s1s2Components.componentCount; i++){
         if(s1s2Components.containsSemiEdge[i] && s1s2Components.componentSizes[i] > maxVertexDegree){
@@ -5485,11 +6119,14 @@ void assignComponentLabels(DDGRAPH *ddgraph){
             PROFILINGINCREMENT(rejectedColouredGraphBecauseVertexOrbitTooBig)
             return;
         }
+        //clear component labels
+        s1s2Components.componentLabels[i]=0;
     }
     
     PROFILINGINCREMENT(acceptedColouredGraphs)
     
-    bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
+    //bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
+    startAssignings0s1ComponentLabels(ddgraph, &s0s1Components, &s1s2Components, vertex2s0s1Component, vertex2s1s2Component);
 }
 
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
@@ -7428,7 +8065,7 @@ void startGeneration(int targetSize){
     cleanComponentStatistics();
 }
 
-void startFromListFile(char *filename){
+void startFromListFile(char *filename, int minimumVertexCountAllowed, int maximumVertexCountAllowed){
     //read a list of components from a file
     FILE *f = fopen(filename, "r");
     if(f==NULL)
@@ -7442,6 +8079,10 @@ void startFromListFile(char *filename){
         if(vertexCount<=0){
             ERRORMSG("Error while parsing file: illegal graph order.")
         }
+        
+        //skip lists with an incorrect number of vertices
+        if(vertexCount < minimumVertexCountAllowed || vertexCount > maximumVertexCountAllowed) continue;
+        
         int realVertexCount = 0;
 
         initComponents(vertexCount);
@@ -8112,39 +8753,41 @@ boolean validateSymbolConstraints(){
         validConstraints = FALSE;
     }
     
-    int maximumFaceSizeAllowed = 2+maxFaceOrbitCount*4;
-    /* see Two finiteness Theorems for Periodic Tilings of d-Dimensional Euclidean
-     * Space, Dolbilin, Dress, Huson; Discrete Comput GEOM 20:143-153 (1998) for
-     * this bound. The formula given in lemma 4.1 is incorrect: it should be <= 
-     * instead of <.
-     */ 
-    if(minFaceSize>maximumFaceSizeAllowed){
-        fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
-        validConstraints = FALSE;
-    } else if (maxFaceSize > maximumFaceSizeAllowed){
-        maxFaceSize = maximumFaceSizeAllowed;
-    }
-    for(i=0; i<requestedFaceSizesCount; i++){
-        if(requestedFaceSizes[i]>maximumFaceSizeAllowed){
-            fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
-            validConstraints = FALSE;
-        }
-    }
-    int maximumVertexDegreeAllowed = 2+maxVertexOrbitCount*4;
-    /* the dual of the bond mentioned above
-     */ 
-    if(minVertexDegree>maximumVertexDegreeAllowed){
-        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
-        validConstraints = FALSE;
-    } else if (maxVertexDegree > maximumVertexDegreeAllowed){
-        maxVertexDegree = maximumVertexDegreeAllowed;
-    }
-    for(i=0; i<requestedVertexDegreesCount; i++){
-        if(requestedVertexDegrees[i]>maximumVertexDegreeAllowed){
-        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
-            validConstraints = FALSE;
-        }
-    }
+//    These bounds only apply for convex tilings!
+//
+//    int maximumFaceSizeAllowed = 2+maxFaceOrbitCount*4;
+//    /* see Two finiteness Theorems for Periodic Tilings of d-Dimensional Euclidean
+//     * Space, Dolbilin, Dress, Huson; Discrete Comput GEOM 20:143-153 (1998) for
+//     * this bound. The formula given in lemma 4.1 is incorrect: it should be <= 
+//     * instead of <.
+//     */ 
+//    if(minFaceSize>maximumFaceSizeAllowed){
+//        fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
+//        validConstraints = FALSE;
+//    } else if (maxFaceSize > maximumFaceSizeAllowed){
+//        maxFaceSize = maximumFaceSizeAllowed;
+//    }
+//    for(i=0; i<requestedFaceSizesCount; i++){
+//        if(requestedFaceSizes[i]>maximumFaceSizeAllowed){
+//            fprintf(stderr, "For this number of face orbits the largest face possible\nhas size %d.\n", maximumFaceSizeAllowed);
+//            validConstraints = FALSE;
+//        }
+//    }
+//    int maximumVertexDegreeAllowed = 2+maxVertexOrbitCount*4;
+//    /* the dual of the bond mentioned above
+//     */ 
+//    if(minVertexDegree>maximumVertexDegreeAllowed){
+//        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
+//        validConstraints = FALSE;
+//    } else if (maxVertexDegree > maximumVertexDegreeAllowed){
+//        maxVertexDegree = maximumVertexDegreeAllowed;
+//    }
+//    for(i=0; i<requestedVertexDegreesCount; i++){
+//        if(requestedVertexDegrees[i]>maximumVertexDegreeAllowed){
+//        fprintf(stderr, "For this number of vertex orbits the largest vertex degree possible\nhas degree %d.\n", maximumVertexDegreeAllowed);
+//            validConstraints = FALSE;
+//        }
+//    }
     
     int maximumVertexOrbitsAllowed = (maxFaceOrbitCount - requestedFaceSizesCount)*maxFaceSize;
     for(i=0; i<requestedFaceSizesCount; i++){
@@ -8237,6 +8880,25 @@ boolean validateSymbolConstraints(){
         }
     }
     
+    //Adjust maximum number of face and vertex orbits based upon size of symbol
+    if(maxFaceOrbitCount > maxVertexCount){
+        maxFaceOrbitCount = maxVertexCount;
+    }
+    if(maxVertexOrbitCount > maxVertexCount){
+        maxVertexOrbitCount = maxVertexCount;
+    }
+    
+    //Adjust maximum face size and vertex degree based upon size of symbol
+    int theoreticalMaxFaceSize = (maxVertexCount - minFaceOrbitCount + 1)*12;
+    if(orientable) theoreticalMaxFaceSize/=2;
+    if(maxFaceSize > theoreticalMaxFaceSize){
+        maxFaceSize = theoreticalMaxFaceSize;
+    }
+    int theoreticalMaxVertexDegree = (maxVertexCount - minVertexOrbitCount + 1)*12;
+    if(orientable) theoreticalMaxVertexDegree/=2;
+    if(maxVertexDegree > theoreticalMaxVertexDegree){
+        maxVertexDegree = theoreticalMaxVertexDegree;
+    }
     return validConstraints;
 }
 
@@ -8272,6 +8934,23 @@ void calculateSymbolSize(){
         maxVerticesNeeded += requestedVertexDegrees[i]*2;
     }
     maxVertexCount = MIN(maxVertexCount, maxVerticesNeeded);
+}
+
+//creates a table that keeps track for each face size whether it is forbidden or not
+void createForbiddenTable(){
+    int i;
+    for(i=0; i<6*MAXN; i++){
+        forbiddenFaceSizesTable[i]=FALSE;
+        forbiddenVertexDegreesTable[i]=FALSE;
+    }
+    
+    for(i=0;i<forbiddenFaceSizesCount; i++){
+        forbiddenFaceSizesTable[forbiddenFaceSizes[i]]=TRUE;
+    }
+    
+    for(i=0; i<forbiddenVertexDegreesCount; i++){
+        forbiddenVertexDegreesTable[forbiddenVertexDegrees[i]]=TRUE;
+    }
 }
 
 
@@ -8540,8 +9219,14 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         //calculate size limits for Delaney-Dress graph
         calculateSymbolSize();
         
+        createForbiddenTable();
+        
         //start generation
-        fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n\n", minVertexCount, maxVertexCount);
+        fprintf(stderr, "Generating Delaney-Dress symbols with %d to %d vertices.\n", minVertexCount, maxVertexCount);
+        if(listFilename!=NULL){
+            fprintf(stderr, "Using the component lists in %s as input.\n", listFilename);
+        }
+        fprintf(stderr, "\n");
         fprintf(stderr, "Improved parameter bounds\n-------------------------\n");
         fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCount, maxFaceOrbitCount);
         fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCount, maxVertexOrbitCount);
@@ -8582,7 +9267,11 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "\n");
         
         if(!restrictionsOnly){
-            startMultipleGenerations(minVertexCount, maxVertexCount);
+            if(listFilename!=NULL){
+                startFromListFile(listFilename, minVertexCount, maxVertexCount);
+            } else {
+                startMultipleGenerations(minVertexCount, maxVertexCount);
+            }
         }
         
         
@@ -8598,7 +9287,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                 markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"",
                 listFilename);
         }
-        startFromListFile(listFilename);
+        startFromListFile(listFilename, 0, MAXN);
     } else {
 
         //parse the order
