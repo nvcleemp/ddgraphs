@@ -361,10 +361,14 @@ void help(char *name) {
     fprintf(stderr, "  -h    : Print this help and return.\n");
     fprintf(stderr, "  -n n  : Only allow symbols of order at least n.\n");
     fprintf(stderr, "  -N n  : Only allow symbols of order at most n.\n");
-    fprintf(stderr, "  -f n  : Only allow symbols with faces of size at least n.\n");
-    fprintf(stderr, "  -F n  : Only allow symbols with faces of size at most n.\n");
-    fprintf(stderr, "  -v n  : Only allow symbols with vertices of degree at least n.\n");
-    fprintf(stderr, "  -V n  : Only allow symbols with vertices of degree at most n.\n");
+    fprintf(stderr, "  -s n  : Only allow symbols with faces of size at least n.\n");
+    fprintf(stderr, "  -S n  : Only allow symbols with faces of size at most n.\n");
+    fprintf(stderr, "  -d n  : Only allow symbols with vertices of degree at least n.\n");
+    fprintf(stderr, "  -D n  : Only allow symbols with vertices of degree at most n.\n");
+    fprintf(stderr, "  -f n  : Only allow symbols with at least n face orbits.\n");
+    fprintf(stderr, "  -F n  : Only allow symbols with at most n face orbits.\n");
+    fprintf(stderr, "  -v n  : Only allow symbols with at least n vertex orbits.\n");
+    fprintf(stderr, "  -V n  : Only allow symbols with at most n vertex orbits.\n");
     fprintf(stderr, "  -p    : Only allow symbols with curvature 0.\n");
 }
 
@@ -382,17 +386,29 @@ int main(int argc, char *argv[]){
             case 'N':
                 maximumOrder = atoi(optarg);
                 break;
-            case 'f':
+            case 's':
                 minimumFaceSize = atoi(optarg);
                 break;
-            case 'F':
+            case 'S':
                 maximumFaceSize = atoi(optarg);
                 break;
-            case 'v':
+            case 'd':
                 minimumVertexDegree = atoi(optarg);
                 break;
-            case 'V':
+            case 'D':
                 maximumVertexDegree = atoi(optarg);
+                break;
+            case 'f':
+                minimumNumberFaceOrbits = atoi(optarg);
+                break;
+            case 'F':
+                maximumNumberFaceOrbits = atoi(optarg);
+                break;
+            case 'v':
+                minimumNumberVertexOrbits = atoi(optarg);
+                break;
+            case 'V':
+                maximumNumberVertexOrbits = atoi(optarg);
                 break;
             case 'p':
                 allownonplain = FALSE;
