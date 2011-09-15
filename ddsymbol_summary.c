@@ -39,6 +39,7 @@ int requiredVertices[6*MAXORDER];
 boolean forbiddenFaces[6*MAXORDER];
 boolean forbiddenVertices[6*MAXORDER];
 boolean semiEdgeSigma[DIMENSION+1];
+boolean containsSymbolsWithOddCycle = FALSE;
 
 /*************************** I/O ************************************/
 
@@ -268,6 +269,34 @@ int readSymbol(FILE *f, SYMBOL *ddsymbol, char **string) {
     return 1;
 }
 
+boolean containsOddCycles(SYMBOL *symbol){
+    int queue[MAXORDER];
+    int head = 0, tail = 0;
+    int colour[MAXORDER];
+    int i;
+    
+    for(i = 0; i < MAXORDER; i++){
+        colour[i] = -1;
+    }
+    
+    queue[tail++] = 0;
+    colour[0] = 0;
+    while(head<tail){
+        int v = queue[head++];
+        for(i=0; i<3; i++){
+            int neighbour = symbol->adjacency[v][i];
+            if(colour[neighbour] == -1){
+                colour[neighbour] = 1 - colour[v];
+                queue[tail++] = neighbour;
+            } else if(neighbour != v && colour[neighbour] == colour[v]){
+                return TRUE;
+            }
+        }
+    }
+    
+    return FALSE;
+}
+
 /* Handle a symbol once it has been read.
  */
 void handleSymbol(SYMBOL *symbol){
@@ -345,6 +374,10 @@ void handleSymbol(SYMBOL *symbol){
                 semiEdgeSigma[i] = TRUE;
             }
         }
+    }
+    
+    if(!containsSymbolsWithOddCycle){
+        containsSymbolsWithOddCycle = containsOddCycles(symbol);
     }
 }
 /*
@@ -440,10 +473,16 @@ int main(int argc, char *argv[]){
     
     for(i = 0; i <= DIMENSION; i++){
         if(semiEdgeSigma[i]){
-            fprintf(stderr, "Symbol contains s%d semi edge.\n", i);
+            fprintf(stderr, "Symbols contain s%d semi edge.\n", i);
         } else {
-            fprintf(stderr, "Symbol doesn't contain s%d semi edge.\n", i);
+            fprintf(stderr, "Symbols don't contain s%d semi edge.\n", i);
         }
+    }
+    
+    if(containsSymbolsWithOddCycle){
+        fprintf(stderr, "Symbols contain odd cycles.\n");
+    } else {
+        fprintf(stderr, "Symbols don't contain odd cycles.\n");
     }
     
     return EXIT_SUCCESS;
