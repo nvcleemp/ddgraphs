@@ -378,7 +378,7 @@ int main(int argc, char *argv[]){
     char *name = argv[0];
     
 
-    while ((c = getopt(argc, argv, "n:N:f:F:v:V:ph")) != -1) {
+    while ((c = getopt(argc, argv, "n:N:s:S:d:D:f:F:v:V:ph")) != -1) {
         switch (c) {
             case 'n':
                 minimumOrder = atoi(optarg);
