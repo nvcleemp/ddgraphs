@@ -8384,6 +8384,9 @@ void help(char *name){
     fprintf(stderr, "       into n parts and only part r is generated. The number n needs to\n");
     fprintf(stderr, "       be an integer larger than 0 and r should be a positive integer\n");
     fprintf(stderr, "       smaller than n.\n");
+    fprintf(stderr, "    --restrictionsonly\n");
+    fprintf(stderr, "       calculate the restrictions for the Delaney-Dress symbol, but don't\n");
+    fprintf(stderr, "       generate any structures.\n");
     fprintf(stderr, "\n* Generated types\n");
     fprintf(stderr, "    -L, --lists\n");
     fprintf(stderr, "       Generate component lists.\n");
