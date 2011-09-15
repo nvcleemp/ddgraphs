@@ -14,6 +14,9 @@
 #define TRUE 1
 #define FALSE 0
 
+#define MAXFORBIDDEN 20
+#define MAXREQUIRED 20
+
 typedef int boolean;
 
 typedef struct _symbol {
@@ -36,6 +39,16 @@ int minimumVertexDegree = 0;
 int maximumVertexDegree = INT_MAX;
 
 boolean allownonplain = TRUE;
+
+int requiredFaces[MAXREQUIRED];
+int requiredFacesCount = 0;
+int requiredVertices[MAXREQUIRED];
+int requiredVerticesCount = 0;
+
+int forbiddenFaces[MAXFORBIDDEN];
+int forbiddenFacesCount = 0;
+int forbiddenVertices[MAXFORBIDDEN];
+int forbiddenVerticesCount;
 
 /*************************** I/O ************************************/
 
@@ -317,7 +330,7 @@ boolean acceptSymbol(SYMBOL *symbol){
         return FALSE;
     }
     
-    int i;
+    int i, j;
     for(i = 0; i < symbol->orbitCount[0]; i++){
         if(symbol->orbitM[i][0] > maximumFaceSize){
             return FALSE;
@@ -337,6 +350,48 @@ boolean acceptSymbol(SYMBOL *symbol){
     
     if(!allownonplain){
         if(getCurvatureSign(symbol)){
+            return FALSE;
+        }
+    }
+    
+    for(i = 0; i < forbiddenFacesCount; i++){
+        for(j = 0; j < symbol->orbitCount[0]; j++){
+            if(forbiddenFaces[i] == symbol->orbitM[j][0]){
+                return FALSE;
+            }
+        }
+    }
+    
+    for(i = 0; i < forbiddenVerticesCount; i++){
+        for(j = 0; j < symbol->orbitCount[1]; j++){
+            if(forbiddenVertices[i] == symbol->orbitM[j][1]){
+                return FALSE;
+            }
+        }
+    }
+    
+    for(i = 0; i < requiredFacesCount; i++){
+        boolean containsCurrentFace = FALSE;
+        for(j = 0; j < symbol->orbitCount[0]; j++){
+            if(requiredFaces[i] == symbol->orbitM[j][0]){
+                containsCurrentFace = TRUE;
+                break;
+            }
+        }
+        if(!containsCurrentFace){
+            return FALSE;
+        }
+    }
+    
+    for(i = 0; i < requiredVerticesCount; i++){
+        boolean containsCurrentVertex = FALSE;
+        for(j = 0; j < symbol->orbitCount[1]; j++){
+            if(requiredVertices[i] == symbol->orbitM[j][1]){
+                containsCurrentVertex = TRUE;
+                break;
+            }
+        }
+        if(!containsCurrentVertex){
             return FALSE;
         }
     }
@@ -369,6 +424,10 @@ void help(char *name) {
     fprintf(stderr, "  -F n  : Only allow symbols with at most n face orbits.\n");
     fprintf(stderr, "  -v n  : Only allow symbols with at least n vertex orbits.\n");
     fprintf(stderr, "  -V n  : Only allow symbols with at most n vertex orbits.\n");
+    fprintf(stderr, "  -c n  : Only allow symbols with a vertex of degree n.\n");
+    fprintf(stderr, "  -C n  : Only allow symbols with a face of size n.\n");
+    fprintf(stderr, "  -x n  : Only allow symbols without a vertex of degree n.\n");
+    fprintf(stderr, "  -X n  : Only allow symbols without a face of size n.\n");
     fprintf(stderr, "  -p    : Only allow symbols with curvature 0.\n");
 }
 
@@ -378,7 +437,7 @@ int main(int argc, char *argv[]){
     char *name = argv[0];
     
 
-    while ((c = getopt(argc, argv, "n:N:s:S:d:D:f:F:v:V:ph")) != -1) {
+    while ((c = getopt(argc, argv, "n:N:s:S:d:D:f:F:v:V:c:C:x:X:ph")) != -1) {
         switch (c) {
             case 'n':
                 minimumOrder = atoi(optarg);
@@ -409,6 +468,34 @@ int main(int argc, char *argv[]){
                 break;
             case 'V':
                 maximumNumberVertexOrbits = atoi(optarg);
+                break;
+            case 'c':
+                if(requiredVerticesCount==MAXREQUIRED){
+                    fprintf(stderr, "Recompile this program if you want to specify more than %d required vertices.\n", MAXREQUIRED);
+                } else {
+                    requiredVertices[requiredVerticesCount++] = atoi(optarg);
+                }
+                break;
+            case 'C':
+                if(requiredFacesCount==MAXREQUIRED){
+                    fprintf(stderr, "Recompile this program if you want to specify more than %d required faces.\n", MAXREQUIRED);
+                } else {
+                    requiredFaces[requiredFacesCount++] = atoi(optarg);
+                }
+                break;
+            case 'x':
+                if(forbiddenVerticesCount==MAXFORBIDDEN){
+                    fprintf(stderr, "Recompile this program if you want to specify more than %d forbidden vertices.\n", MAXFORBIDDEN);
+                } else {
+                    forbiddenVertices[forbiddenVerticesCount++] = atoi(optarg);
+                }
+                break;
+            case 'X':
+                if(forbiddenFacesCount==MAXFORBIDDEN){
+                    fprintf(stderr, "Recompile this program if you want to specify more than %d forbidden faces.\n", MAXFORBIDDEN);
+                } else {
+                    forbiddenFaces[forbiddenFacesCount++] = atoi(optarg);
+                }
                 break;
             case 'p':
                 allownonplain = FALSE;
