@@ -255,6 +255,8 @@ unsigned long long int edgeColouredGraphsCount;
 
 unsigned long long int symbolsCount;
 
+int edgeOrbitCount = 0;
+
 char outputType = 'n'; //defaults to no output
 
 boolean onlyLists = FALSE;
@@ -284,6 +286,8 @@ int maxFaceOrbitCount = MAXN;
 int minFaceOrbitCount = 1;
 int maxVertexOrbitCount = MAXN;
 int minVertexOrbitCount = 1;
+int maxEdgeOrbitCount = MAXN;
+int minEdgeOrbitCount = 1;
 
 int minFaceSize = 3;
 int maxFaceSize = 6*MAXN;

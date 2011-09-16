@@ -7350,14 +7350,21 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
 }
 
 void q4Components(int targetSize, int currentSize, DDGRAPH *ddgraph){
+    if(edgeOrbitCount + targetSize - currentSize > maxEdgeOrbitCount) return;
+    if(edgeOrbitCount + targetSize - currentSize < minEdgeOrbitCount) return;
+    
     if(!orientable || targetSize == currentSize){
         //Q4 component is not orientable
+        edgeOrbitCount += targetSize - currentSize;
         Q4ComponentCount = targetSize - currentSize; //each q4 component has 1 vertex
+        edgeOrbitCount -= targetSize - currentSize;
         handleComponentList(targetSize, ddgraph);
     }
 }
 
 void q3Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    if(edgeOrbitCount > maxEdgeOrbitCount) return;
+    
     boolean skip = FALSE;
     int blockTypeNumber = buildingBlockParametersToNumber(3, currentType);
     if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
@@ -7380,17 +7387,25 @@ void q3Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
         if(targetSize - newSize >= 2*(currentParameter+1)){
+            edgeOrbitCount += currentParameter*i;
             q3Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else if(currentType+1==Q3TypeComponentsCount){
+            edgeOrbitCount += currentParameter*i;
             q4Components(targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else {
+            edgeOrbitCount += currentParameter*i;
             q3Components(currentType+1, Q3TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         }
     }
     Q3TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
 }
 
 void q2Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    if(edgeOrbitCount > maxEdgeOrbitCount) return;
+    
     boolean skip = FALSE;
     int blockTypeNumber = buildingBlockParametersToNumber(2, currentType);
     if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
@@ -7413,17 +7428,25 @@ void q2Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 2*currentParameter*i; //each q2 component has 2n vertices
 
         if(targetSize - newSize >= 2*(currentParameter+1)){
+            edgeOrbitCount += currentParameter*i;
             q2Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else if(currentType+1==Q2TypeComponentsCount){
+            edgeOrbitCount += currentParameter*i;
             q3Components(0, Q3TypeComponentsSmallestCase[0], targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else {
+            edgeOrbitCount += currentParameter*i;
             q2Components(currentType+1, Q2TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         }
     }
     Q2TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
 }
 
 void q1Components(int currentType, int currentParameter, int targetSize, int currentSize, DDGRAPH *ddgraph){
+    if(edgeOrbitCount > maxEdgeOrbitCount) return;
+    
     boolean skip = FALSE;
     int blockTypeNumber = buildingBlockParametersToNumber(1, currentType);
     if(bipartite && !isBipartiteBlock[blockTypeNumber]) skip = TRUE;
@@ -7446,11 +7469,17 @@ void q1Components(int currentType, int currentParameter, int targetSize, int cur
         int newSize = currentSize + 4*currentParameter*i; //each q1 component has 4n vertices
 
         if(targetSize - newSize >= 4*(currentParameter+1)){
+            edgeOrbitCount += currentParameter*i;
             q1Components(currentType, currentParameter+1, targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else if(currentType+1==Q1TypeComponentsCount){
+            edgeOrbitCount += currentParameter*i;
             q2Components(0, Q2TypeComponentsSmallestCase[0], targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         } else {
+            edgeOrbitCount += currentParameter*i;
             q1Components(currentType+1, Q1TypeComponentsSmallestCase[currentType+1], targetSize, newSize, ddgraph);
+            edgeOrbitCount -= currentParameter*i;
         }
     }
     Q1TypeComponentsComponentCount[currentType][currentParameter-1]=0; //reset this type to 0
@@ -8551,6 +8580,10 @@ boolean validateSymbolConstraints(){
         fprintf(stderr, "Maximum number of vertex orbits needs to be at least the minimum number of vertex orbits.\n");
         validConstraints = FALSE;
     }
+    if(maxEdgeOrbitCount < minEdgeOrbitCount){
+        fprintf(stderr, "Maximum number of edge orbits needs to be at least the minimum number of edge orbits.\n");
+        validConstraints = FALSE;
+    }
     if(maxFaceSize < minFaceSize){
         fprintf(stderr, "Maximum face size needs to be at least the minimum face size.\n");
         validConstraints = FALSE;
@@ -8937,6 +8970,16 @@ void calculateSymbolSize(){
         maxVerticesNeeded += requestedVertexDegrees[i]*2;
     }
     maxVertexCount = MIN(maxVertexCount, maxVerticesNeeded);
+    
+    minVertexCount = MAX(minVertexCount, minFaceOrbitCount);
+    minVertexCount = MAX(minVertexCount, minVertexOrbitCount);
+    minVertexCount = MAX(minVertexCount, minEdgeOrbitCount);
+    
+    maxVertexCount = MIN(maxVertexCount, maxEdgeOrbitCount*4);
+    
+    maxFaceOrbitCount = MIN(maxFaceOrbitCount, maxVertexCount);
+    maxVertexOrbitCount = MIN(maxVertexOrbitCount, maxVertexCount);
+    maxEdgeOrbitCount = MIN(maxEdgeOrbitCount, maxVertexCount);
 }
 
 //creates a table that keeps track for each face size whether it is forbidden or not
@@ -8984,6 +9027,8 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"maxvertexdegree", required_argument, NULL, 0},
         {"verbose", no_argument, NULL, 0},
         {"restrictionsonly", no_argument, NULL, 0},
+        {"maxedgecount", required_argument, NULL, 0},
+        {"minedgecount", required_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
@@ -9062,6 +9107,18 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         break;
                     case 9:
                         restrictionsOnly = TRUE;
+                        break;
+                    case 10:
+                        maxEdgeOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxEdgeOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 11:
+                        minEdgeOrbitCount = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minEdgeOrbitCount, 1, MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -9217,10 +9274,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
             if(!validateSymbolConstraints()){
                 return EXIT_FAILURE;
             }
+            //recalculate size limits for Delaney-Dress graph
+            calculateSymbolSize();
         }
-        
-        //calculate size limits for Delaney-Dress graph
-        calculateSymbolSize();
         
         createForbiddenTable();
         
@@ -9233,6 +9289,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "Improved parameter bounds\n-------------------------\n");
         fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCount, maxFaceOrbitCount);
         fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCount, maxVertexOrbitCount);
+        fprintf(stderr, "Number of edge orbits lies in [%d,%d].\n", minEdgeOrbitCount, maxEdgeOrbitCount);
         fprintf(stderr, "Face sizes lie in [%d,%d].\n", minFaceSize, maxFaceSize);
         fprintf(stderr, "Vertex degrees lie in [%d,%d].\n", minVertexDegree, maxVertexDegree);
         fprintf(stderr, "Required face sizes are [");
