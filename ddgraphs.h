@@ -242,6 +242,8 @@ boolean isBipartiteBlock[ComponentsTypesCount];
 
 boolean isOrientableBlock[ComponentsTypesCount];
 
+boolean isEdgeColourableBlock[ComponentsTypesCount];
+
 /******************Global Variables**********************/
 
 int connectionsMade; //the number of connections made at this point

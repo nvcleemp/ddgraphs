@@ -7775,6 +7775,35 @@ void initComponentsStatic(){
     isOrientableBlock[27] = TRUE;
     isOrientableBlock[28] = FALSE;
 
+    isEdgeColourableBlock[0] = TRUE;
+    isEdgeColourableBlock[1] = FALSE;
+    isEdgeColourableBlock[2] = FALSE;
+    isEdgeColourableBlock[3] = TRUE;
+    isEdgeColourableBlock[4] = FALSE;
+    isEdgeColourableBlock[5] = FALSE;
+    isEdgeColourableBlock[6] = TRUE;
+    isEdgeColourableBlock[7] = FALSE;
+    isEdgeColourableBlock[8] = FALSE;
+    isEdgeColourableBlock[9] = FALSE;
+    isEdgeColourableBlock[10] = FALSE;
+    isEdgeColourableBlock[11] = FALSE;
+    isEdgeColourableBlock[12] = TRUE;
+    isEdgeColourableBlock[13] = FALSE;
+    isEdgeColourableBlock[14] = TRUE;
+    isEdgeColourableBlock[15] = FALSE;
+    isEdgeColourableBlock[16] = TRUE;
+    isEdgeColourableBlock[17] = FALSE;
+    isEdgeColourableBlock[18] = FALSE;
+    isEdgeColourableBlock[19] = TRUE;
+    isEdgeColourableBlock[20] = FALSE;
+    isEdgeColourableBlock[21] = TRUE;
+    isEdgeColourableBlock[22] = FALSE;
+    isEdgeColourableBlock[23] = TRUE;
+    isEdgeColourableBlock[24] = TRUE;
+    isEdgeColourableBlock[25] = FALSE;
+    isEdgeColourableBlock[26] = FALSE;
+    isEdgeColourableBlock[27] = FALSE;
+    isEdgeColourableBlock[28] = FALSE;
 }
 
 void cleanComponentStatistics(){
@@ -9264,6 +9293,11 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         }
     }
 #endif
+    
+    //adjust some constant in case certain restrictions were chosen
+    if(edgeColourable){
+        Q1TypeComponentsSmallestCase[3] = 2;
+    }
     
     if(symbols){
         int i;
