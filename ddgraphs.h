@@ -394,6 +394,10 @@ unsigned long long int rejectedColouredGraphBecauseFaceOrbitTooBig = 0;
 
 unsigned long long int possibleAssignments = 0;
 unsigned long long int validAssignments = 0;
+
+unsigned long long int colouredDelaneyDressGraphsWithoutSymbol = 0;
+unsigned long long int colouredDelaneyDressGraphsWithOneSymbol = 0;
+unsigned long long int colouredDelaneyDressGraphsWithMultipleSymbols = 0;
 #endif 
 
 #endif	/* _DDGRAPHS_H */

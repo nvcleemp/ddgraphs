@@ -6135,7 +6135,19 @@ boolean first = TRUE;
 void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     edgeColouredGraphsCount++;
     if(symbols){
+        #ifdef _PROFILING
+        unsigned long long int oldSymbolCount = symbolCount;    
+        #endif
         assignComponentLabels(ddgraph);
+        #ifdef _PROFILING
+        if(oldSymbolCount==symbolCount){
+            colouredDelaneyDressGraphsWithoutSymbol++;
+        } else if (oldSymbolCount==symbolCount-1){
+            colouredDelaneyDressGraphsWithOneSymbol++;
+        } else {
+            colouredDelaneyDressGraphsWithMultipleSymbols++;
+        }
+        #endif
     } else {
         if(outputType=='c'){
             writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
@@ -9478,6 +9490,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "    because too big vertex orbit            : %llu\n", rejectedColouredGraphBecauseVertexOrbitTooBig);
         fprintf(stderr, "Number of possible symbols: %llu\n", possibleAssignments);
         fprintf(stderr, "Number of valid symbols: %llu\n", validAssignments);
+        fprintf(stderr, "Number of Delaney-Dress graphs which were not used  : %llu\n", colouredDelaneyDressGraphsWithoutSymbol);
+        fprintf(stderr, "Number of Delaney-Dress graphs which were used once : %llu\n", colouredDelaneyDressGraphsWithOneSymbol);
+        fprintf(stderr, "Number of Delaney-Dress graphs which were used more : %llu\n", colouredDelaneyDressGraphsWithMultipleSymbols);
     }
 #endif 
     
