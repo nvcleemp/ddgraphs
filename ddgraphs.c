@@ -6123,6 +6123,18 @@ void assignComponentLabels(DDGRAPH *ddgraph){
         s1s2Components.componentLabels[i]=0;
     }
     
+    if(minVertexDegree * (ddgraph->order - 4 * s0s1Components.componentCount) >
+            2*ddgraph->order){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseIncompatibleParameters)
+        return;
+    }
+    
+    if(minFaceSize * (ddgraph->order - 4 * s1s2Components.componentCount) >
+            2*ddgraph->order){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseIncompatibleParameters)
+        return;
+    }
+    
     PROFILINGINCREMENT(acceptedColouredGraphs)
     
     //bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
@@ -6136,13 +6148,13 @@ void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     edgeColouredGraphsCount++;
     if(symbols){
         #ifdef _PROFILING
-        unsigned long long int oldSymbolCount = symbolCount;    
+        unsigned long long int oldSymbolCount = symbolsCount;    
         #endif
         assignComponentLabels(ddgraph);
         #ifdef _PROFILING
-        if(oldSymbolCount==symbolCount){
+        if(oldSymbolCount==symbolsCount){
             colouredDelaneyDressGraphsWithoutSymbol++;
-        } else if (oldSymbolCount==symbolCount-1){
+        } else if (oldSymbolCount==symbolsCount-1){
             colouredDelaneyDressGraphsWithOneSymbol++;
         } else {
             colouredDelaneyDressGraphsWithMultipleSymbols++;
@@ -9488,6 +9500,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "    because wrong number vertex orbits      : %llu\n", rejectedColouredGraphBecauseWrongNumberVertexOrbits);
         fprintf(stderr, "    because too big face orbit              : %llu\n", rejectedColouredGraphBecauseFaceOrbitTooBig);
         fprintf(stderr, "    because too big vertex orbit            : %llu\n", rejectedColouredGraphBecauseVertexOrbitTooBig);
+        fprintf(stderr, "    because incompatible parameters         : %llu\n", rejectedColouredGraphBecauseIncompatibleParameters);
         fprintf(stderr, "Number of possible symbols: %llu\n", possibleAssignments);
         fprintf(stderr, "Number of valid symbols: %llu\n", validAssignments);
         fprintf(stderr, "Number of Delaney-Dress graphs which were not used  : %llu\n", colouredDelaneyDressGraphsWithoutSymbol);
