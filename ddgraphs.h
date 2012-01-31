@@ -391,6 +391,7 @@ unsigned long long int rejectedColouredGraphBecauseWrongNumberVertexOrbits = 0;
 unsigned long long int rejectedColouredGraphBecauseWrongNumberFaceOrbits = 0;
 unsigned long long int rejectedColouredGraphBecauseVertexOrbitTooBig = 0;
 unsigned long long int rejectedColouredGraphBecauseFaceOrbitTooBig = 0;
+unsigned long long int rejectedColouredGraphBecauseIncompatibleParameters = 0;
 
 unsigned long long int possibleAssignments = 0;
 unsigned long long int validAssignments = 0;
