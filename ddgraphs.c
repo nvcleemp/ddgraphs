@@ -6135,6 +6135,12 @@ void assignComponentLabels(DDGRAPH *ddgraph){
         return;
     }
     
+    if(ddgraph->order > 
+            4*(s0s1Components.componentCount + s1s2Components.componentCount)){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseTooManyOrbits)
+        return;
+    }
+    
     PROFILINGINCREMENT(acceptedColouredGraphs)
     
     //bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
@@ -9498,6 +9504,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         fprintf(stderr, "Number of rejected edge-coloured graphs\n");
         fprintf(stderr, "    because wrong number face orbits        : %llu\n", rejectedColouredGraphBecauseWrongNumberFaceOrbits);
         fprintf(stderr, "    because wrong number vertex orbits      : %llu\n", rejectedColouredGraphBecauseWrongNumberVertexOrbits);
+        fprintf(stderr, "    because too many orbits                 : %llu\n", rejectedColouredGraphBecauseTooManyOrbits);
         fprintf(stderr, "    because too big face orbit              : %llu\n", rejectedColouredGraphBecauseFaceOrbitTooBig);
         fprintf(stderr, "    because too big vertex orbit            : %llu\n", rejectedColouredGraphBecauseVertexOrbitTooBig);
         fprintf(stderr, "    because incompatible parameters         : %llu\n", rejectedColouredGraphBecauseIncompatibleParameters);
