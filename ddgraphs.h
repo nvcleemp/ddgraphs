@@ -277,11 +277,29 @@ boolean verbose = FALSE;
 
 boolean restrictionsOnly = FALSE;
 
+boolean giveStatistics = FALSE;
+
 // allow the generation process to be split in several parts
 boolean moduloEnabled = FALSE;
 unsigned long long int moduloRest;
 unsigned long long int moduloMod;
 unsigned long long int splitPointCount;
+
+// Delaney-Dress symbol/tiling statistics
+int minOrderStatistic = MAXN;
+int maxOrderStatistic = 1;
+
+int maxFaceOrbitCountStatistic = 1;
+int minFaceOrbitCountStatistic = MAXN;
+int maxVertexOrbitCountStatistic = 1;
+int minVertexOrbitCountStatistic = MAXN;
+int maxEdgeOrbitCountStatistic = 1;
+int minEdgeOrbitCountStatistic = MAXN;
+
+int minFaceSizeStatistic = 6*MAXN;
+int maxFaceSizeStatistic = 3;
+int minVertexDegreeStatistic = 6*MAXN;
+int maxVertexDegreeStatistic = 3;
 
 // Delaney-Dress symbol/tiling restrictions
 int maxFaceOrbitCount = MAXN;

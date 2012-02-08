@@ -5505,6 +5505,56 @@ void quickSortComponentsList(int *indices, COLOURCOMPONENTS *componentsList, int
 
 void handleDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components){
         symbolsCount++;
+        if(giveStatistics){
+            //Delaney-Dress graph
+            if(ddgraph->order > maxOrderStatistic){
+                maxOrderStatistic = ddgraph->order;
+            }
+            if(ddgraph->order < minOrderStatistic){
+                minOrderStatistic = ddgraph->order;
+            }
+            
+            int i;
+            //faces
+            if(s0s1Components->componentCount > maxFaceOrbitCountStatistic){
+                maxFaceOrbitCountStatistic = s0s1Components->componentCount;
+            }
+            if(s0s1Components->componentCount < minFaceOrbitCountStatistic){
+                minFaceOrbitCountStatistic = s0s1Components->componentCount;
+            }
+            for(i=0; i<s0s1Components->componentCount; i++){
+                if(s0s1Components->componentLabels[i] > maxFaceSizeStatistic){
+                    maxFaceSizeStatistic = s0s1Components->componentLabels[i];
+                }
+                if(s0s1Components->componentLabels[i] < minFaceSizeStatistic){
+                    minFaceSizeStatistic = s0s1Components->componentLabels[i];
+                }
+            }
+            
+            //vertices
+            if(s1s2Components->componentCount > maxVertexOrbitCountStatistic){
+                maxVertexOrbitCountStatistic = s1s2Components->componentCount;
+            }
+            if(s1s2Components->componentCount < minVertexOrbitCountStatistic){
+                minVertexOrbitCountStatistic = s1s2Components->componentCount;
+            }
+            for(i=0; i<s1s2Components->componentCount; i++){
+                if(s1s2Components->componentLabels[i] > maxVertexDegreeStatistic){
+                    maxVertexDegreeStatistic = s1s2Components->componentLabels[i];
+                }
+                if(s1s2Components->componentLabels[i] < minVertexDegreeStatistic){
+                    minVertexDegreeStatistic = s1s2Components->componentLabels[i];
+                }
+            }
+            
+            //edges
+            if(edgeOrbitCount > maxEdgeOrbitCountStatistic){
+                maxEdgeOrbitCountStatistic = edgeOrbitCount;
+            }
+            if(edgeOrbitCount < minEdgeOrbitCountStatistic){
+                minEdgeOrbitCountStatistic = edgeOrbitCount;
+            }
+        }
         if(outputType=='c'){
             writeDDSymbol(stdout, ddgraph, s0s1Components, s1s2Components, 1, symbolsCount);
         }
@@ -7932,6 +7982,11 @@ void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgrap
 }
 
 void addTristar(DDGRAPH * ddgraph){
+    if(minEdgeOrbitCount>1){
+        return;
+    }
+    edgeOrbitCount = 1;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 5, 0, 0, 0);
     handleSingleBlockComponentList(bblock, 1, ddgraph);
@@ -7939,6 +7994,11 @@ void addTristar(DDGRAPH * ddgraph){
 }
 
 void addDoubleLockedPearlChain(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 5, 1, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
@@ -7946,6 +8006,11 @@ void addDoubleLockedPearlChain(DDGRAPH * ddgraph, int parameter){
 }
 
 void addPearlNecklace(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 5, 2, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
@@ -7953,6 +8018,11 @@ void addPearlNecklace(DDGRAPH * ddgraph, int parameter){
 }
 
 void addDoubleLockedBarbedWire(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 0, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
@@ -7960,6 +8030,11 @@ void addDoubleLockedBarbedWire(DDGRAPH * ddgraph, int parameter){
 }
 
 void addBarbedWireNecklace(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 1, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*2, ddgraph);
@@ -7967,6 +8042,11 @@ void addBarbedWireNecklace(DDGRAPH * ddgraph, int parameter){
 }
 
 void addDoubleLockedDiagonalChain(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 2, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -7974,6 +8054,11 @@ void addDoubleLockedDiagonalChain(DDGRAPH * ddgraph, int parameter){
 }
 
 void addMobiusLadder(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 3, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -7981,6 +8066,11 @@ void addMobiusLadder(DDGRAPH * ddgraph, int parameter){
 }
 
 void addPrism(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 4, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -7988,6 +8078,11 @@ void addPrism(DDGRAPH * ddgraph, int parameter){
 }
 
 void addDoubleLockedDoubleroofLongBuilding(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 5, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -7995,6 +8090,11 @@ void addDoubleLockedDoubleroofLongBuilding(DDGRAPH * ddgraph, int parameter){
 }
 
 void addCompletelyLockedHub(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 6, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -8002,6 +8102,11 @@ void addCompletelyLockedHub(DDGRAPH * ddgraph, int parameter){
 }
 
 void addDoubleroofDoublefloorHighBuilding(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 7, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -8009,6 +8114,11 @@ void addDoubleroofDoublefloorHighBuilding(DDGRAPH * ddgraph, int parameter){
 }
 
 void addDoubleLockedDoubleroofHighBuilding(DDGRAPH * ddgraph, int parameter){
+    if(minEdgeOrbitCount > parameter || maxEdgeOrbitCount < parameter){
+        return;
+    }
+    edgeOrbitCount = parameter;
+    
     BBLOCK * bblock = (BBLOCK *)malloc(sizeof(BBLOCK));
     initBuildingBlock(bblock, 6, 8, parameter, 0);
     handleSingleBlockComponentList(bblock, parameter*4, ddgraph);
@@ -9102,6 +9212,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"restrictionsonly", no_argument, NULL, 0},
         {"maxedgecount", required_argument, NULL, 0},
         {"minedgecount", required_argument, NULL, 0},
+        {"statistics", no_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
@@ -9192,6 +9303,9 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         if(!checkIntegerValue(long_options[option_index].name, minEdgeOrbitCount, 1, MAXN)){
                             failAfterArgumentParsing = TRUE;
                         }
+                        break;
+                    case 12:
+                        giveStatistics = TRUE;
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -9455,6 +9569,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     times(&TMS);
     unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
+    
+    if(giveStatistics){
+        fprintf(stderr, "\nDelaney-Dress symbol statistics:\n");
+        
+        fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCountStatistic, maxFaceOrbitCountStatistic);
+        fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCountStatistic, maxVertexOrbitCountStatistic);
+        fprintf(stderr, "Number of edge orbits lies in [%d,%d].\n", minEdgeOrbitCountStatistic, maxEdgeOrbitCountStatistic);
+        fprintf(stderr, "Face sizes lie in [%d,%d].\n", minFaceSizeStatistic, maxFaceSizeStatistic);
+        fprintf(stderr, "Vertex degrees lie in [%d,%d].\n", minVertexDegreeStatistic, maxVertexDegreeStatistic);
+    }
     
 #ifdef _PROFILING
     
