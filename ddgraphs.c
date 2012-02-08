@@ -9570,7 +9570,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     unsigned int savetime = oldtime + (unsigned int) TMS.tms_utime;
     fprintf(stderr, "CPU time: %.1f seconds.\n", (double) savetime / time_factor);
     
-    if(giveStatistics){
+    if(giveStatistics && symbols && symbolsCount){
         fprintf(stderr, "\nDelaney-Dress symbol statistics:\n");
         
         fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCountStatistic, maxFaceOrbitCountStatistic);
