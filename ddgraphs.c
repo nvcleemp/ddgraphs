@@ -7371,7 +7371,21 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
                     printHumanReadableComponentList(stdout);
                 }
             } else {
+//                unsigned long long int oldSymbolsCount = symbolsCount;
+//                unsigned long long int oldGraphsCount = graphsCount;
                 connectComponentList(vertexCount, ddgraph);
+//                if(oldSymbolsCount==symbolsCount){
+//                    if(oldGraphsCount==graphsCount){
+//                        fprintf(stdout, "nograph: ");
+//                        printHumanReadableComponentList(stdout);
+//                    } else {
+//                        fprintf(stdout, "unused: ");
+//                        printHumanReadableComponentList(stdout);
+//                    }
+//                } else {
+//                    fprintf(stdout, "used: ");
+//                    printHumanReadableComponentList(stdout);
+//                }
             }
         }
         splitPointCount++;
