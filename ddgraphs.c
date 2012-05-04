@@ -8606,6 +8606,9 @@ void startMultipleGenerations(int startSize, int endSize){
 
         DDGRAPH * ddgraph = getNewDDGraph(targetSize);
         
+        edgeOrbitCount = 0;
+        //this could be set to a non-zero value in one of the single block lists
+        
         q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0, ddgraph);
         
         extraUnconstructableGraphs(ddgraph, targetSize);
