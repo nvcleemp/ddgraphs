@@ -279,6 +279,10 @@ boolean restrictionsOnly = FALSE;
 
 boolean giveStatistics = FALSE;
 
+boolean filterDelaneyDressGraphs = FALSE;
+
+boolean intermediateStructures = FALSE;
+
 // allow the generation process to be split in several parts
 boolean moduloEnabled = FALSE;
 unsigned long long int moduloRest;
@@ -308,6 +312,11 @@ int maxVertexOrbitCount = MAXN;
 int minVertexOrbitCount = 1;
 int maxEdgeOrbitCount = MAXN;
 int minEdgeOrbitCount = 1;
+
+int maxFaceR = 2*MAXN;
+int minFaceR = 1;
+int maxVertexR = 2*MAXN;
+int minVertexR = 1;
 
 int minFaceSize = 3;
 int maxFaceSize = 6*MAXN;

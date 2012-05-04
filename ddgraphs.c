@@ -6200,6 +6200,62 @@ void assignComponentLabels(DDGRAPH *ddgraph){
 //========= PHASE 3: HANDLING THE GENERATED DELANEY-DRESS GRAPHS ============
 boolean first = TRUE;
 
+boolean applyColouredDelaneyDressGraphFilter(DDGRAPH *ddgraph){
+    COLOURCOMPONENTS s0s1Components;
+    s0s1Components.colour1 = 0;
+    s0s1Components.colour2 = 1;
+    int vertex2s0s1Component[MAXN]; //maps vertices to components
+    COLOURCOMPONENTS s1s2Components;
+    s1s2Components.colour1 = 1;
+    s1s2Components.colour2 = 2;
+    int vertex2s1s2Component[MAXN]; //maps vertices to components
+    
+    int i;
+
+    findComponents(ddgraph, &s0s1Components, vertex2s0s1Component);
+    findComponents(ddgraph, &s1s2Components, vertex2s1s2Component);
+    
+    if(s0s1Components.componentCount < minFaceOrbitCount || s0s1Components.componentCount > maxFaceOrbitCount){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseWrongNumberFaceOrbits)
+        return FALSE;
+    }
+    
+    for(i = 0; i < s0s1Components.componentCount; i++){
+        int currentR = s0s1Components.componentSizes[i];
+        if(!s0s1Components.containsSemiEdge[i]){
+            if(currentR%2){
+                ERRORMSG("Illegal size of component")
+            }
+            currentR /= 2;
+        }
+        if(currentR < minFaceR || currentR > maxFaceR){
+            //TODO: profiling
+            return FALSE;
+        }
+    }
+    
+    if(s1s2Components.componentCount < minVertexOrbitCount || s1s2Components.componentCount > maxVertexOrbitCount){
+        PROFILINGINCREMENT(rejectedColouredGraphBecauseWrongNumberVertexOrbits)
+        return FALSE;
+    }
+    
+    for(i = 0; i < s1s2Components.componentCount; i++){
+        int currentR = s1s2Components.componentSizes[i];
+        if(!s1s2Components.containsSemiEdge[i]){
+            if(currentR%2){
+                ERRORMSG("Illegal size of component")
+            }
+            currentR /= 2;
+        }
+        if(currentR < minVertexR || currentR > maxVertexR){
+            //TODO: profiling
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
 void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
     edgeColouredGraphsCount++;
     if(symbols){
@@ -6217,6 +6273,10 @@ void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
         }
         #endif
     } else {
+        if(filterDelaneyDressGraphs && !applyColouredDelaneyDressGraphFilter(ddgraph)){
+            edgeColouredGraphsCount--;
+            return;
+        }
         if(outputType=='c'){
             writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
             first = FALSE;
@@ -7421,6 +7481,13 @@ void handleComponentList(int vertexCount, DDGRAPH *ddgraph){
                     printHumanReadableComponentList(stdout);
                 }
             } else {
+                if(intermediateStructures){
+                    if(outputType=='c'){
+                        writeListCodeMultipleBlockList(stdout, vertexCount);
+                    } else if(outputType=='h'){
+                        printHumanReadableComponentList(stdout);
+                    }
+                }
 //                unsigned long long int oldSymbolsCount = symbolsCount;
 //                unsigned long long int oldGraphsCount = graphsCount;
                 connectComponentList(vertexCount, ddgraph);
@@ -7962,6 +8029,14 @@ void handleSingleBlockComponentList(BBLOCK * bblock, int order, DDGRAPH * ddgrap
                 fprintf(stdout, "\n");
             }
         } else {
+            if(intermediateStructures){
+                if(outputType=='c'){
+                    writeListCodeSingleBlockList(stdout, order, bblock);
+                } else if(outputType=='h'){
+                    printBlockName(stdout, 1, buildingBlockTypeToNumber(bblock), bblock->parameter, TRUE);
+                    fprintf(stdout, "\n");
+                }
+            }
             int vertexToBlock[ddgraph->underlyingGraph->vlen];
             int vertexToConnector[ddgraph->underlyingGraph->vlen];
             constructBuildingBlockListAsGraph(bblock, 1, ddgraph, vertexToBlock, vertexToConnector);
@@ -8530,7 +8605,7 @@ void startMultipleGenerations(int startSize, int endSize){
         initNautyOptions(targetSize);
 
         DDGRAPH * ddgraph = getNewDDGraph(targetSize);
-
+        
         q1Components(0, Q1TypeComponentsSmallestCase[0], targetSize, 0, ddgraph);
         
         extraUnconstructableGraphs(ddgraph, targetSize);
@@ -9213,6 +9288,12 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         {"maxedgecount", required_argument, NULL, 0},
         {"minedgecount", required_argument, NULL, 0},
         {"statistics", no_argument, NULL, 0},
+        {"filter", no_argument, NULL, 0},
+        {"maxfaceR", required_argument, NULL, 0},
+        {"minfaceR", required_argument, NULL, 0},
+        {"maxvertexR", required_argument, NULL, 0},
+        {"minvertexR", required_argument, NULL, 0},
+        {"intermediate", no_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
@@ -9306,6 +9387,36 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                         break;
                     case 12:
                         giveStatistics = TRUE;
+                        break;
+                    case 13:
+                        filterDelaneyDressGraphs = TRUE;
+                        break;
+                    case 14:
+                        maxFaceR = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxFaceR, 1, 2*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 15:
+                        minFaceR = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minFaceR, 1, 2*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 16:
+                        maxVertexR = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, maxVertexR, 1, 2*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 17:
+                        minVertexR = atoi(optarg);
+                        if(!checkIntegerValue(long_options[option_index].name, minVertexR, 1, 2*MAXN)){
+                            failAfterArgumentParsing = TRUE;
+                        }
+                        break;
+                    case 18:
+                        intermediateStructures = TRUE;
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -9573,6 +9684,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     if(giveStatistics && symbols && symbolsCount){
         fprintf(stderr, "\nDelaney-Dress symbol statistics:\n");
         
+        fprintf(stderr, "Delaney-Dress graph order lies in [%d,%d].\n", minOrderStatistic, maxOrderStatistic);
         fprintf(stderr, "Number of face orbits lies in [%d,%d].\n", minFaceOrbitCountStatistic, maxFaceOrbitCountStatistic);
         fprintf(stderr, "Number of vertex orbits lies in [%d,%d].\n", minVertexOrbitCountStatistic, maxVertexOrbitCountStatistic);
         fprintf(stderr, "Number of edge orbits lies in [%d,%d].\n", minEdgeOrbitCountStatistic, maxEdgeOrbitCountStatistic);
