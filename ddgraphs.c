@@ -673,6 +673,27 @@ void printDDGraph(DDGRAPH *graph){
     fprintf(stderr, "\n");
 }
 
+
+
+void printColouredDDGraph(CDDGRAPH *graph){
+    fprintf(stderr, "CDDGRAPH %p\n", graph);
+    fprintf(stderr, "===================\n");
+    
+    int i, j;
+    for(i=0; i<graph->order; i++){
+        fprintf(stderr, "%2d) ", i+1);
+        for(j=0; j<3; j++){
+            if(graph->adjacency[i][j]==SEMIEDGE){
+                fprintf(stderr, " S ");
+            } else {
+                fprintf(stderr, "%2d ", graph->adjacency[i][j]+1);
+            }
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+}
+
 DDGRAPH *getNewDDGraph(int order){
     int i;
     
@@ -6280,6 +6301,10 @@ void handleColouredDelaneyDressGraph(DDGRAPH *ddgraph){
         if(outputType=='c'){
             writePregraphColorCodeEdgeColouring(stdout, ddgraph, first);
             first = FALSE;
+        } else if(outputType=='h'){
+            CDDGRAPH cddgraph;
+            translateDdgraphToCddgraph(ddgraph, &cddgraph);
+            printColouredDDGraph(&cddgraph);
         }
     }
 }
