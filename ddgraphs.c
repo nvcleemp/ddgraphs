@@ -5682,50 +5682,6 @@ void validateDelaneyDressSymbol(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Componen
     }
 }
 
-/*
- * Old method used to assign the labels to the s1s2 components.
- * This method just tries all the combinations and let the user
- * filter out the isomorphic once himself
- */
-void bruteForces1s2LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
-    int i;
-    for(i=minVertexDegree; i<=maxVertexDegree; i++){
-        int r = s1s2Components->containsSemiEdge[current] ? 
-                        s1s2Components->componentSizes[current] : 
-                        s1s2Components->componentSizes[current]/2;
-        if(i%r==0){
-            s1s2Components->componentLabels[current]=i;
-            if(current+1==s1s2Components->componentCount){
-                validateDelaneyDressSymbol(ddgraph, s0s1Components, s1s2Components);
-            } else {
-                bruteForces1s2LabelAssignment(ddgraph, s0s1Components, s1s2Components, current+1);
-            }
-        }
-    }
-}
-
-/*
- * Old method used to assign the labels to the s0s1 components.
- * This method just tries all the combinations and let the user
- * filter out the isomorphic once himself
- */
-void bruteForces0s1LabelAssignment(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1Components, COLOURCOMPONENTS *s1s2Components, int current){
-    int i;
-    for(i=minFaceSize; i<=maxFaceSize; i++){
-        int r = s0s1Components->containsSemiEdge[current] ? 
-                        s0s1Components->componentSizes[current] : 
-                        s0s1Components->componentSizes[current]/2;
-        if(i%r==0){
-            s0s1Components->componentLabels[current]=i;
-            if(current+1==s0s1Components->componentCount){
-                bruteForces1s2LabelAssignment(ddgraph, s0s1Components, s1s2Components, 0);
-            } else {
-                bruteForces0s1LabelAssignment(ddgraph, s0s1Components, s1s2Components, current+1);
-            }
-        }
-    }
-}
-
 //this array is used to store the different certificates to compare
 int refineCCPWorkspace[MAXN][MAXN*5];
 int refineCCPComparisons[MAXN][MAXN];
@@ -6233,7 +6189,6 @@ void assignComponentLabels(DDGRAPH *ddgraph){
     
     PROFILINGINCREMENT(acceptedColouredGraphs)
     
-    //bruteForces0s1LabelAssignment(ddgraph, &s0s1Components, &s1s2Components, 0);
     startAssignings0s1ComponentLabels(ddgraph, &s0s1Components, &s1s2Components, vertex2s0s1Component, vertex2s1s2Component);
 }
 
