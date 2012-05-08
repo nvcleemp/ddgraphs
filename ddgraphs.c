@@ -5852,7 +5852,7 @@ void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
                             partitioningPosition = currentComponent + s1s2componentsPartitionSize[depth][currentComponent];
                         }
                         
-                        
+            
                         for(j = partitioningPosition; j < s1s2Components->componentCount; j++){
                             s1s2componentsPartitioning[depth+1][j] = 
                                     s1s2componentsPartitioning[depth][j];
@@ -5861,7 +5861,7 @@ void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
                         }
                         
                         //if the partition still has a size > 1 we try to refine this partition
-                        if(s1s2componentsPartitionSize[depth][currentComponent]>2){
+                        if(s1s2componentsPartitionSize[depth][currentComponent+1]>1){
                             //refine
                             refineColourComponentPartition(cddgraph, s0s1Components, s1s2Components,
                                     vertex2s0s1components, vertex2s1s2components, depth + 1,
