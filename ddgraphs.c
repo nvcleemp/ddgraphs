@@ -5832,6 +5832,10 @@ void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
     
     int i, j;
     int current = s1s2labelling[depth][currentComponent];
+    /*
+     * currentComponent is the index of the current component in the ordered list of components
+     * current is the index of that component in the original list of components (i.e. in s1s2Components)
+     */
     for(i=localMinimumVertexDegree; i<=localMaximumVertexDegree; i++){
         if(!forbiddenFaceSizesTable[i]){
             int r = s1s2Components->containsSemiEdge[current] ? 
@@ -5895,7 +5899,7 @@ void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
                         
                         for(j = partitioningPosition; j < s1s2Components->componentCount; j++){
                             s1s2componentsPartitioning[depth+1][j] = 
-                                    s1s2componentsPartitioning[depth+1][j];
+                                    s1s2componentsPartitioning[depth][j];
                             s1s2componentsPartitionSize[depth+1][j] = 
                                     s1s2componentsPartitionSize[depth][j];
                         }
@@ -5918,6 +5922,8 @@ void assignLabelsToNexts1s2Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
                                 vertex2s1s2components, currentComponent+1, depth + 1);
                     }
                 }
+                
+                s1s2Components->componentLabels[current]=0;
             }
         }
     }
@@ -5939,7 +5945,7 @@ void startAssignings1s2ComponentLabels(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COL
     quickSortComponentsList(s1s2labelling[0], s1s2Components, 0, s1s2Components->componentCount-1);
     
     //determine the partitioning: currently only for s1s2-components
-    s0s1componentsPartitioning[0][0]=0;
+    s1s2componentsPartitioning[0][0]=0;
     int lastStart = 0;
     int currentSize = 1;
     for(i = 1; i < s1s2Components->componentCount; i++){
@@ -6090,6 +6096,8 @@ void assignLabelsToNexts0s1Component(DDGRAPH *ddgraph, CDDGRAPH *cddgraph, COLOU
                                 vertex2s1s2components, currentComponent+1, depth + 1);
                     }
                 }
+                
+                s0s1Components->componentLabels[current]=0;
             }
         }
     }
@@ -6113,6 +6121,17 @@ void startAssignings0s1ComponentLabels(DDGRAPH *ddgraph, COLOURCOMPONENTS *s0s1C
     
     //sort the components from large to small
     quickSortComponentsList(s0s1labelling[0], s0s1Components, 0, s0s1Components->componentCount-1);
+    
+    /*
+     * This partitioning works the same for both type of components.
+     * 
+     * sXsYcomponentsPartitioning contains for each recursion depth as many
+     * elements as there are components. If the entry is 0, this means that 
+     * a new part of the partition starts.
+     * sXsYcomponentsPartitionSize contains for each recursion depth as many
+     * elements as there are components. Each entry gives the size of the
+     * partition this components is in.
+     */
     
     //determine the partitioning: currently only for s0s1-components
     s0s1componentsPartitioning[0][0]=0;
