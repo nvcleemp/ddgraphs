@@ -8292,14 +8292,14 @@ void extraUnconstructableGraphs(DDGRAPH * ddgraph, int targetSize){
 
 void startGeneration(int targetSize){
     if(orientable && targetSize%2){
-        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        fprintf(stderr, "Found %llu block list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
         if(!onlyLists){
-            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+            fprintf(stderr, "Found %llu cubic pregraph%s%s.\n",
                     graphsCount,
                     graphsCount==1 ? (char *)"" : (char *)"s",
-                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)" that have a C4q 2-factor");
             if(colouredEdges){
-                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                fprintf(stderr, "Found %llu Delaney-Dress graph%s.\n",
                     edgeColouredGraphsCount,
                     edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
             }
@@ -8324,14 +8324,14 @@ void startGeneration(int targetSize){
     freeDDGraph(ddgraph);
 
     if(!symbols || verbose){
-        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        fprintf(stderr, "Found %llu block list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
         if(!onlyLists){
-            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+            fprintf(stderr, "Found %llu cubic pregraph%s%s.\n",
                     graphsCount,
                     graphsCount==1 ? (char *)"" : (char *)"s",
-                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)" that have a C4q 2-factor");
             if(colouredEdges){
-                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                fprintf(stderr, "Found %llu Delaney-Dress graph%s.\n",
                     edgeColouredGraphsCount,
                     edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
             }
@@ -8559,15 +8559,15 @@ void startFromListFile(char *filename, int minimumVertexCountAllowed, int maximu
         cleanNautyOptions();
     }
 
-    fprintf(stderr, "Read %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+    fprintf(stderr, "Read %llu block list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
     if(!symbols || verbose){
         if(!onlyLists){
-            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+            fprintf(stderr, "Found %llu cubic pregraph%s%s.\n",
                     graphsCount,
                     graphsCount==1 ? (char *)"" : (char *)"s",
-                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)" that have a C4q 2-factor");
             if(colouredEdges){
-                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                fprintf(stderr, "Found %llu Delaney-Dress graph%s.\n",
                     edgeColouredGraphsCount,
                     edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
             }
@@ -8619,14 +8619,14 @@ void startMultipleGenerations(int startSize, int endSize){
     }
     
     if(!symbols || verbose){
-        fprintf(stderr, "Found %llu component list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
+        fprintf(stderr, "Found %llu block list%s.\n", componentListsCount, componentListsCount==1 ? (char *)"" : (char *)"s");
         if(!onlyLists){
-            fprintf(stderr, "Found %llu Delaney-Dress graph%s%s.\n",
+            fprintf(stderr, "Found %llu cubic pregraph%s%s.\n",
                     graphsCount,
                     graphsCount==1 ? (char *)"" : (char *)"s",
-                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"");
+                    markedTwoFactors ? (char *)" with marked 2-factors" : (char *)" that have a C4q 2-factor");
             if(colouredEdges){
-                fprintf(stderr, "Found %llu edge-coloured Delaney-Dress graph%s.\n",
+                fprintf(stderr, "Found %llu Delaney-Dress graph%s.\n",
                     edgeColouredGraphsCount,
                     edgeColouredGraphsCount==1 ? (char *)"" : (char *)"s");
             }
@@ -8650,11 +8650,13 @@ void help(char *name){
     fprintf(stderr, "The program %s calculates Delaney-Dress symbols or related structures.\n\n", name);
     fprintf(stderr, "Usage\n=====\n");
     fprintf(stderr, " %s [options] n\n", name);
-    fprintf(stderr, "       Generate Delaney-Dress graphs with n vertices.\n");
+    fprintf(stderr, "       Generate graphs with n vertices.\n");
     fprintf(stderr, " %s -l file [options] \n", name);
-    fprintf(stderr, "       Generate Delaney-Dress graphs based on the component lists in file.\n");
+    fprintf(stderr, "       Generate graphs based on the component lists in file.\n");
     fprintf(stderr, " %s -s [options]\n", name);
     fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
+    fprintf(stderr, "Without any options, this program will generate cubic pregraphs that\n");
+    fprintf(stderr, "have a 2-factor where each component is the quotient of a 4-cycle.\n\n");
     fprintf(stderr, "\nThis program can handle graphs up to %d vertices. Recompile if you need larger\n", MAXN);
     fprintf(stderr, "graphs.\n\n");
     fprintf(stderr, "Valid options\n=============\n");
@@ -8678,15 +8680,13 @@ void help(char *name){
     fprintf(stderr, "       generate any structures.\n");
     fprintf(stderr, "\n* Generated types\n");
     fprintf(stderr, "    -L, --lists\n");
-    fprintf(stderr, "       Generate component lists.\n");
+    fprintf(stderr, "       Generate block lists.\n");
     fprintf(stderr, "    -t, --marked\n");
-    fprintf(stderr, "       Generate Delaney-Dress graphs with a marked 2-factor, i.e. graphs that\n");
-    fprintf(stderr, "       are the underlying graphs of Delaney-Dress symbols and in which the\n");
-    fprintf(stderr, "       s0s2 orbits are marked.\n");
+    fprintf(stderr, "       Generate cubic pregraphs with a marked 2-factor.\n");
     fprintf(stderr, "    -c, --coloured\n");
-    fprintf(stderr, "       Generate coloured Delaney-Dress graphs, i.e. graphs that are the\n");
-    fprintf(stderr, "       underlying graphs of Delaney-Dress symbols and in which the edges\n");
-    fprintf(stderr, "       are coloured with the colours 0, 1 or 2.\n");
+    fprintf(stderr, "       Generate Delaney-Dress graphs, i.e. graphs that are the underlying\n");
+    fprintf(stderr, "       graphs of Delaney-Dress symbols and in which the edges are coloured\n");
+    fprintf(stderr, "       with the colours 0, 1 or 2.\n");
     fprintf(stderr, "    -s, --symbols\n");
     fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
     fprintf(stderr, "\n* Specify constraints\n");
@@ -9642,14 +9642,14 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         
     } else if(listFilename!=NULL){
         if(onlyLists){
-            fprintf(stderr, "Generating component lists for Delaney-Dress graphs based on component lists in %s.\n",
+            fprintf(stderr, "Generating block lists for Delaney-Dress graphs based on block lists in %s.\n",
                 listFilename);
         } else if(colouredEdges){
-            fprintf(stderr, "Generating edge-coloured Delaney-Dress graphs based on component lists in %s.\n",
+            fprintf(stderr, "Generating Delaney-Dress graphs based on block lists in %s.\n",
                 listFilename);
         } else {
-            fprintf(stderr, "Generating Delaney-Dress graphs%s  based on component lists in %s.\n",
-                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)"",
+            fprintf(stderr, "Generating cubic pregraphs%s based on block lists in %s.\n",
+                markedTwoFactors ? (char *)" with marked 2-factors" : (char *)" that have a C4q 2-factor",
                 listFilename);
         }
         startFromListFile(listFilename, 0, MAXN);
@@ -9660,16 +9660,16 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
         DEBUGDUMP(vertexCount, "%d")
                 
         if(onlyLists){
-            fprintf(stderr, "Generating component lists for Delaney-Dress graphs with %d %s.\n",
+            fprintf(stderr, "Generating block lists for Delaney-Dress graphs with %d %s.\n",
                 vertexCount,
                 vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
         } else if(colouredEdges){
-            fprintf(stderr, "Generating edge-coloured Delaney-Dress graphs with %d %s.\n",
+            fprintf(stderr, "Generating Delaney-Dress graphs with %d %s.\n",
                 vertexCount,
                 vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
         } else {
-            fprintf(stderr, "Generating Delaney-Dress graphs with%s %d %s.\n",
-                markedTwoFactors ? (char *)" marked 2-factors and" : (char *)"",
+            fprintf(stderr, "Generating cubic pregraphs %s %d %s.\n",
+                markedTwoFactors ? (char *)"with marked 2-factors and" : (char *)"that have a C4q 2-factor and with",
                 vertexCount,
                 vertexCount==1 ? (char *)"vertex" : (char *)"vertices");
         }
