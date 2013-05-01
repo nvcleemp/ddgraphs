@@ -1,0 +1,16 @@
+#private configuration files
+nbproject/private/
+
+#nauty files
+nausparse.c
+nausparse.h
+nautil.c
+nauty.c
+nauty.h
+
+#executables
+ddgraphs
+ddgraphs-64
+ddgraphs-debug
+ddgraphs-profile
+
