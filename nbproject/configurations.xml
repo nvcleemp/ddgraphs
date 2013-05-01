@@ -10,6 +10,9 @@
       <in>ddsymbol_non_iso.c</in>
       <in>ddsymbol_summary.c</in>
       <in>edgecol3regpg_non_iso.c</in>
+      <in>nausparse.c</in>
+      <in>nautil.c</in>
+      <in>nauty.c</in>
       <in>util.h</in>
       <in>validateddgraph.c</in>
     </df>
@@ -41,25 +44,69 @@
           <executablePath>./ddgraphs</executablePath>
         </makeTool>
       </makefileType>
-      <item path="3regpg_non_iso.c" ex="false" tool="0" flavor2="0">
+      <item path="3regpg_non_iso.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
-      <item path="bruteforcecolouring.c" ex="false" tool="0" flavor2="0">
+      <item path="bruteforcecolouring.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
       <item path="ddgraphs.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <preprocessorList>
+            <Elem>MAXN=64</Elem>
+            <Elem>WORDSIZE=64</Elem>
+          </preprocessorList>
+        </cTool>
       </item>
       <item path="ddgraphs.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="ddsymbol_filter.c" ex="false" tool="0" flavor2="0">
+      <item path="ddsymbol_filter.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
-      <item path="ddsymbol_non_iso.c" ex="false" tool="0" flavor2="0">
+      <item path="ddsymbol_non_iso.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
-      <item path="ddsymbol_summary.c" ex="false" tool="0" flavor2="0">
+      <item path="ddsymbol_summary.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
-      <item path="edgecol3regpg_non_iso.c" ex="false" tool="0" flavor2="0">
+      <item path="edgecol3regpg_non_iso.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
+      </item>
+      <item path="nausparse.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <preprocessorList>
+            <Elem>MAXN=64</Elem>
+            <Elem>WORDSIZE=64</Elem>
+          </preprocessorList>
+        </cTool>
+      </item>
+      <item path="nautil.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <preprocessorList>
+            <Elem>MAXN=64</Elem>
+            <Elem>WORDSIZE=64</Elem>
+          </preprocessorList>
+        </cTool>
+      </item>
+      <item path="nauty.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <preprocessorList>
+            <Elem>MAXN=64</Elem>
+            <Elem>WORDSIZE=64</Elem>
+          </preprocessorList>
+        </cTool>
       </item>
       <item path="util.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="validateddgraph.c" ex="false" tool="0" flavor2="0">
+      <item path="validateddgraph.c" ex="false" tool="0" flavor2="2">
+        <cTool>
+        </cTool>
       </item>
     </conf>
   </confs>
