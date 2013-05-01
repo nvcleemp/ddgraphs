@@ -8655,8 +8655,8 @@ void help(char *name){
     fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
     fprintf(stderr, "Without any options, this program will generate cubic pregraphs that\n");
     fprintf(stderr, "have a 2-factor where each component is the quotient of a 4-cycle.\n\n");
-    fprintf(stderr, "\nThis program can handle graphs up to %d vertices. Recompile if you need larger\n", MAXN);
-    fprintf(stderr, "graphs.\n\n");
+    fprintf(stderr, "\nThis program can handle graphs on up to %d vertices. Recompile with a larger\n", MAXN);
+    fprintf(stderr, "value for MAXN if you need larger graphs.\n\n");
     fprintf(stderr, "Valid options\n=============\n");
     fprintf(stderr, "* Various options\n");
     fprintf(stderr, "    -h, --help\n");
@@ -8691,7 +8691,8 @@ void help(char *name){
     fprintf(stderr, "    -b, --bipartite\n");
     fprintf(stderr, "       Only generate Delaney-Dress graphs that are bipartite.\n");
     fprintf(stderr, "    -O, --orientable\n");
-    fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable tilings.\n");
+    fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable\n");
+    fprintf(stderr, "       tilings.\n");
     fprintf(stderr, "    -R, --requiredface\n");
     fprintf(stderr, "       Add a face size to the list of required faces.\n");
     fprintf(stderr, "    -F, --forbiddenface\n");
