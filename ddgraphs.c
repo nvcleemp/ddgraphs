@@ -1572,7 +1572,7 @@ void storeLockedHubsMapping(BBLOCK *block1, BBLOCK *block2, DDGRAPH *ddgraph){
  *
  */
 void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgraph, int *vertexToBlock, int *vertexToConnector){
-    int i, start;
+    int i;
     block->connectionVertices[0] = (*currentVertex)+1;
     block->connectionVertices[1] = (*currentVertex)+(block->parameter-1)*4+2;
     vertexToConnector[(*currentVertex)+1] = 0;
@@ -1585,8 +1585,6 @@ void constructDoubleLockedHub(int *currentVertex, BBLOCK *block, DDGRAPH *ddgrap
     }
     ddgraph->vertexPartition[0][(*currentVertex)+1] = 1;
     ddgraph->vertexPartition[0][(*currentVertex)+(block->parameter-1)*4+2] = 1;
-
-    start = *currentVertex;
 
     //store some pointers to limit the amount of typing in the next lines
     int *positions = ddgraph->underlyingGraph->v;
