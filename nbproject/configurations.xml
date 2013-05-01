@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="69">
-  <logicalFolder name="root" displayName="root" projectFiles="true">
-    <df name="trunk" root=".">
+<configurationDescriptor version="88">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="." name="trunk">
+      <in>3regpg_non_iso.c</in>
+      <in>bruteforcecolouring.c</in>
       <in>ddgraphs.c</in>
       <in>ddgraphs.h</in>
+      <in>ddsymbol_filter.c</in>
+      <in>ddsymbol_non_iso.c</in>
+      <in>ddsymbol_summary.c</in>
+      <in>edgecol3regpg_non_iso.c</in>
       <in>util.h</in>
+      <in>validateddgraph.c</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -21,18 +28,39 @@
   <confs>
     <conf name="Default" type="0">
       <toolsSet>
-        <developmentServer>localhost</developmentServer>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
         <compilerSet>GNU|GNU</compilerSet>
-        <platform>4</platform>
       </toolsSet>
+      <codeAssistance>
+      </codeAssistance>
       <makefileType>
         <makeTool>
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
-          <buildCommand>$(MAKE) -f Makefile</buildCommand>
-          <cleanCommand>$(MAKE) -f Makefile clean</cleanCommand>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath>./ddgraphs</executablePath>
         </makeTool>
       </makefileType>
+      <item path="3regpg_non_iso.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="bruteforcecolouring.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="ddgraphs.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="ddgraphs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ddsymbol_filter.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="ddsymbol_non_iso.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="ddsymbol_summary.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="edgecol3regpg_non_iso.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="util.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="validateddgraph.c" ex="false" tool="0" flavor2="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>
