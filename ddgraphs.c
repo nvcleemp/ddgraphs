@@ -8684,7 +8684,8 @@ void help(char *name){
     fprintf(stderr, "    -b, --bipartite\n");
     fprintf(stderr, "       Only generate Delaney-Dress graphs that are bipartite.\n");
     fprintf(stderr, "    -O, --orientable\n");
-    fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable tilings.\n");
+    fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable\n");
+    fprintf(stderr, "       tilings.\n");
     fprintf(stderr, "    -n, --minvertices\n");
     fprintf(stderr, "       Specify the minimum number of vertices in the Delaney-Dress graph.\n");
     fprintf(stderr, "    -N, --maxvertices\n");
