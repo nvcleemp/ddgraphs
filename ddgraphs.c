@@ -8651,8 +8651,6 @@ void help(char *name){
     fprintf(stderr, "       Generate graphs with n vertices.\n");
     fprintf(stderr, " %s -l file [options] \n", name);
     fprintf(stderr, "       Generate graphs based on the component lists in file.\n");
-    fprintf(stderr, " %s -s [options]\n", name);
-    fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
     fprintf(stderr, "Without any options, this program will generate cubic pregraphs that\n");
     fprintf(stderr, "have a 2-factor where each component is the quotient of a 4-cycle.\n\n");
     fprintf(stderr, "\nThis program can handle graphs up to %d vertices. Recompile if you need larger\n", MAXN);
@@ -8673,9 +8671,6 @@ void help(char *name){
     fprintf(stderr, "       into n parts and only part r is generated. The number n needs to\n");
     fprintf(stderr, "       be an integer larger than 0 and r should be a positive integer\n");
     fprintf(stderr, "       smaller than n.\n");
-    fprintf(stderr, "    --restrictionsonly\n");
-    fprintf(stderr, "       calculate the restrictions for the Delaney-Dress symbol, but don't\n");
-    fprintf(stderr, "       generate any structures.\n");
     fprintf(stderr, "\n* Generated types\n");
     fprintf(stderr, "    -L, --lists\n");
     fprintf(stderr, "       Generate block lists.\n");
@@ -8685,37 +8680,11 @@ void help(char *name){
     fprintf(stderr, "       Generate Delaney-Dress graphs, i.e. graphs that are the underlying\n");
     fprintf(stderr, "       graphs of Delaney-Dress symbols and in which the edges are coloured\n");
     fprintf(stderr, "       with the colours 0, 1 or 2.\n");
-    fprintf(stderr, "    -s, --symbols\n");
-    fprintf(stderr, "       Generate Delaney-Dress symbols.\n");
     fprintf(stderr, "\n* Specify constraints\n");
     fprintf(stderr, "    -b, --bipartite\n");
     fprintf(stderr, "       Only generate Delaney-Dress graphs that are bipartite.\n");
     fprintf(stderr, "    -O, --orientable\n");
     fprintf(stderr, "       Only generate Delaney-Dress graphs that (may) correspond to orientable tilings.\n");
-    fprintf(stderr, "    -R, --requiredface\n");
-    fprintf(stderr, "       Add a face size to the list of required faces.\n");
-    fprintf(stderr, "    -F, --forbiddenface\n");
-    fprintf(stderr, "       Add a face size to the list of forbidden faces.\n");
-    fprintf(stderr, "    -r, --requiredvertex\n");
-    fprintf(stderr, "       Add a vertex degree to the list of required vertices.\n");
-    fprintf(stderr, "    -f, --forbiddenvertex\n");
-    fprintf(stderr, "       Add a vertex degree to the list of forbidden vertices.\n");
-    fprintf(stderr, "    --maxfacecount\n");
-    fprintf(stderr, "       Specify the maximum number of face orbits in the tiling.\n");
-    fprintf(stderr, "    --minfacecount\n");
-    fprintf(stderr, "       Specify the minimum number of face orbits in the tiling.\n");
-    fprintf(stderr, "    --maxvertexcount\n");
-    fprintf(stderr, "       Specify the maximum number of vertex orbits in the tiling.\n");
-    fprintf(stderr, "    --minvertexcount\n");
-    fprintf(stderr, "       Specify the minimum number of vertex orbits in the tiling.\n");
-    fprintf(stderr, "    --minfacesize\n");
-    fprintf(stderr, "       Specify the minimum size of a face in the tiling.\n");
-    fprintf(stderr, "    --maxfacesize\n");
-    fprintf(stderr, "       Specify the maximum size of a face in the tiling.\n");
-    fprintf(stderr, "    --minvertexdegree\n");
-    fprintf(stderr, "       Specify the minimum degree of a vertex in the tiling.\n");
-    fprintf(stderr, "    --maxvertexdegree\n");
-    fprintf(stderr, "       Specify the maximum degree of a vertex in the tiling.\n");
     fprintf(stderr, "    -n, --minvertices\n");
     fprintf(stderr, "       Specify the minimum number of vertices in the Delaney-Dress graph.\n");
     fprintf(stderr, "    -N, --maxvertices\n");
@@ -9275,37 +9244,14 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     char *listFilename = NULL;
     char *moduloString;
     static struct option long_options[] = {
-        {"maxfacecount", required_argument, NULL, 0},
-        {"minfacecount", required_argument, NULL, 0},
-        {"maxvertexcount", required_argument, NULL, 0},
-        {"minvertexcount", required_argument, NULL, 0},
-        {"minfacesize", required_argument, NULL, 0},
-        {"maxfacesize", required_argument, NULL, 0},
-        {"minvertexdegree", required_argument, NULL, 0},
-        {"maxvertexdegree", required_argument, NULL, 0},
         {"verbose", no_argument, NULL, 0},
-        {"restrictionsonly", no_argument, NULL, 0},
-        {"maxedgecount", required_argument, NULL, 0},
-        {"minedgecount", required_argument, NULL, 0},
-        {"statistics", no_argument, NULL, 0},
-        {"filter", no_argument, NULL, 0},
-        {"maxfaceR", required_argument, NULL, 0},
-        {"minfaceR", required_argument, NULL, 0},
-        {"maxvertexR", required_argument, NULL, 0},
-        {"minvertexR", required_argument, NULL, 0},
-        {"intermediate", no_argument, NULL, 0},
         {"help", no_argument, NULL, 'h'},
         {"lists", no_argument, NULL, 'L'},
         {"marked", no_argument, NULL, 't'},
         {"coloured", no_argument, NULL, 'c'},
-        {"symbols", no_argument, NULL, 's'},
         {"listfile", required_argument, NULL, 'l'},
         {"output", required_argument, NULL, 'o'},
         {"modulo", required_argument, NULL, 'm'},
-        {"requiredface", required_argument, NULL, 'R'},
-        {"forbiddenface", required_argument, NULL, 'F'},
-        {"requiredvertex", required_argument, NULL, 'r'},
-        {"forbiddenvertex", required_argument, NULL, 'f'},
         {"minvertices", required_argument, NULL, 'n'},
         {"maxvertices", required_argument, NULL, 'N'},
         {"bipartite", no_argument, NULL, 'b'},
@@ -9314,109 +9260,13 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     int option_index = 0;
 
     boolean failAfterArgumentParsing = FALSE;
-    while ((c = getopt_long(argc, argv, "hl:Ltcso:m:R:F:r:f:n:N:bO", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hl:Ltco:m:n:N:bO", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 //handle long option with no alternative
                 switch(option_index) {
                     case 0:
-                        maxFaceOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxFaceOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 1:
-                        minFaceOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minFaceOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 2:
-                        maxVertexOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxVertexOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 3:
-                        minVertexOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minVertexOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 4:
-                        minFaceSize = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minFaceSize, 3, 6*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 5:
-                        maxFaceSize = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxFaceSize, 3, 6*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 6:
-                        minVertexDegree = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minVertexDegree, 3, 6*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 7:
-                        maxVertexDegree = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxVertexDegree, 3, 6*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 8:
                         verbose = TRUE;
-                        break;
-                    case 9:
-                        restrictionsOnly = TRUE;
-                        break;
-                    case 10:
-                        maxEdgeOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxEdgeOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 11:
-                        minEdgeOrbitCount = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minEdgeOrbitCount, 1, MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 12:
-                        giveStatistics = TRUE;
-                        break;
-                    case 13:
-                        filterDelaneyDressGraphs = TRUE;
-                        break;
-                    case 14:
-                        maxFaceR = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxFaceR, 1, 2*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 15:
-                        minFaceR = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minFaceR, 1, 2*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 16:
-                        maxVertexR = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, maxVertexR, 1, 2*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 17:
-                        minVertexR = atoi(optarg);
-                        if(!checkIntegerValue(long_options[option_index].name, minVertexR, 1, 2*MAXN)){
-                            failAfterArgumentParsing = TRUE;
-                        }
-                        break;
-                    case 18:
-                        intermediateStructures = TRUE;
                         break;
                     default:
                         fprintf(stderr, "Illegal option index %d.\n", option_index);
@@ -9439,11 +9289,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
             case 'c':
                 markedTwoFactors = TRUE;
                 colouredEdges = TRUE;
-                break;
-            case 's':
-                markedTwoFactors = TRUE;
-                colouredEdges = TRUE;
-                symbols = TRUE;
                 break;
             case 'b':
                 bipartite = TRUE;
@@ -9486,30 +9331,6 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
                     fprintf(stderr, "Illegal format for modulo: rest must be positive.\n");
                     usage(name);
                     return EXIT_FAILURE;
-                }
-                break;
-            case 'R':
-                requestedFaceSizes[requestedFaceSizesCount++] = atoi(optarg);
-                if(!checkIntegerValue("requiredface", requestedFaceSizes[requestedFaceSizesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
-                }
-                break;
-            case 'F':
-                forbiddenFaceSizes[forbiddenFaceSizesCount++] = atoi(optarg);
-                if(!checkIntegerValue("forbiddenface", forbiddenFaceSizes[forbiddenFaceSizesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
-                }
-                break;
-            case 'r':
-                requestedVertexDegrees[requestedVertexDegreesCount++] = atoi(optarg);
-                if(!checkIntegerValue("requiredvertex", requestedVertexDegrees[requestedVertexDegreesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
-                }
-                break;
-            case 'f':
-                forbiddenVertexDegrees[forbiddenVertexDegreesCount++] = atoi(optarg);
-                if(!checkIntegerValue("forbiddenvertex", forbiddenVertexDegrees[forbiddenVertexDegreesCount-1], 3, 6*MAXN)){
-                    failAfterArgumentParsing = TRUE;
                 }
                 break;
             case 'n':
