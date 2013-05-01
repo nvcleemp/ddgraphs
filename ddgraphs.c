@@ -2,7 +2,7 @@
  * =========================================================================
  * This file is part of the ddgraphs project
  *
- * Copyright (C) 2011 Universiteit Gent
+ * Copyright (C) 2011 - 2013 Universiteit Gent
  *
  * Author: Nicolas Van Cleemput
  * In collaboration with Gunnar Brinkmann
