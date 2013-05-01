@@ -14,3 +14,6 @@ ddgraphs-64
 ddgraphs-debug
 ddgraphs-profile
 
+#sources distribution
+ddgraphs-sources.tar.gz
+ddgraphs-sources.zip
