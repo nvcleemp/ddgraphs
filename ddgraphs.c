@@ -9567,6 +9567,7 @@ int DDGRAPHS_MAIN_FUNCTION(int argc, char** argv) {
     
     //adjust some constant in case certain restrictions were chosen
     if(edgeColourable){
+        //Delaney-Dress symbols for edge colourable tilings are not yet possible
         Q1TypeComponentsSmallestCase[3] = 2;
     }
     

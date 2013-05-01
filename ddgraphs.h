@@ -273,6 +273,8 @@ boolean bipartite = FALSE;
 
 boolean orientable = FALSE;
 
+boolean edgeColourable = FALSE;
+
 boolean verbose = FALSE;
 
 boolean restrictionsOnly = FALSE;
